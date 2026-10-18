@@ -1,0 +1,95 @@
+<%- include('_layout') %>
+
+<%- include('_dashboard-tabs', { tab: 'user' }) %>
+
+<div class="toolbar">
+  <a class="btn btn--primary" href="#new-dashboard"><span aria-hidden="true">+</span> New dashboard</a>
+</div>
+
+<div class="table-scroll">
+  <table class="table">
+    <thead>
+      <tr>
+        <th scope="col">Dashboard</th>
+        <th scope="col">Type</th>
+        <th scope="col">
+          <span class="label-row">Portal variable
+            <%- include('../../partials/info', { text: 'Place this in a custom requester portal to show the dashboard there. The standard look shows every dashboard that is on above My tickets.' }) %>
+          </span>
+        </th>
+        <th scope="col">Shown to requesters</th>
+        <th scope="col"><span class="visually-hidden">Actions</span></th>
+      </tr>
+    </thead>
+    <tbody>
+      <% dashboards.forEach(function (d) { %>
+        <tr>
+          <td><a class="link-strong" href="/admin/settings/dashboards/user/<%= d.id %>"><%= d.name %></a></td>
+          <td class="small"><%= kindLabels[d.kind] || d.kind %><%= builtIn[d.id] ? '' : ' (copy)' %></td>
+          <td class="mono small"><span class="copyable">{{dashboard:<%= d.id %>}}</span></td>
+          <td>
+            <% if (d.is_enabled) { %>
+              <span class="pill pill--ok">On</span>
+            <% } else { %>
+              <span class="pill pill--muted">Off</span>
+            <% } %>
+          </td>
+          <td class="row-actions">
+            <a class="btn btn--quiet btn--small" href="/admin/settings/dashboards/user/<%= d.id %>">Edit</a>
+            <form method="post" action="/admin/settings/dashboards/user/<%= d.id %>/enabled" class="inline-form">
+              <input type="hidden" name="_csrf" value="<%= locals.csrfToken %>">
+              <% if (d.is_enabled) { %>
+                <button type="submit" class="btn btn--quiet btn--small">Turn off</button>
+              <% } else { %>
+                <input type="hidden" name="enabled" value="on">
+                <button type="submit" class="btn btn--quiet btn--small">Turn on</button>
+              <% } %>
+            </form>
+            <form method="post" action="/admin/settings/dashboards/user/<%= d.id %>/delete" class="inline-form">
+              <input type="hidden" name="_csrf" value="<%= locals.csrfToken %>">
+              <%- include('../../partials/bin-button', { label: 'Delete ' + d.name, refused: builtIn[d.id] ? 'Built in - turn it off instead' : '' }) %>
+            </form>
+          </td>
+        </tr>
+      <% }); %>
+    </tbody>
+  </table>
+</div>
+
+<div class="dialog<%= openDialog === 'new-dashboard' ? ' dialog--open' : '' %>" id="new-dashboard">
+  <a class="dialog__backdrop" href="#top" aria-label="Close"></a>
+  <div class="dialog__panel" role="dialog" aria-modal="true" aria-labelledby="new-dashboard-title">
+    <div class="dialog__head">
+      <h2 id="new-dashboard-title">New dashboard</h2>
+      <a class="dialog__close" href="#top" aria-label="Close">&times;</a>
+    </div>
+    <form method="post" action="/admin/settings/dashboards/user" class="stack">
+      <input type="hidden" name="_csrf" value="<%= locals.csrfToken %>">
+      <div class="field">
+        <label for="nd-name">Name <span class="required">*</span></label>
+        <input id="nd-name" name="name" type="text" required maxlength="80" value="<%= values.name || '' %>" placeholder="Network team availability">
+        <% if (errors.name) { %><p class="field-error" role="alert"><%= errors.name %></p><% } %>
+      </div>
+      <fieldset class="field">
+        <legend class="label-row">Based on
+          <%- include('../../partials/info', { text: 'A copy of the built-in dashboard with its design, switched off. Set what makes it different on the next page.' }) %>
+        </legend>
+        <div class="pick-list">
+          <% kinds.forEach(function (k, i) { %>
+            <label class="pick-option">
+              <input type="radio" name="kind" value="<%= k.key %>" required<%= (values.kind ? values.kind === k.key : i === 0) ? ' checked' : '' %>>
+              <span class="pick-option__name"><%= k.label %></span>
+              <span class="small muted"><%= k.differs %></span>
+            </label>
+          <% }); %>
+        </div>
+      </fieldset>
+      <div class="dialog__actions">
+        <button type="submit" class="btn btn--primary">Create dashboard</button>
+        <a class="btn btn--quiet" href="#top">Cancel</a>
+      </div>
+    </form>
+  </div>
+</div>
+
+<%- include('_layout_end') %>

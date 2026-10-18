@@ -1,0 +1,329 @@
+<%- include('_layout') %>
+
+<%- include('_advanced-tabs', { tab: 'api-keys' }) %>
+
+<% if (created) { %>
+  <section class="card stack api-key-created" role="status">
+    <h2 class="section-title"><% if (created.rotated) { %>A new secret for "<%= created.name %>"<% } else { %>"<%= created.name %>" is ready<% } %></h2>
+    <p><strong>Copy the key now. It is shown this once</strong> and cannot be shown again; if it is lost, give the key a new secret.<% if (created.rotated) { %> The old one is refused from now on; its identifier, automations and rights are unchanged.<% } %></p>
+    <div class="api-key-created__row">
+      <pre class="api-key-created__secret mono"><%= created.secret %></pre>
+      <%- include('../../partials/copy-button', { text: created.secret, label: 'Copy the key' }) %>
+    </div>
+    <p class="small muted">Send it as <code>Authorization: Bearer &lt;key&gt;</code>. Choose it on the trigger of an automation that starts when an HTTP request is received.</p>
+  </section>
+<% } %>
+
+<div class="toolbar">
+  <a class="btn btn--primary" href="#new-key"><span aria-hidden="true">+</span> New API key</a>
+  <%- include('../../partials/info', { text: 'A key starts the automations whose trigger is "An HTTP request is received" and names it. It can run only the steps ticked on it; an automation with any other step is refused.' }) %>
+</div>
+
+<% if (keys.length === 0) { %>
+  <div class="card">
+    <p><strong>No API keys yet.</strong></p>
+    <p class="small muted">Make one with <a href="#new-key">New API key</a>, then choose it on an automation's trigger.</p>
+  </div>
+<% } else { %>
+  <div class="table-scroll">
+    <table class="table">
+      <thead>
+        <tr>
+          <th scope="col">Name</th>
+          <th scope="col">Identifier</th>
+          <th scope="col">May run</th>
+          <th scope="col">Templates</th>
+          <th scope="col">Starts</th>
+          <th scope="col">Last used</th>
+          <th scope="col"><span class="visually-hidden">Actions</span></th>
+        </tr>
+      </thead>
+      <tbody>
+        <% keys.forEach(function (k) { %>
+          <tr id="row-<%= k.id %>">
+            <td><%= k.name %></td>
+            <td class="mono small" title="Not secret: the start of the key, which says which key a request used"><%= keyStart(k) %>_...</td>
+            <td class="small"><%= actions.filter(function (a) { return k.allowed_actions.indexOf(a.key) >= 0; }).map(function (a) { return a.label; }).join(', ') %></td>
+            <td class="small"><%= k.template_ids.length === 0 ? 'Any' : k.template_ids.map(function (t) { return templateNames[t] || 'a removed template'; }).join(', ') %></td>
+            <td class="small"><%= (usedBy[k.id] || []).join(', ') || 'nothing yet' %></td>
+            <td class="small"><%= k.last_used_at ? formatDateTime(k.last_used_at) : 'never' %></td>
+            <td class="row-actions">
+              <a class="btn btn--quiet btn--small" href="#key-<%= k.id %>">Edit</a>
+              <a class="btn btn--quiet btn--small" href="#rotate-<%= k.id %>">New secret</a>
+              <form method="post" action="/admin/settings/advanced/api-keys/<%= k.id %>/delete" class="inline-form">
+                <input type="hidden" name="_csrf" value="<%= locals.csrfToken %>">
+                <%- include('../../partials/bin-button', { label: 'Delete ' + k.name }) %>
+              </form>
+            </td>
+          </tr>
+        <% }); %>
+
+      </tbody>
+    </table>
+  </div>
+<% } %>
+
+<section class="card stack api-guide" id="how-to-call">
+  <h2 class="section-title">How to call it</h2>
+  <p class="small muted">Two things a key can do: <strong>change</strong> tickets, by starting an automation (POST, below), and <strong>read</strong> them (GET, <a href="#reading">further down</a>).</p>
+  <p>A key does nothing alone: it starts an automation, and the automation's steps do the work. Each automation has its own address.</p>
+  <ol class="api-guide__steps">
+    <li>Make a key here and tick the steps it may run, for example <strong>Set status</strong>.</li>
+    <li>Under <a href="/admin/settings/advanced/automation">Automation</a>, create one that starts when <strong>An HTTP request is received</strong>, choose this key on its trigger, and add the steps, for example <em>Set status - Resolved</em>.</li>
+    <li>Switch it on and send a POST to its address. The trigger's popup shows the exact address.</li>
+  </ol>
+
+  <h3 class="api-guide__head">Changing tickets (POST): examples, one per action</h3>
+  <p class="small muted">Each is an automation (trigger: An HTTP request is received) and the request that starts it. Everything in the body reads as <code>{{request.json.name}}</code>. The key is read from the <code>HELPDESK_KEY</code> environment variable, so it never sits in your code.</p>
+
+  <%# One language bar for every example: the radios come first, so CSS can
+      show the chosen language's code everywhere below (no script). In a
+      block of their own: hidden radios placed straight in the card (a grid)
+      sat at its top, and focusing one on a tab click scrolled up there. %>
+  <div class="api-lang-switch">
+  <% languages.forEach(function (l, i) { %>
+    <input class="kind-radio api-lang api-lang--<%= l.key %>" type="radio" name="apiLanguage" id="api-lang-<%= l.key %>"<%= i === 0 ? ' checked' : '' %>>
+  <% }); %>
+  <div class="api-lang-bar" role="radiogroup" aria-label="Language">
+    <% languages.forEach(function (l) { %>
+      <label for="api-lang-<%= l.key %>" class="api-lang-bar__tab api-lang-bar__tab--<%= l.key %>"><%= l.label %></label>
+    <% }); %>
+  </div>
+
+  <div class="api-guide__examples">
+    <% guide.forEach(function (g) { %>
+      <details class="api-guide__example">
+        <summary><%= g.title %></summary>
+        <div class="stack">
+          <p class="small"><strong>Automation:</strong> <%= g.steps %></p>
+          <% g.snippets.forEach(function (s) { %>
+            <div class="api-snippet api-snippet--<%= s.language %>">
+              <pre class="api-guide__code mono"><%= s.code %></pre>
+              <%- include('../../partials/copy-button', { text: s.code, label: 'Copy the code' }) %>
+            </div>
+          <% }); %>
+          <p class="small muted">Answer: <code><%= g.answer %></code></p>
+        </div>
+      </details>
+    <% }); %>
+  </div>
+
+  <%# Changing: POST and PATCH /api/v1, no automation. Inside the same switch. %>
+  <h3 class="api-guide__head" id="changing">Changing tickets without an automation (POST, PATCH)</h3>
+  <p class="small">Create tickets, change their status, priority, group or technician, comment, send notifications, and create templates and notifications - directly, without building an automation first. Each change needs its own tick on the key, and is done as the person who made the key.</p>
+  <div class="table-scroll">
+    <table class="table">
+      <thead><tr><th scope="col">Address</th><th scope="col">Does</th><th scope="col">The key needs</th></tr></thead>
+      <tbody>
+        <tr><td class="mono small">POST <%= origin %>/api/v1/tickets</td><td class="small">Create a ticket from a template</td><td class="small">Create a ticket</td></tr>
+        <tr><td class="mono small">PATCH <%= origin %>/api/v1/tickets/<em>INC-000123</em></td><td class="small">Status, priority, group, assignee - any of them</td><td class="small">A tick for each one sent</td></tr>
+        <tr><td class="mono small">POST <%= origin %>/api/v1/tickets/<em>INC-000123</em>/comments</td><td class="small">Add a comment or an internal note</td><td class="small">Add a comment</td></tr>
+        <tr><td class="mono small">POST <%= origin %>/api/v1/tickets/<em>INC-000123</em>/notifications</td><td class="small">Send a notification about it</td><td class="small">Send notification</td></tr>
+        <tr><td class="mono small">POST <%= origin %>/api/v1/templates</td><td class="small">Create a ticket template</td><td class="small">Create a ticket template</td></tr>
+        <tr><td class="mono small">POST <%= origin %>/api/v1/notifications</td><td class="small">Create a notification</td><td class="small">Create a notification</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <p class="small muted">Answers: <code>200</code> or <code>201</code> with JSON; <code>400</code> something in the body is missing or unknown, with the reason; <code>401</code> no or wrong key; <code>403</code> the key may not do that; <code>404</code> no such ticket, or one the key may not see; <code>409</code> a name already taken, or a change the ticket's own rules refuse (an approval awaited, a task open).</p>
+
+  <div class="api-guide__examples">
+    <% writeGuide.forEach(function (g) { %>
+      <details class="api-guide__example">
+        <summary><%= g.title %></summary>
+        <div class="stack">
+          <p class="small"><%= g.explain %></p>
+          <p class="small muted">The key needs: <strong><%= g.needs %></strong></p>
+          <% g.snippets.forEach(function (s) { %>
+            <div class="api-snippet api-snippet--<%= s.language %>">
+              <pre class="api-guide__code mono"><%= s.code %></pre>
+              <%- include('../../partials/copy-button', { text: s.code, label: 'Copy the code' }) %>
+            </div>
+          <% }); %>
+          <p class="small muted">Answer:</p>
+          <pre class="api-guide__code mono api-guide__answer"><%= g.answer %></pre>
+        </div>
+      </details>
+    <% }); %>
+  </div>
+
+  <%# Reading: GET /api/v1. Inside the same switch, so the language chosen
+      above applies here too. %>
+  <h3 class="api-guide__head" id="reading">Reading tickets (GET)</h3>
+  <p class="small">Ask for a ticket and get it back as JSON - its status, who it is for, who has it, the SLA, its tasks and files. Nothing is changed. The key needs <strong>Read tickets</strong> ticked (and <strong>Read internal notes too</strong> for those); a key limited to some templates sees only their tickets.</p>
+  <div class="table-scroll">
+    <table class="table">
+      <thead><tr><th scope="col">Address</th><th scope="col">Gives</th></tr></thead>
+      <tbody>
+        <tr><td class="mono small">GET <%= origin %>/api/v1/tickets/<em>INC-000123</em></td><td class="small">One ticket, everything about it</td></tr>
+        <tr><td class="mono small">GET <%= origin %>/api/v1/tickets</td><td class="small">All tickets, a page at a time (limit, offset)</td></tr>
+        <tr><td class="mono small">GET <%= origin %>/api/v1/tickets?<em>filters</em></td><td class="small">Only some: status, priority, requester, group, updatedSince, tasks</td></tr>
+        <tr><td class="mono small">GET <%= origin %>/api/v1/tickets/<em>INC-000123</em>/comments</td><td class="small">Its comments, oldest first</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <details class="api-guide__example api-filters" open>
+    <summary>Filters for GET /api/v1/tickets</summary>
+    <div class="stack">
+      <p class="small">Add any of these after <code>?</code>, joined with <code>&amp;</code>; they combine (all must match). Leave them all out for every ticket. In Postman, put each on the Params tab as a key and a value.</p>
+      <div class="table-scroll">
+        <table class="table">
+          <thead><tr><th scope="col">Filter</th><th scope="col">Matches</th><th scope="col">Example</th></tr></thead>
+          <tbody>
+            <tr><td class="mono small">status</td><td class="small">One or more statuses, comma-separated: open, in_progress, pending (On-hold), resolved, closed, cancelled</td><td class="mono small">status=open,in_progress</td></tr>
+            <tr><td class="mono small">priority</td><td class="small">low, normal, high, urgent</td><td class="mono small">priority=high,urgent</td></tr>
+            <tr><td class="mono small">type</td><td class="small">incident, service_request, change_request, task</td><td class="mono small">type=incident</td></tr>
+            <tr><td class="mono small">requester</td><td class="small">The requester's email address</td><td class="mono small">requester=jana@example.com</td></tr>
+            <tr><td class="mono small">assignee</td><td class="small">The technician's email address, or <code>none</code> for unassigned</td><td class="mono small">assignee=none</td></tr>
+            <tr><td class="mono small">group</td><td class="small">A technician group, by name</td><td class="mono small">group=Network</td></tr>
+            <tr><td class="mono small">template</td><td class="small">The template it was raised from, by name</td><td class="mono small">template=Default request</td></tr>
+            <tr><td class="mono small">search</td><td class="small">Words in the title, any case</td><td class="mono small">search=printer</td></tr>
+            <tr><td class="mono small">createdSince</td><td class="small">Raised at or after a date and time</td><td class="mono small">createdSince=2026-10-01T00:00:00Z</td></tr>
+            <tr><td class="mono small">updatedSince</td><td class="small">Changed at or after a date and time</td><td class="mono small">updatedSince=2026-10-12T08:00:00Z</td></tr>
+            <tr><td class="mono small">tasks</td><td class="small">Tasks are left out unless this is <code>include</code></td><td class="mono small">tasks=include</td></tr>
+            <tr><td class="mono small">limit</td><td class="small">How many per page, 1 to 100 (50 if left out)</td><td class="mono small">limit=100</td></tr>
+            <tr><td class="mono small">offset</td><td class="small">Where the page starts; use the "next" of the previous answer</td><td class="mono small">offset=100</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p class="small muted">A value with a space is written with %20 (<code>template=Default%20request</code>); most tools, Postman included, do that for you.</p>
+    </div>
+  </details>
+
+  <p class="small muted">Answers: <code>200</code> with the JSON; <code>401</code> no or wrong key; <code>403</code> the key may not read; <code>404</code> no such ticket, or one the key may not see; <code>400</code> a filter that does not make sense, with the reason.</p>
+
+  <div class="api-guide__examples">
+    <% readGuide.forEach(function (g) { %>
+      <details class="api-guide__example">
+        <summary><%= g.title %></summary>
+        <div class="stack">
+          <p class="small"><%= g.explain %></p>
+          <% g.snippets.forEach(function (s) { %>
+            <div class="api-snippet api-snippet--<%= s.language %>">
+              <pre class="api-guide__code mono"><%= s.code %></pre>
+              <%- include('../../partials/copy-button', { text: s.code, label: 'Copy the code' }) %>
+            </div>
+          <% }); %>
+          <p class="small muted">Answer:</p>
+          <pre class="api-guide__code mono api-guide__answer"><%= g.answer %></pre>
+        </div>
+      </details>
+    <% }); %>
+  </div>
+  </div>
+
+  <h3 class="api-guide__head">The request</h3>
+  <div class="table-scroll">
+    <table class="table">
+      <tbody>
+        <tr><th scope="row">Method and address</th><td><code>POST <%= origin %>/hooks/automations/&lt;automation id&gt;</code></td></tr>
+        <tr><th scope="row">Authorization</th><td><code>Bearer &lt;key&gt;</code> - the key chosen on that automation's trigger</td></tr>
+        <tr><th scope="row">Body</th><td>JSON, at most 64 KB. <code>"ticket"</code> names the ticket by reference, such as <code>INC-000123</code>; leave it out when the automation creates one</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h3 class="api-guide__head">The answer</h3>
+  <div class="table-scroll">
+    <table class="table">
+      <tbody>
+        <tr><th scope="row"><code>200</code></th><td><code>{"outcome": "success", "ticket": "INC-000123"}</code> - every step ran (<code>"stopped"</code> if it hit the step limit); the ticket it acted on or created</td></tr>
+        <tr><th scope="row"><code>400</code></th><td>A step needed a ticket and none was named or created, or the body is not JSON</td></tr>
+        <tr><th scope="row"><code>401</code></th><td>The key is wrong, deleted, or not the one on this automation's trigger</td></tr>
+        <tr><th scope="row"><code>403</code></th><td>The automation has a step the key may not run - nothing was done</td></tr>
+        <tr><th scope="row"><code>404</code></th><td>There is no such ticket - or it is from a template the key is not limited to</td></tr>
+        <tr><th scope="row"><code>409</code></th><td>The automation is switched off</td></tr>
+        <tr><th scope="row"><code>500</code></th><td>A step failed; the automation's run history says which</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <% if (httpAutomations.length > 0) { %>
+    <p class="small">Started by a request now: <% httpAutomations.forEach(function (a, i) { %><%= i ? ', ' : '' %><a href="/admin/settings/advanced/automation/<%= a.id %>"><%= a.name %></a><% }); %>.</p>
+  <% } %>
+</section>
+
+<%
+  var dialogs = [{ id: 'new-key', title: 'New API key', action: '/admin/settings/advanced/api-keys', button: 'Create key', k: null, closeTo: '#top' }]
+    .concat(keys.map(function (k) {
+      return { id: 'key-' + k.id, title: 'Edit ' + k.name, action: '/admin/settings/advanced/api-keys/' + k.id + '/actions', button: 'Save key', k: k, closeTo: '#row-' + k.id };
+    }));
+%>
+<% dialogs.forEach(function (d) {
+     var reopened = openDialog === d.id;
+     var chosen = reopened && values.actions ? values.actions : (d.k ? d.k.allowed_actions : []);
+     var chosenTemplates = reopened && values.templateIds ? values.templateIds : (d.k ? d.k.template_ids : []);
+%>
+  <div class="dialog<%= reopened ? ' dialog--open' : '' %>" id="<%= d.id %>">
+    <a class="dialog__backdrop" href="<%= d.closeTo %>" aria-label="Close"></a>
+    <div class="dialog__panel" role="dialog" aria-modal="true" aria-labelledby="<%= d.id %>-title">
+      <div class="dialog__head">
+        <h2 id="<%= d.id %>-title"><%= d.title %></h2>
+        <a class="dialog__close" href="<%= d.closeTo %>" aria-label="Close">&times;</a>
+      </div>
+      <form method="post" action="<%= d.action %>" class="stack">
+        <input type="hidden" name="_csrf" value="<%= locals.csrfToken %>">
+        <% if (reopened && errors.form) { %><p class="field-error" role="alert"><%= errors.form %></p><% } %>
+
+        <% if (!d.k) { %>
+          <div class="field">
+            <label for="<%= d.id %>-name">Name <span class="required">*</span></label>
+            <input id="<%= d.id %>-name" name="name" type="text" required maxlength="80" value="<%= reopened ? (values.name || '') : '' %>" placeholder="Monitoring system">
+            <% if (reopened && errors.name) { %><p class="field-error" role="alert"><%= errors.name %></p><% } %>
+          </div>
+        <% } %>
+
+        <fieldset class="field">
+          <legend>May run <span class="required">*</span></legend>
+          <% actions.forEach(function (a) { %>
+            <label class="check">
+              <input type="checkbox" name="actions" value="<%= a.key %>"<%= chosen.indexOf(a.key) >= 0 ? ' checked' : '' %>>
+              <%= a.label %>
+            </label>
+          <% }); %>
+          <% if (reopened && errors.actions) { %><p class="field-error" role="alert"><%= errors.actions %></p><% } %>
+        </fieldset>
+
+        <fieldset class="field">
+          <legend class="label-row">Only tickets from these templates
+            <%- include('../../partials/info', { text: 'Leave all unticked for any template. Ticked, a request naming a ticket from another template is answered as if it did not exist, and Create a ticket may use only these.' }) %>
+          </legend>
+          <% templates.forEach(function (t) { %>
+            <label class="check">
+              <input type="checkbox" name="templateIds" value="<%= t.id %>"<%= chosenTemplates.indexOf(t.id) >= 0 ? ' checked' : '' %>>
+              <%= t.name %>
+            </label>
+          <% }); %>
+        </fieldset>
+
+        <div class="dialog__actions">
+          <button type="submit" class="btn btn--primary"><%= d.button %></button>
+          <a class="btn btn--quiet" href="<%= d.closeTo %>">Cancel</a>
+        </div>
+      </form>
+    </div>
+  </div>
+<% }); %>
+
+<script src="/assets/js/copy.js?v=<%= locals.assetVersion %>" defer></script>
+
+<%- include('_layout_end') %>
+
+<%# A new secret breaks whatever uses the old one, so it asks first. %>
+<% keys.forEach(function (k) { %>
+  <div class="dialog" id="rotate-<%= k.id %>">
+    <a class="dialog__backdrop" href="#row-<%= k.id %>" aria-label="Close"></a>
+    <div class="dialog__panel" role="dialog" aria-modal="true" aria-labelledby="rotate-<%= k.id %>-title">
+      <div class="dialog__head">
+        <h2 id="rotate-<%= k.id %>-title">A new secret for <%= k.name %>?</h2>
+        <a class="dialog__close" href="#row-<%= k.id %>" aria-label="Close">&times;</a>
+      </div>
+      <form method="post" action="/admin/settings/advanced/api-keys/<%= k.id %>/rotate" class="stack">
+        <input type="hidden" name="_csrf" value="<%= locals.csrfToken %>">
+        <p>The current secret stops working at once: whatever sends it is refused until it has the new one. The identifier <code><%= keyStart(k) %>_</code>, the automations and what the key may run stay as they are.</p>
+        <div class="dialog__actions">
+          <button type="submit" class="btn btn--primary">Make a new secret</button>
+          <a class="btn btn--quiet" href="#row-<%= k.id %>">Cancel</a>
+        </div>
+      </form>
+    </div>
+  </div>
+<% }); %>

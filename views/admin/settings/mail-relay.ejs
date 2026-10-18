@@ -1,0 +1,139 @@
+<%- include('_layout') %>
+
+<%- include('_mail-tabs', { tab: 'relay' }) %>
+
+<div class="toolbar">
+  <a class="btn btn--primary" href="#new-relay">
+    <span aria-hidden="true">+</span> New relay
+  </a>
+</div>
+
+<% if (relays.length === 0) { %>
+  <div class="card">
+    <p><strong>No SMTP relays yet.</strong></p>
+    <p class="small muted">Press <a href="#new-relay">New relay</a> to send through your own SMTP server instead of a mailbox.</p>
+  </div>
+<% } else { %>
+  <div class="table-scroll">
+    <table class="table">
+      <thead>
+        <tr>
+          <th scope="col">Relay</th>
+          <th scope="col">Server</th>
+          <th scope="col">Sends for</th>
+          <th scope="col">Status</th>
+          <th scope="col">Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        <% relays.forEach(function (relay) { %>
+          <%
+            var mine = groups.filter(function (g) { return groupRelay[g.id] === relay.id; });
+          %>
+          <tr id="row-<%= relay.id %>">
+            <td>
+              <a class="link-strong" href="#relay-<%= relay.id %>"><%= relay.name %></a>
+              <div class="small muted mono"><%= relay.from_address %></div>
+            </td>
+            <td class="small mono"><%= relay.host %>:<%= relay.port %></td>
+            <td class="small">
+              <%= mine.length > 0 ? mine.map(function (g) { return g.name; }).join(', ') : 'No particular group' %>
+              <% if (relay.is_default) { %>
+                <span class="pill pill--ok" title="Used when a ticket's group has no relay of its own">&#9733; Default</span>
+              <% } %>
+            </td>
+            <td>
+              <% if (!relay.is_enabled) { %>
+                <span class="pill pill--muted">Off</span>
+              <% } else if (!ready[relay.id]) { %>
+                <span class="pill pill--warn">Incomplete</span>
+              <% } else if (relay.last_error) { %>
+                <span class="pill pill--warn" title="<%= relay.last_error %>">Problem</span>
+              <% } else { %>
+                <span class="pill pill--ok">Ready</span>
+              <% } %>
+            </td>
+            <td class="row-actions">
+              <a class="btn btn--quiet btn--small" href="#relay-<%= relay.id %>">Edit</a>
+              <% if (!relay.is_default) { %>
+                <form method="post" class="inline" action="/admin/settings/mail/relay/<%= relay.id %>/default">
+                  <input type="hidden" name="_csrf" value="<%= locals.csrfToken %>">
+                  <button type="submit" class="btn btn--quiet btn--small">Make default</button>
+                </form>
+              <% } %>
+              <form method="post" class="inline" action="/admin/settings/mail/relay/<%= relay.id %>/delete">
+                <input type="hidden" name="_csrf" value="<%= locals.csrfToken %>">
+                <%- include('../../partials/bin-button', { label: 'Remove ' + relay.name }) %>
+              </form>
+            </td>
+          </tr>
+          <% if (relay.last_error) { %>
+            <tr>
+              <td colspan="5" class="small"><p class="field-error"><%= relay.last_error %></p></td>
+            </tr>
+          <% } %>
+        <% }); %>
+      </tbody>
+    </table>
+  </div>
+<% } %>
+
+<form method="post" action="/admin/settings/mail/relay/options" class="card stack" id="relay-options">
+  <input type="hidden" name="_csrf" value="<%= locals.csrfToken %>">
+  <h2 class="section-title">What goes through the relays</h2>
+  <% if (errors.options) { %><p class="field-error" role="alert"><%= errors.options %></p><% } %>
+
+  <div class="label-row">
+    <label class="check">
+      <input type="checkbox" name="relaysOnly" value="on"<%= options.relaysOnly ? ' checked' : '' %>>
+      Send every notification through the SMTP relays - mailboxes only read mail
+    </label>
+    <%- include('../../partials/info', { text: "Each notification goes through the relay of the ticket's technician group, else the default relay, whatever mailbox it names. Replies still arrive in the mailboxes, which go on reading them into tickets." }) %>
+  </div>
+  <% if (options.relaysOnly && !relaysOnlyInForce) { %>
+    <p class="field-error" role="alert">No relay can send at the moment, so the mailboxes are sending notifications until one can.</p>
+  <% } %>
+
+  <label class="check">
+    <input type="checkbox" name="useForCodes" value="on"<%= options.useForCodes ? ' checked' : '' %>>
+    Send sign-in codes through the default relay instead of the default mailbox
+  </label>
+
+  <div class="actions">
+    <button type="submit" class="btn">Save</button>
+  </div>
+</form>
+
+<% if (relays.length > 0) { %>
+  <form method="post" action="/admin/settings/mail/relay/test" class="card stack" id="relay-test">
+    <input type="hidden" name="_csrf" value="<%= locals.csrfToken %>">
+    <h2 class="section-title">Send a test message</h2>
+    <% (locals.flashMessages || []).filter(function (m) { return m.where === 'relay-test'; }).forEach(function (m) { %>
+      <div class="flash flash--<%= m.type %>" role="status"><%= m.message %></div>
+    <% }); %>
+    <div class="grid-2">
+      <div class="field">
+        <label for="test-relay">Relay</label>
+        <select id="test-relay" name="relayId">
+          <% relays.forEach(function (relay) { %>
+            <option value="<%= relay.id %>"><%= relay.name %></option>
+          <% }); %>
+        </select>
+      </div>
+      <div class="field">
+        <label for="to">To</label>
+        <input id="to" name="to" type="email" maxlength="200" value="<%= locals.currentUser ? currentUser.email : '' %>">
+      </div>
+    </div>
+    <div class="actions">
+      <button type="submit" class="btn">Send test</button>
+    </div>
+  </form>
+<% } %>
+
+<%- include('_relay-dialog', { relay: null, dialogId: 'new-relay' }) %>
+<% relays.forEach(function (relay) { %>
+  <%- include('_relay-dialog', { relay: relay, dialogId: 'relay-' + relay.id }) %>
+<% }); %>
+
+<%- include('_layout_end') %>

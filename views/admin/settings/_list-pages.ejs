@@ -1,0 +1,12 @@
+<% if (search.pageCount > 1) { %>
+  <nav class="pagination" aria-label="Pages">
+    <% for (var p = 1; p <= search.pageCount; p++) { %>
+      <% if (p === 1 || p === search.pageCount || Math.abs(p - search.page) <= 2) { %>
+        <a href="<%= action %>?page=<%= p %><%= search.q ? '&q=' + encodeURIComponent(search.q) : '' %>"
+           class="pagination__item<%= p === search.page ? ' pagination__item--current' : '' %>"><%= p %></a>
+      <% } else if (Math.abs(p - search.page) === 3) { %>
+        <span class="pagination__gap" aria-hidden="true">...</span>
+      <% } %>
+    <% } %>
+  </nav>
+<% } %>

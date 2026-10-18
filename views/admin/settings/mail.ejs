@@ -1,0 +1,179 @@
+<%- include('_layout') %>
+
+<%- include('_mail-tabs') %>
+
+<p class="small muted">
+  A mailbox sends the notifications and, if you let it, reads replies back in.
+  Add as many as you need: each can handle one technician group's tickets, and
+  the one marked default handles everything else.
+</p>
+
+<% if (relaysOnly) { %>
+  <div class="card">
+    <p class="small">
+      <strong>Notifications go through the SMTP relays.</strong> The mailboxes
+      only read mail. <a href="/admin/settings/mail/relay#relay-options">Change it</a>.
+    </p>
+  </div>
+<% } %>
+
+<div class="toolbar">
+  <a class="btn btn--primary" href="#new-mailbox">
+    <span aria-hidden="true">+</span> New mailbox
+  </a>
+  <% if (mailboxes.length > 0) { %>
+    <form method="post" action="/admin/settings/mail/outbox/flush" class="inline">
+      <input type="hidden" name="_csrf" value="<%= locals.csrfToken %>">
+      <button type="submit" class="btn">Send queued mail now</button>
+    </form>
+  <% } %>
+</div>
+
+<% if (mailboxes.length === 0) { %>
+  <div class="card">
+    <p><strong>No mailboxes yet.</strong></p>
+    <p class="small muted">
+      Start with <a href="#new-mailbox">New mailbox</a>. Until there is one,
+      nothing is emailed and nothing is read.
+    </p>
+  </div>
+<% } else { %>
+  <div class="table-scroll">
+    <table class="table">
+      <thead>
+        <tr>
+          <th scope="col">Address</th>
+          <th scope="col">Connects by</th>
+          <th scope="col">Handles</th>
+          <th scope="col">Reads</th>
+          <th scope="col">Last read</th>
+          <th scope="col">Status</th>
+          <th scope="col">Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        <% mailboxes.forEach(function (mailbox) { %>
+          <tr>
+            <td>
+              <a class="link-strong" href="#mailbox-<%= mailbox.id %>"><%= mailbox.address %></a>
+              <div class="small muted"><%= mailbox.name %></div>
+            </td>
+            <td class="small"><%= kindLabels[mailbox.kind] %></td>
+            <td class="small">
+              <% var g = mailbox.group_id ? groups.filter(function (x) { return x.id === mailbox.group_id; })[0] : null; %>
+              <%= g ? g.name : 'No particular group' %>
+              <% if (mailbox.is_default) { %>
+                <span class="pill pill--ok" title="Used when a ticket's group has no mailbox">
+                  &#9733; Default
+                </span>
+              <% } %>
+            </td>
+            <td class="small"><%= mailbox.receive_enabled ? 'Yes' : 'Sends only' %></td>
+            <td class="small">
+              <%= mailbox.last_polled_at ? formatRelative(mailbox.last_polled_at) : 'never' %>
+            </td>
+            <td>
+              <% if (!mailbox.is_active) { %>
+                <span class="pill pill--muted">Off</span>
+              <% } else if (mailbox.last_error) { %>
+                <span class="pill pill--warn" title="<%= mailbox.last_error %>">Problem</span>
+              <% } else { %>
+                <span class="pill pill--ok">Active</span>
+              <% } %>
+            </td>
+            <td class="row-actions">
+              <a class="btn btn--quiet btn--small" href="#mailbox-<%= mailbox.id %>">Edit</a>
+              <% if (!mailbox.is_default) { %>
+                <form method="post" class="inline"
+                      action="/admin/settings/mail/mailboxes/<%= mailbox.id %>/default">
+                  <input type="hidden" name="_csrf" value="<%= locals.csrfToken %>">
+                  <button type="submit" class="btn btn--quiet btn--small"
+                          <%= mailbox.is_active ? '' : 'disabled' %>>Make default</button>
+                </form>
+              <% } %>
+              <% if (mailbox.receive_enabled) { %>
+                <form method="post" class="inline"
+                      action="/admin/settings/mail/mailboxes/<%= mailbox.id %>/poll">
+                  <input type="hidden" name="_csrf" value="<%= locals.csrfToken %>">
+                  <button type="submit" class="btn btn--quiet btn--small">Read now</button>
+                </form>
+              <% } %>
+              <form method="post" class="inline"
+                    action="/admin/settings/mail/mailboxes/<%= mailbox.id %>/delete">
+                <input type="hidden" name="_csrf" value="<%= locals.csrfToken %>">
+                <%- include('../../partials/bin-button', { label: 'Remove ' + mailbox.address }) %>
+              </form>
+            </td>
+          </tr>
+          <% if (mailbox.last_error) { %>
+            <tr>
+              <td colspan="7" class="small">
+                <p class="field-error"><%= mailbox.last_error %></p>
+              </td>
+            </tr>
+          <% } %>
+        <% }); %>
+      </tbody>
+    </table>
+  </div>
+<% } %>
+
+<% if (outbox.length > 0) { %>
+  <div class="card stack">
+    <h2 class="section-title">Recent mail</h2>
+    <div class="table-scroll">
+      <table class="table">
+        <thead>
+          <tr>
+            <th scope="col">To</th>
+            <th scope="col">Subject</th>
+            <th scope="col">When</th>
+            <th scope="col">Status</th>
+            <th scope="col"></th>
+          </tr>
+        </thead>
+        <tbody>
+          <% outbox.forEach(function (row) { %>
+            <tr>
+              <td class="small mono"><%= row.to_address %></td>
+              <td class="small"><%= row.subject %></td>
+              <td class="small"><%= formatRelative(row.created_at) %></td>
+              <td>
+                <% if (row.status === 'sent') { %>
+                  <span class="pill pill--ok">Sent</span>
+                <% } else if (row.status === 'failed') { %>
+                  <span class="pill pill--warn" title="<%= row.last_error %>">Failed</span>
+                <% } else { %>
+                  <span class="pill pill--muted">Queued</span>
+                <% } %>
+              </td>
+              <td class="row-actions">
+                <% if (row.status !== 'sent') { %>
+                  <form method="post" class="inline"
+                        action="/admin/settings/mail/outbox/<%= row.id %>/retry">
+                    <input type="hidden" name="_csrf" value="<%= locals.csrfToken %>">
+                    <button type="submit" class="btn btn--quiet btn--small">Try again</button>
+                  </form>
+                <% } %>
+              </td>
+            </tr>
+          <% }); %>
+        </tbody>
+      </table>
+    </div>
+  </div>
+<% } %>
+
+<%#
+  One dialog for adding, and one per mailbox for editing. They share their
+  markup through a partial so the two cannot drift apart - which is exactly
+  what happens when a form this long is written twice.
+%>
+<% var dialogMailbox = null; var dialogId = 'new-mailbox'; %>
+<%- include('_mailbox-dialog', { mailbox: null, dialogId: 'new-mailbox' }) %>
+
+<% mailboxes.forEach(function (mailbox) { %>
+  <%- include('_mailbox-dialog', { mailbox: mailbox, dialogId: 'mailbox-' + mailbox.id }) %>
+<% }); %>
+
+<%- include('_layout_end') %>

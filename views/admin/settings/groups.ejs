@@ -1,0 +1,107 @@
+<%- include('_layout') %>
+
+<%- include('_group-tabs') %>
+
+<p class="small muted">
+  Membership grants nothing on its own - only a
+  <a href="/admin/settings/users">role</a> does - so only agents and
+  administrators can be members.
+</p>
+
+<div class="toolbar">
+  <a class="btn btn--primary" href="#new-group">
+    <span aria-hidden="true">+</span> New group
+  </a>
+</div>
+
+<%- include('_list-search', { action: '/admin/settings/groups', search: search, noun: 'groups' }) %>
+
+<% if (groups.length === 0 && search.q) { %>
+  <div class="card"><p>Nothing matches "<%= search.q %>".</p></div>
+<% } else if (groups.length === 0) { %>
+  <div class="card">
+    <p><strong>No groups yet.</strong></p>
+    <p class="small muted">
+      Start with <a href="#new-group">New group</a>.
+    </p>
+  </div>
+<% } else { %>
+  <div class="table-scroll">
+    <table class="table">
+      <thead>
+        <tr>
+          <th scope="col">Name</th>
+          <th scope="col">Manager</th>
+          <th scope="col">Members</th>
+          <th scope="col">Open tickets</th>
+          <th scope="col">Status</th>
+        </tr>
+      </thead>
+      <tbody>
+        <% groups.forEach(function (group) { %>
+          <tr>
+            <td>
+              <a class="link-strong" href="/admin/settings/groups/<%= group.id %>"><%= group.name %></a>
+              <% if (group.description) { %>
+                <div class="small muted"><%= group.description %></div>
+              <% } %>
+            </td>
+            <td class="small"><% if (group.manager_names.length) { %><%- include('_group-names', { names: group.manager_names }) %><% } else { %><span class="muted"> - </span><% } %></td>
+            <td><%= group.member_count %></td>
+            <td><%= group.open_count %></td>
+            <td>
+              <% if (group.is_active) { %>
+                <span class="pill pill--ok">Active</span>
+              <% } else { %>
+                <span class="pill pill--muted">Retired</span>
+              <% } %>
+            </td>
+          </tr>
+        <% }); %>
+      </tbody>
+    </table>
+  </div>
+  <%- include('_list-pages', { action: '/admin/settings/groups', search: search }) %>
+<% } %>
+
+<%# The dialog is a :target anchor; openDialog reopens it after a refusal. %>
+<div class="dialog<%= openDialog === 'new-group' ? ' dialog--open' : '' %>" id="new-group">
+  <a class="dialog__backdrop" href="#top" aria-label="Close"></a>
+  <div class="dialog__panel" role="dialog" aria-modal="true" aria-labelledby="new-group-title">
+    <div class="dialog__head">
+      <h2 id="new-group-title">New group</h2>
+      <a class="dialog__close" href="#top" aria-label="Close">&times;</a>
+    </div>
+
+    <form method="post" action="/admin/settings/groups" class="stack">
+      <input type="hidden" name="_csrf" value="<%= locals.csrfToken %>">
+
+      <% if (errors.form) { %>
+        <p class="field-error" role="alert"><%= errors.form %></p>
+      <% } %>
+
+      <div class="field">
+        <label for="name">Name <span class="required">*</span></label>
+        <input id="name" name="name" type="text" required minlength="2" maxlength="80"
+               value="<%= values.name || '' %>" placeholder="e.g. Desktop Support">
+        <% if (errors.name) { %><p class="field-error" role="alert"><%= errors.name %></p><% } %>
+      </div>
+
+      <div class="field">
+        <div class="label-row">
+          <label for="description">Description</label>
+          <%- include('../../partials/info', { text: 'A short description displayed wherever the group can be selected.' }) %>
+        </div>
+        <input id="description" name="description" type="text" maxlength="500"
+               value="<%= values.description || '' %>">
+      </div>
+
+      <div class="dialog__actions">
+        <button type="submit" class="btn btn--primary">Create group</button>
+        <a class="btn btn--quiet" href="#top">Cancel</a>
+      </div>
+    </form>
+  </div>
+</div>
+
+<%- include('_layout_end') %>

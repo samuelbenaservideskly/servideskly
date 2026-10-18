@@ -1,0 +1,13 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "noEmit": true,
+    "rootDir": ".",
+    "types": ["node"]
+  },
+  // `exclude` is inherited, and the base config excludes "tests" so the build
+  // does not emit them. It has to be overridden here or this project would
+  // check nothing but src.
+  "exclude": ["node_modules", "dist"],
+  "include": ["src/**/*.ts", "tests/**/*.ts"]
+}

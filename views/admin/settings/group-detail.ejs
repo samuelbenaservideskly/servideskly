@@ -1,0 +1,225 @@
+<%- include('_layout') %>
+
+<%- include('_group-tabs') %>
+
+<p class="breadcrumb"><%- include('../../partials/back-link', { href: '/admin/settings/groups', label: 'All technician groups' }) %></p>
+
+<form method="post" action="/admin/settings/groups/<%= group.id %>" class="card stack">
+  <input type="hidden" name="_csrf" value="<%= locals.csrfToken %>">
+  <h2 class="section-title">Details</h2>
+
+  <% if (errors.form) { %>
+    <p class="field-error" role="alert"><%= errors.form %></p>
+  <% } %>
+
+  <div class="field">
+    <label for="name">Name</label>
+    <input id="name" name="name" type="text" required minlength="2" maxlength="80"
+           value="<%= group.name %>">
+    <% if (errors.name) { %><p class="field-error" role="alert"><%= errors.name %></p><% } %>
+  </div>
+
+  <div class="field">
+    <label for="description">Description</label>
+    <input id="description" name="description" type="text" maxlength="500"
+           value="<%= group.description %>">
+  </div>
+
+  <div class="field">
+    <div class="label-row">
+      <label class="checkbox">
+        <input type="checkbox" name="isActive" value="1"<%= group.is_active ? ' checked' : '' %>>
+        Offer this group when routing a ticket
+      </label>
+      <%- include('../../partials/info', { text: 'Clear to retire the group. Tickets already routed to it are not affected.' }) %>
+    </div>
+  </div>
+
+  <div class="actions">
+    <button type="submit" class="btn btn--primary">Save group</button>
+  </div>
+</form>
+
+<%# --------------------------------------------------------------- managers %>
+<div class="card stack" id="managers">
+  <div class="label-row">
+    <h2 class="section-title">Managers</h2>
+    <%- include('../../partials/info', { text: 'They see this group in Reports and on the Manager dashboard, and receive its SLA alerts and the reason a ticket in it was deleted. A manager need not be a member.' }) %>
+  </div>
+  <% (locals.flashMessages || []).filter(function (m) { return m.where === 'managers'; }).forEach(function (m) { %>
+    <div class="flash flash--<%= m.type %>" role="<%= m.type === 'error' ? 'alert' : 'status' %>"><%= m.message %></div>
+  <% }); %>
+
+  <% if (managers.length === 0) { %>
+    <p class="small muted">No managers yet. Find one below.</p>
+  <% } else { %>
+    <ul class="manager-list">
+      <% managers.forEach(function (m) { %>
+        <li>
+          <span><b><%= m.display_name %></b> <span class="small muted mono"><%= m.email %></span></span>
+          <form method="post" action="/admin/settings/groups/<%= group.id %>/managers" class="inline-form">
+            <input type="hidden" name="_csrf" value="<%= locals.csrfToken %>">
+            <input type="hidden" name="userId" value="<%= m.id %>">
+            <input type="hidden" name="action" value="remove">
+            <%- include('../../partials/bin-button', { label: 'Remove ' + m.display_name + ' as a manager' }) %>
+          </form>
+        </li>
+      <% }); %>
+    </ul>
+  <% } %>
+
+  <%# Searched as you type (live-search.js); eight at most, never every technician. %>
+  <form method="get" action="/admin/settings/groups/<%= group.id %>#managers" class="picker-bar" data-live-search="manager-results">
+    <div class="field">
+      <label class="sr-only" for="mq">Find a manager</label>
+      <input id="mq" name="mq" type="search" value="<%= mq %>" placeholder="Find a technician by name or email" maxlength="100" data-no-search>
+    </div>
+    <button type="submit" class="btn" data-live-hide>Search</button>
+  </form>
+  <div id="manager-results" aria-live="polite">
+    <% if (managerCandidates.length === 0) { %>
+      <p class="small muted"><%= mq ? 'No technician matches "' + mq + '".' : 'There is nobody to add.' %></p>
+    <% } else { %>
+      <ul class="manager-list manager-list--found">
+        <% managerCandidates.forEach(function (p) { %>
+          <li>
+            <span><%= p.display_name %> <span class="small muted mono"><%= p.email %></span></span>
+            <% if (managerIds.indexOf(p.id) !== -1) { %>
+              <span class="small muted">Manager</span>
+            <% } else { %>
+              <form method="post" action="/admin/settings/groups/<%= group.id %>/managers" class="inline-form">
+                <input type="hidden" name="_csrf" value="<%= locals.csrfToken %>">
+                <input type="hidden" name="userId" value="<%= p.id %>">
+                <input type="hidden" name="action" value="add">
+                <button type="submit" class="btn btn--small">Add</button>
+              </form>
+            <% } %>
+          </li>
+        <% }); %>
+      </ul>
+      <% if (managerTotal > managerCandidates.length) { %>
+        <p class="small muted">Showing <%= managerCandidates.length %> of <%= managerTotal %> - type more of a name to narrow it.</p>
+      <% } %>
+    <% } %>
+  </div>
+</div>
+
+<%# ------------------------------------------------------------------ rules %>
+<div class="card stack" id="rules">
+  <div class="builder__head">
+    <div class="label-row">
+      <h2 class="section-title">Rules</h2>
+      <%- include('../../partials/info', { text: 'Agents and administrators matching any rule are members, recalculated when an account or its role changes. A rule never adds a plain user.' }) %>
+    </div>
+    <a class="btn btn--small" href="#add-rule">Add a rule</a>
+  </div>
+
+  <% if (rules.length === 0) { %>
+    <p class="small muted">No rules. Membership is whoever is named below.</p>
+  <% } else { %>
+    <ul class="task-list rule-list">
+      <% rules.forEach(function (rule) { %>
+        <li class="task-list__item">
+          <span>
+            <strong><%= attributeLabels[rule.attribute] %></strong>
+            <%= operatorLabels[rule.operator] %>
+            <% if (valueless.indexOf(rule.operator) === -1) { %>
+              <strong>&ldquo;<%= rule.value %>&rdquo;</strong>
+            <% } %>
+          </span>
+          <form method="post" class="inline"
+                action="/admin/settings/groups/<%= group.id %>/rules/<%= rule.id %>/delete">
+            <input type="hidden" name="_csrf" value="<%= locals.csrfToken %>">
+            <%- include('../../partials/bin-button', { label: 'Remove this rule' }) %>
+          </form>
+        </li>
+      <% }); %>
+    </ul>
+
+    <form method="post" action="/admin/settings/groups/<%= group.id %>/rules/apply">
+      <input type="hidden" name="_csrf" value="<%= locals.csrfToken %>">
+      <button type="submit" class="btn btn--small">Recalculate now</button>
+    </form>
+  <% } %>
+</div>
+
+<div class="card stack">
+  <h2 class="section-title" id="members">Members</h2>
+
+  <p class="small muted">
+    Only agents and administrators are listed: a plain user has no queue to
+    route anything into. A member added by a rule is removed by changing the rule.
+  </p>
+
+  <%- include('_member-picker', {
+    action: '/admin/settings/groups/' + group.id,
+    members: members,
+    candidates: candidates,
+    memberIds: memberIds,
+    memberPage: memberPage,
+    manualIds: manualIds,
+    total: total,
+    q: q,
+    size: size,
+    page: page,
+  }) %>
+</div>
+
+<div class="card stack">
+  <h2 class="section-title">Remove</h2>
+  <p class="small">
+    Removing a group leaves the tickets routed to it unrouted - they stay in
+    the queue and keep their assignee, they simply have no team any more.
+  </p>
+  <form method="post" action="/admin/settings/groups/<%= group.id %>/delete" class="inline-form">
+    <input type="hidden" name="_csrf" value="<%= locals.csrfToken %>">
+    <button type="submit" class="btn btn--small btn--danger">Remove this group</button>
+  </form>
+</div>
+
+<div class="dialog<%= openDialog === 'add-rule' ? ' dialog--open' : '' %>" id="add-rule">
+  <a class="dialog__backdrop" href="#rules" aria-label="Close"></a>
+  <div class="dialog__panel" role="dialog" aria-modal="true" aria-labelledby="add-rule-title">
+    <div class="dialog__head">
+      <h2 id="add-rule-title">Add a rule</h2>
+      <a class="dialog__close" href="#rules" aria-label="Close">&times;</a>
+    </div>
+    <form method="post" action="/admin/settings/groups/<%= group.id %>/rules" class="stack">
+      <input type="hidden" name="_csrf" value="<%= locals.csrfToken %>">
+      <% if (openDialog === 'add-rule' && errors.form) { %>
+        <p class="field-error" role="alert"><%= errors.form %></p>
+      <% } %>
+      <div class="grid-2">
+        <div class="field">
+          <label for="attribute">Attribute</label>
+          <select id="attribute" name="attribute">
+            <% ruleAttributes.forEach(function (attribute) { %>
+              <option value="<%= attribute %>"><%= attributeLabels[attribute] %></option>
+            <% }); %>
+          </select>
+        </div>
+        <div class="field">
+          <label for="operator">Comparison</label>
+          <select id="operator" name="operator">
+            <% ruleOperators.forEach(function (operator) { %>
+              <option value="<%= operator %>"><%= operatorLabels[operator] %></option>
+            <% }); %>
+          </select>
+        </div>
+      </div>
+      <div class="field">
+        <div class="label-row">
+          <label for="value">Value</label>
+          <%- include('../../partials/info', { text: 'Matching is case-insensitive. Leave empty only with is set or is empty.' }) %>
+        </div>
+        <input id="value" name="value" type="text" maxlength="200" placeholder="e.g. IT">
+      </div>
+      <div class="dialog__actions">
+        <button type="submit" class="btn btn--primary">Add rule</button>
+        <a class="btn btn--quiet" href="#rules">Cancel</a>
+      </div>
+    </form>
+  </div>
+</div>
+
+<%- include('_layout_end') %>

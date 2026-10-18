@@ -1,0 +1,8 @@
+<nav class="subtabs" aria-label="Dashboards">
+  <a href="/admin/settings/dashboards/user"
+     class="<%= locals.tab === 'user' ? 'subtabs__item--current' : '' %>"
+     <%- locals.tab === 'user' ? 'aria-current="page"' : '' %>>User dashboards</a>
+  <a href="/admin/settings/dashboards/locations"
+     class="<%= locals.tab === 'locations' ? 'subtabs__item--current' : '' %>"
+     <%- locals.tab === 'locations' ? 'aria-current="page"' : '' %>>Locations</a>
+</nav>

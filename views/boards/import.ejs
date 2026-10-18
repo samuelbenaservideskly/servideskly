@@ -1,0 +1,30 @@
+<%- include('../partials/header') %>
+
+<div class="dash-hello">
+  <div>
+    <p class="crumbs small"><a href="/boards">My dashboards</a></p>
+    <h1>Import a dashboard</h1>
+  </div>
+</div>
+
+<% if (!source) { %>
+  <p class="dash-empty">This link has expired or was stopped. Ask whoever shared it for a new one.</p>
+<% } else { %>
+  <section class="dash-panel">
+    <div class="dash-panel__head"><h2><%= source.name %></h2><small class="muted">Shared by <%= source.owner_name %></small></div>
+    <% if (titles.length === 0) { %>
+      <p class="dash-empty">It has no widgets yet.</p>
+    <% } else { %>
+      <ul class="import-preview">
+        <% titles.forEach(function (t) { %><li><%= t %></li><% }); %>
+      </ul>
+    <% } %>
+    <p class="small muted">You get your own copy, pinned to your sidebar. Its widgets show what <b>you</b> may see - nothing of <%= source.owner_name %>'s data comes with it, and later changes on either side stay separate.</p>
+    <form method="post" action="/boards/import/<%= token %>" class="inline-form">
+      <input type="hidden" name="_csrf" value="<%= locals.csrfToken %>">
+      <button type="submit" class="btn btn--primary">Add to my dashboards</button>
+    </form>
+  </section>
+<% } %>
+
+<%- include('../partials/footer') %>

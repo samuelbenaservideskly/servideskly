@@ -1,0 +1,253 @@
+<%- include('_layout') %>
+
+<%- include('_customization-tabs', { tab: 'locale' }) %>
+
+<form method="post" action="/admin/settings/customization/locale" class="card stack">
+  <input type="hidden" name="_csrf" value="<%= locals.csrfToken %>">
+
+  <div class="field">
+    <div class="label-row">
+      <label for="timeZone">Time zone</label>
+      <%- include('../../partials/info', { text: 'All dates and times in the application and in notifications are displayed in this time zone. SLA business hours are also calculated in it.' }) %>
+    </div>
+    <select id="timeZone" name="timeZone">
+      <% timeZones.forEach(function (zone) { %>
+        <option value="<%= zone.value %>"<%= locale.timeZone === zone.value ? ' selected' : '' %>><%= zone.label %></option>
+      <% }); %>
+    </select>
+  </div>
+
+  <div class="field">
+    <label for="dateFormat">Date format</label>
+    <select id="dateFormat" name="dateFormat">
+      <% dateFormats.forEach(function (f) { %>
+        <option value="<%= f.value %>"<%= locale.dateFormat === f.value ? ' selected' : '' %>><%= f.example %></option>
+      <% }); %>
+    </select>
+  </div>
+
+  <fieldset class="field">
+    <legend>Clock</legend>
+    <label class="check">
+      <input type="radio" name="timeFormat" value="24h"<%= locale.timeFormat === '24h' ? ' checked' : '' %>>
+      24-hour - <span class="muted"><%= timeExamples['24h'] %></span>
+    </label>
+    <label class="check">
+      <input type="radio" name="timeFormat" value="12h"<%= locale.timeFormat === '12h' ? ' checked' : '' %>>
+      12-hour - <span class="muted"><%= timeExamples['12h'] %></span>
+    </label>
+  </fieldset>
+
+  <div class="label-row">
+    <label class="check">
+      <input type="checkbox" name="followBrowser" value="on"<%= locale.followBrowser ? ' checked' : '' %>>
+      <span>Use the language the browser asks for</span>
+    </label>
+    <%- include('../../partials/info', { text: 'For somebody who has chosen no language of their own, and whose user groups and email domain name none. Off: they get English.' }) %>
+  </div>
+
+  <div class="actions">
+    <button type="submit" class="btn btn--primary">Save locale</button>
+  </div>
+</form>
+
+<%#
+  Languages. A language is a tag, a name, a document to hand an AI and the
+  answer pasted back; everything hard about it is in src/i18n, and the
+  document is generated, so nothing on this page can go out of date.
+%>
+<div class="page-head">
+  <h2>Languages</h2>
+  <div class="page-head__actions">
+    <a class="btn btn--primary" href="#new-language"><span aria-hidden="true">+</span> New language</a>
+  </div>
+</div>
+
+<% if (languages.length === 0) { %>
+  <div class="empty">
+    <p>The service desk is in English. Add a language to have it translated.</p>
+    <p><a class="btn" href="#new-language">New language</a></p>
+  </div>
+<% } %>
+
+<% languages.forEach(function (l) { %>
+  <section class="card stack" id="language-<%= l.row.tag %>">
+    <div class="page-head">
+      <div>
+        <h3><%= l.row.name %> <span class="muted">(<%= l.row.tag %>)</span></h3>
+        <p class="small muted">
+          <%= l.done %> of <%= l.total %> strings translated<%= l.row.is_enabled ? '' : ' - switched off' %>
+        </p>
+      </div>
+      <div class="page-head__actions">
+        <a class="btn btn--small" href="/admin/settings/customization/locale/languages/<%= l.row.tag %>/document">Download the document</a>
+        <a class="btn btn--small" href="#import-<%= l.row.tag %>">Paste the translation</a>
+        <form method="post" action="/admin/settings/customization/locale/languages/<%= l.row.tag %>/enabled" class="inline-form">
+          <input type="hidden" name="_csrf" value="<%= locals.csrfToken %>">
+          <% if (l.row.is_enabled) { %>
+            <button type="submit" class="btn btn--small btn--quiet">Switch off</button>
+          <% } else { %>
+            <input type="hidden" name="enabled" value="on">
+            <button type="submit" class="btn btn--small" <%= l.done === 0 ? 'disabled title="Nothing is translated yet."' : '' %>>Switch on</button>
+          <% } %>
+        </form>
+        <a class="btn btn--small btn--danger" href="#remove-<%= l.row.tag %>">Remove</a>
+      </div>
+    </div>
+
+    <div class="grid-2">
+      <form method="post" action="/admin/settings/customization/locale/languages/<%= l.row.tag %>" class="stack">
+        <input type="hidden" name="_csrf" value="<%= locals.csrfToken %>">
+        <div class="field">
+          <label for="name-<%= l.row.tag %>">Name</label>
+          <input id="name-<%= l.row.tag %>" name="name" type="text" required maxlength="60" value="<%= l.row.name %>">
+          <% if (languageErrors.name && openDialog === 'language-' + l.row.tag) { %><p class="field-error" role="alert"><%= languageErrors.name %></p><% } %>
+        </div>
+        <div class="field">
+          <div class="label-row">
+            <label for="label-<%= l.row.tag %>">Short label</label>
+            <%- include('../../partials/info', { text: 'Two letters, as the notification tab shows it: CZ beside EN reads as a pair where Czech beside English does not.' }) %>
+          </div>
+          <input id="label-<%= l.row.tag %>" name="label" type="text" required maxlength="2" size="4" value="<%= l.row.label %>">
+          <% if (languageErrors.label && openDialog === 'language-' + l.row.tag) { %><p class="field-error" role="alert"><%= languageErrors.label %></p><% } %>
+        </div>
+        <div class="actions"><button type="submit" class="btn btn--small">Save</button></div>
+      </form>
+
+      <form method="post" action="/admin/settings/customization/locale/languages/<%= l.row.tag %>/domains" class="stack">
+        <input type="hidden" name="_csrf" value="<%= locals.csrfToken %>">
+        <div class="field">
+          <div class="label-row">
+            <label for="domains-<%= l.row.tag %>">Email domains</label>
+            <%- include('../../partials/info', { text: 'Somebody whose address ends in one of these gets this language, unless they chose another or a user group says otherwise. One per line.' }) %>
+          </div>
+          <textarea id="domains-<%= l.row.tag %>" name="domains" rows="3" class="mono" spellcheck="false" placeholder="contoso.cz"><%= l.row.domains.join('\n') %></textarea>
+          <% if (languageErrors.domains && openDialog === 'language-' + l.row.tag) { %><p class="field-error" role="alert"><%= languageErrors.domains %></p><% } %>
+        </div>
+        <div class="actions"><button type="submit" class="btn btn--small">Save</button></div>
+      </form>
+    </div>
+
+    <% if (allUserGroups.length > 0) { %>
+      <form method="post" action="/admin/settings/customization/locale/languages/<%= l.row.tag %>/groups" class="stack">
+        <input type="hidden" name="_csrf" value="<%= locals.csrfToken %>">
+        <div class="grid-2">
+          <fieldset class="field">
+            <legend>User groups that get this language</legend>
+            <div class="pick-list pick-list--five" data-search>
+              <% allUserGroups.forEach(function (g) { %>
+                <label class="pick-option">
+                  <input type="checkbox" name="assigned" value="<%= g.id %>"<%= l.assigned.indexOf(g.id) >= 0 ? ' checked' : '' %>>
+                  <span class="pick-option__name"><%= g.name %></span>
+                </label>
+              <% }); %>
+            </div>
+          </fieldset>
+          <fieldset class="field">
+            <div class="label-row">
+              <legend>Groups kept out of it</legend>
+              <%- include('../../partials/info', { text: 'The narrower statement wins: somebody in a group that is kept out stays in English even if another of their groups is given this language.' }) %>
+            </div>
+            <div class="pick-list pick-list--five" data-search>
+              <% allUserGroups.forEach(function (g) { %>
+                <label class="pick-option">
+                  <input type="checkbox" name="excluded" value="<%= g.id %>"<%= l.excluded.indexOf(g.id) >= 0 ? ' checked' : '' %>>
+                  <span class="pick-option__name"><%= g.name %></span>
+                </label>
+              <% }); %>
+            </div>
+          </fieldset>
+        </div>
+        <div class="actions"><button type="submit" class="btn btn--small">Save groups</button></div>
+      </form>
+    <% } %>
+  </section>
+
+  <%# Paste the translation back. %>
+  <div class="dialog<%= openDialog === 'import-' + l.row.tag ? ' dialog--open' : '' %>" id="import-<%= l.row.tag %>">
+    <a class="dialog__backdrop" href="#language-<%= l.row.tag %>" aria-label="Close"></a>
+    <div class="dialog__panel" role="dialog" aria-modal="true" aria-labelledby="import-<%= l.row.tag %>-title">
+      <div class="dialog__head">
+        <h2 id="import-<%= l.row.tag %>-title">Paste the <%= l.row.name %> translation</h2>
+        <a class="dialog__close" href="#language-<%= l.row.tag %>" aria-label="Close">&times;</a>
+      </div>
+      <form method="post" action="/admin/settings/customization/locale/languages/<%= l.row.tag %>/import" class="stack">
+        <input type="hidden" name="_csrf" value="<%= locals.csrfToken %>">
+        <div class="field">
+          <label for="markdown-<%= l.row.tag %>">The table the AI gave back</label>
+          <textarea id="markdown-<%= l.row.tag %>" name="markdown" rows="10" class="mono" spellcheck="false" required placeholder="| s0123456789 | A button on tickets/index | Raise a ticket | Zadat pozadavek |"></textarea>
+          <% if (languageErrors.markdown) { %><p class="field-error" role="alert"><%= languageErrors.markdown %></p><% } %>
+          <p class="hint">A row for text that has changed since the document was made is left out, and the count says how many.</p>
+        </div>
+        <div class="dialog__actions">
+          <button type="submit" class="btn btn--primary">Import</button>
+          <a class="btn btn--quiet" href="#language-<%= l.row.tag %>">Cancel</a>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <%# Removing it. %>
+  <div class="dialog" id="remove-<%= l.row.tag %>">
+    <a class="dialog__backdrop" href="#language-<%= l.row.tag %>" aria-label="Close"></a>
+    <div class="dialog__panel" role="dialog" aria-modal="true" aria-labelledby="remove-<%= l.row.tag %>-title">
+      <div class="dialog__head">
+        <h2 id="remove-<%= l.row.tag %>-title">Remove <%= l.row.name %>?</h2>
+        <a class="dialog__close" href="#language-<%= l.row.tag %>" aria-label="Close">&times;</a>
+      </div>
+      <form method="post" action="/admin/settings/customization/locale/languages/<%= l.row.tag %>/delete" class="stack">
+        <input type="hidden" name="_csrf" value="<%= locals.csrfToken %>">
+        <p>The translation goes with it. Anybody who chose this language is back to English.</p>
+        <div class="dialog__actions">
+          <button type="submit" class="btn btn--danger">Remove the language</button>
+          <a class="btn btn--quiet" href="#language-<%= l.row.tag %>">Cancel</a>
+        </div>
+      </form>
+    </div>
+  </div>
+<% }); %>
+
+<div class="dialog<%= openDialog === 'new-language' ? ' dialog--open' : '' %>" id="new-language">
+  <a class="dialog__backdrop" href="#top" aria-label="Close"></a>
+  <div class="dialog__panel" role="dialog" aria-modal="true" aria-labelledby="new-language-title">
+    <div class="dialog__head">
+      <h2 id="new-language-title">New language</h2>
+      <a class="dialog__close" href="#top" aria-label="Close">&times;</a>
+    </div>
+    <form method="post" action="/admin/settings/customization/locale/languages" class="stack">
+      <input type="hidden" name="_csrf" value="<%= locals.csrfToken %>">
+      <% if (languageErrors.form) { %><p class="field-error" role="alert"><%= languageErrors.form %></p><% } %>
+
+      <div class="field">
+        <div class="label-row">
+          <label for="tag">Language tag <span class="required">*</span></label>
+          <%- include('../../partials/info', { text: 'As a browser writes it: cs-CZ, de, pt-BR. The region matters - cs-CZ answers a browser asking for Czech in Czechia, and cs answers any Czech.' }) %>
+        </div>
+        <input id="tag" name="tag" type="text" required maxlength="12" value="<%= typed.tag || '' %>" placeholder="cs-CZ">
+        <% if (languageErrors.tag) { %><p class="field-error" role="alert"><%= languageErrors.tag %></p><% } %>
+      </div>
+
+      <div class="field">
+        <label for="new-name">Name <span class="required">*</span></label>
+        <input id="new-name" name="name" type="text" required maxlength="60" value="<%= typed.name || '' %>" placeholder="Czech">
+        <% if (languageErrors.name) { %><p class="field-error" role="alert"><%= languageErrors.name %></p><% } %>
+      </div>
+
+      <div class="field">
+        <div class="label-row">
+          <label for="new-label">Short label <span class="required">*</span></label>
+          <%- include('../../partials/info', { text: 'Two letters, for the notification tab: CZ.' }) %>
+        </div>
+        <input id="new-label" name="label" type="text" required maxlength="2" size="4" value="<%= typed.label || '' %>" placeholder="CZ">
+        <% if (languageErrors.label) { %><p class="field-error" role="alert"><%= languageErrors.label %></p><% } %>
+      </div>
+
+      <div class="dialog__actions">
+        <button type="submit" class="btn btn--primary">Add the language</button>
+        <a class="btn btn--quiet" href="#top">Cancel</a>
+      </div>
+    </form>
+  </div>
+</div>
+
+<%- include('_layout_end') %>

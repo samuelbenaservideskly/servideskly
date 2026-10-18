@@ -1,0 +1,90 @@
+<%- include('_layout') %>
+
+<div class="integration-head">
+  <%- include('../../partials/back-link', { href: '/admin/settings/integrations', label: 'All integrations' }) %>
+  <h2 class="integration-head__title">
+    <%- include('_openid-logo', { cls: 'entra-logo entra-logo--small' }) %>
+    OpenID Connect
+    <span class="pill pill--<%= configured ? 'ok' : 'muted' %>"><%= configured ? 'Sign-in on' : 'Not set up' %></span>
+  </h2>
+</div>
+
+<div class="card card--info">
+  <dl class="details small">
+    <dt>Redirect URI</dt>
+    <dd class="mono copyable"><%= redirectUri %></dd>
+    <dt>Sign-out redirect URI</dt>
+    <dd class="mono copyable"><%= signOutRedirectUri %></dd>
+  </dl>
+  <p class="small muted">Register both with the provider exactly as shown (the sign-out one is often called the post-logout redirect URI). Any provider that publishes <code>/.well-known/openid-configuration</code> works: Keycloak, ADFS 2016 or later, Authentik, Ping, JumpCloud, OneLogin, Auth0.</p>
+</div>
+
+<form method="post" action="/admin/settings/integrations/openid" class="card stack">
+  <input type="hidden" name="_csrf" value="<%= locals.csrfToken %>">
+  <h2 class="section-title">OpenID Connect</h2>
+
+  <div class="field">
+    <div class="label-row">
+      <label for="name">Button name</label>
+      <%- include('../../partials/info', { text: 'The sign-in page shows "Sign in with" and this name.' }) %>
+    </div>
+    <input id="name" name="name" type="text" maxlength="60"
+           value="<%= values.name !== undefined ? values.name : generic.name %>" placeholder="Company account">
+  </div>
+
+  <div class="field">
+    <div class="label-row">
+      <label for="issuer">Issuer</label>
+      <%- include('../../partials/info', { text: 'The provider\'s issuer address, without /.well-known/openid-configuration. Keycloak: https://host/realms/<realm>. ADFS: https://host/adfs.' }) %>
+    </div>
+    <input id="issuer" name="issuer" type="url" maxlength="300" spellcheck="false"
+           value="<%= values.issuer !== undefined ? values.issuer : generic.issuer %>" placeholder="https://id.example.com/realms/staff">
+  </div>
+
+  <div class="field">
+    <label for="clientId">Client ID</label>
+    <input id="clientId" name="clientId" type="text" maxlength="300" spellcheck="false"
+           value="<%= values.clientId !== undefined ? values.clientId : generic.clientId %>">
+  </div>
+
+  <div class="field">
+    <div class="label-row">
+      <label for="clientSecret">Client secret</label>
+      <%- include('../../partials/info', { text: hasSecret ? 'A client secret is stored, encrypted. Leave this field blank to keep it, or enter a new value to replace it. The value is never displayed after saving.' : 'Stored encrypted. The value is never displayed after saving.' }) %>
+    </div>
+    <input id="clientSecret" name="clientSecret" type="password" maxlength="500" autocomplete="off"
+           placeholder="<%= hasSecret ? 'Stored - leave blank to keep' : '' %>">
+  </div>
+
+  <div class="field">
+    <div class="label-row">
+      <label for="scopes">Scopes</label>
+      <%- include('../../partials/info', { text: 'Separated by spaces. openid is always sent. The account needs an email address, so keep email (ADFS: allatclaims, or an email claim rule).' }) %>
+    </div>
+    <input id="scopes" name="scopes" type="text" maxlength="300" spellcheck="false"
+           value="<%= values.scopes !== undefined ? values.scopes : generic.scopes %>" placeholder="openid profile email">
+  </div>
+
+  <div class="field">
+    <div class="label-row">
+      <label for="allowedDomains">Allowed email domains</label>
+      <%- include('../../partials/info', { text: 'One per line. Leave empty to accept every account the provider signs in. Set it if anybody can register an account with that provider.' }) %>
+    </div>
+    <textarea id="allowedDomains" name="allowedDomains" rows="3" spellcheck="false" placeholder="example.com"><%= values.allowedDomains !== undefined ? values.allowedDomains : generic.allowedDomains.join('\n') %></textarea>
+  </div>
+
+  <div class="actions">
+    <button type="submit" class="btn btn--primary">Save OpenID Connect settings</button>
+  </div>
+</form>
+
+<% if (hasSecret) { %>
+  <form method="post" action="/admin/settings/integrations/openid/secret/clear" class="card stack">
+    <input type="hidden" name="_csrf" value="<%= locals.csrfToken %>">
+    <h2 class="section-title">Client secret</h2>
+    <p class="small muted">Removing the secret turns sign-in with this provider off.</p>
+    <div class="actions"><button type="submit" class="btn btn--danger">Remove client secret</button></div>
+  </form>
+<% } %>
+
+<%- include('_layout_end') %>

@@ -1,0 +1,11 @@
+<%#
+  A GET search over a list, and its pages. Searching and paging happen in SQL,
+  so a list of thousands is never drawn whole. Locals: action, search
+  ({ q, page, total, pageCount }), noun ("groups").
+%>
+<form method="get" action="<%= action %>" class="list-search" role="search">
+  <label for="list-q" class="visually-hidden">Search <%= noun %></label>
+  <input id="list-q" name="q" type="search" maxlength="100" value="<%= search.q %>" placeholder="Search <%= noun %>">
+  <button type="submit" class="btn">Search</button>
+  <% if (search.q) { %><a class="btn btn--quiet" href="<%= action %>">Clear</a><% } %>
+</form>

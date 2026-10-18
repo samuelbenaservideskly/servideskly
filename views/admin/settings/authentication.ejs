@@ -1,0 +1,108 @@
+<%- include('_layout') %>
+
+<%- include('_entra-tabs', { tab: 'authentication' }) %>
+
+<div class="card card--info">
+  <p class="small">
+    Sign-in is <strong>Microsoft Entra ID over OpenID Connect</strong>. These
+    URLs are fixed by <code>APP_BASE_URL</code> and must match what is
+    registered on the app registration.
+  </p>
+  <dl class="details small">
+    <dt>Public URL</dt>
+    <dd class="mono"><%= fixed.publicOrigin %></dd>
+    <dt>Redirect URI</dt>
+    <dd class="mono"><%= fixed.redirectUri %></dd>
+  </dl>
+  <p class="small muted">
+    Add the Redirect URI to the app registration under <em>Authentication</em>,
+    as a Web platform.
+  </p>
+</div>
+
+<form method="post" action="/admin/settings/oidc" class="card stack">
+  <input type="hidden" name="_csrf" value="<%= locals.csrfToken %>">
+  <h2 class="section-title">
+    OpenID Connect
+    <% if (effective.ssoConfigured) { %>
+      <span class="pill pill--ok">Configured</span>
+    <% } else { %>
+      <span class="pill pill--warn">Incomplete</span>
+    <% } %>
+  </h2>
+
+  <div class="field">
+    <label for="tenantId">Directory (tenant) ID</label>
+    <input id="tenantId" name="tenantId" type="text" maxlength="200"
+           value="<%= doc.oidc.tenantId %>" autocomplete="off" spellcheck="false">
+  </div>
+
+  <div class="field">
+    <label for="clientId">Application (client) ID</label>
+    <input id="clientId" name="clientId" type="text" maxlength="200"
+           value="<%= doc.oidc.clientId %>" autocomplete="off" spellcheck="false">
+  </div>
+
+  <div class="field">
+    <div class="label-row">
+      <label for="clientSecret">Client secret</label>
+      <span class="info" tabindex="0"><span class="info__mark" aria-hidden="true">i</span><span class="info__bubble" role="note"><% if (hasClientSecret) { %> A client secret is stored, encrypted. Leave this field blank to keep it, or enter a new value to replace it. <% } else { %> No client secret is stored. <% } %> The value is never displayed after saving.</span></span>
+    </div>
+    <input id="clientSecret" name="clientSecret" type="password" maxlength="500"
+           autocomplete="off"
+           placeholder="<%= hasClientSecret ? 'Stored - leave blank to keep' : 'Not set' %>">
+  </div>
+
+  <div class="field">
+    <div class="label-row">
+      <label for="scopes">Scopes</label>
+      <span class="info" tabindex="0"><span class="info__mark" aria-hidden="true">i</span><span class="info__bubble" role="note">OpenID Connect scopes requested at sign-in, separated by spaces. <code>openid profile email</code> provides sign-in, the display name and the email address. Scopes do not grant permissions in this application.</span></span>
+    </div>
+    <input id="scopes" name="scopes" type="text" maxlength="500"
+           value="<%= doc.oidc.scopes.join(' ') %>" spellcheck="false">
+  </div>
+
+  <div class="field">
+    <div class="label-row">
+      <label for="extraIssuers">Additional accepted issuers</label>
+      <%- include('../../partials/info', { text: 'Additional token issuers to trust, one per line. Required only for multi-tenant or tenant-migration scenarios; leave empty otherwise.' }) %>
+    </div>
+    <textarea id="extraIssuers" name="extraIssuers" rows="2" spellcheck="false"><%= doc.oidc.extraIssuers.join('\n') %></textarea>
+  </div>
+
+  <div class="actions">
+    <button type="submit" class="btn btn--primary">Save OpenID Connect settings</button>
+  </div>
+</form>
+
+<% if (hasClientSecret) { %>
+  <div class="card">
+    <h2 class="section-title">Stored secret</h2>
+    <p class="small">
+      The client secret is stored, encrypted with a key derived from
+      <code>SESSION_SECRET</code>. Rotating that value makes it unreadable and
+      it must be re-entered here.
+    </p>
+    <form method="post" action="/admin/settings/secret/oidcClientSecret/clear" class="inline-form">
+      <input type="hidden" name="_csrf" value="<%= locals.csrfToken %>">
+      <button type="submit" class="btn btn--small btn--danger">Remove stored secret</button>
+    </form>
+  </div>
+<% } %>
+
+<div class="card card--info">
+  <h2 class="section-title">Roles are not taken from the directory</h2>
+  <p class="small">
+    Nothing in an Entra token grants access here. Group membership, app roles
+    and addresses are all ignored, and signing in never changes a role that is
+    already set.
+  </p>
+  <p class="small muted">
+    Everyone arrives as a plain user, and an administrator promotes them under
+    <a href="/admin/settings/users">Users</a>. That keeps role changes in one place, and
+    means a tenant administrator cannot grant themselves access here by editing
+    a group.
+  </p>
+</div>
+
+<%- include('_layout_end') %>

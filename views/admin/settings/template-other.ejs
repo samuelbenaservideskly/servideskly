@@ -1,0 +1,227 @@
+<%- include('_layout') %>
+
+<%- include('_template-tabs', { tab: 'other' }) %>
+
+<%#
+  One page, one chevron per decision. It was four sub-tabs; they are drawn
+  here together because each is a handful of switches, and a panel refused on
+  save reopens itself (openPanel) rather than sending somebody back to a tab.
+%>
+<%
+  var panelOpen = function (name) { return locals.openPanel === name ? ' open' : ''; };
+%>
+
+<details class="mode-panel settings-panel" id="prefixes"<%= panelOpen('prefixes') %>>
+  <summary>
+    <span class="mode-panel__title">Reference prefixes</span>
+    <span class="small muted"><%= prefixes.incident %>-000123</span>
+  </summary>
+  <form method="post" action="/admin/settings/templates/other" class="mode-panel__body">
+    <input type="hidden" name="_csrf" value="<%= locals.csrfToken %>">
+
+    <p class="small muted">
+      The number identifies the ticket; the prefix says what kind it is.
+      Changing one applies to tickets raised from now on, so a reference
+      already sent to somebody keeps working.
+    </p>
+
+    <% prefixFields.forEach(function (field) { %>
+      <div class="field">
+        <div class="label-row">
+          <label for="prefix-<%= field.key %>"><%= field.label %></label>
+          <% if (field.note) { %>
+            <%- include('../../partials/info', { text: field.note }) %>
+          <% } %>
+        </div>
+        <input id="prefix-<%= field.key %>" name="<%= field.key %>" type="text"
+               class="input--short mono" maxlength="8" spellcheck="false"
+               value="<%= prefixes[field.key] %>">
+        <% if (errors[field.key]) { %>
+          <p class="field-error" role="alert"><%= errors[field.key] %></p>
+        <% } %>
+      </div>
+    <% }); %>
+
+    <div class="actions">
+      <button type="submit" class="btn btn--primary">Save prefixes</button>
+    </div>
+  </form>
+</details>
+
+<details class="mode-panel settings-panel" id="sla"<%= panelOpen('sla') %>>
+  <summary>
+    <span class="mode-panel__title">Service levels</span>
+    <span class="small muted"><%= sla.enabled ? 'On - ' + sla.start + ' to ' + sla.end + ', ' + sla.timeZone : 'Off' %></span>
+  </summary>
+  <form method="post" action="/admin/settings/templates/other/sla" class="mode-panel__body">
+    <input type="hidden" name="_csrf" value="<%= locals.csrfToken %>">
+
+    <label class="check">
+      <input type="checkbox" name="enabled" value="on"<%= sla.enabled ? ' checked' : '' %>>
+      <strong>Measure tickets against these targets</strong>
+    </label>
+
+    <div class="label-row">
+      <label class="check">
+        <input type="checkbox" name="notifyManager" value="on"<%= sla.notifyManager ? ' checked' : '' %>>
+        Notify the group manager when a ticket breaches a target
+      </label>
+      <%- include('../../partials/info', { text: 'Sent once per target per ticket to the manager of the technician group the ticket is routed to. The message can be edited under Mail - Notifications - An SLA was breached.' }) %>
+    </div>
+
+    <div class="label-row">
+      <label class="check">
+        <input type="checkbox" name="pauseOnHold" value="on"<%= sla.pauseOnHold ? ' checked' : '' %>>
+        Pause the resolution clock while a ticket is on hold
+      </label>
+      <%- include('../../partials/info', { text: 'Business time spent On-hold is added to the resolution target, and the clock shows Paused while it waits. The first-response clock is not paused.' }) %>
+    </div>
+
+    <h3 class="section-title">Business hours</h3>
+    <p class="small muted">Targets count only inside these hours, so a ticket raised on Friday evening starts its clock on Monday morning.</p>
+
+    <div class="grid-2">
+      <div class="field">
+        <span class="label">Time zone</span>
+        <p><strong><%= sla.timeZone %></strong> <a class="small" href="/admin/settings/customization/locale">Change under Locale</a></p>
+      </div>
+
+      <div class="field">
+        <span class="label">Working hours</span>
+        <div class="time-range">
+          <input name="start" type="time" value="<%= sla.start %>" aria-label="Start">
+          <span aria-hidden="true">to</span>
+          <input name="end" type="time" value="<%= sla.end %>" aria-label="End">
+        </div>
+        <% if (errors.hours) { %><p class="field-error" role="alert"><%= errors.hours %></p><% } %>
+      </div>
+    </div>
+
+    <fieldset class="field">
+      <legend>Working days</legend>
+      <div class="day-picker">
+        <% weekdays.forEach(function (d) { %>
+          <label class="check">
+            <input type="checkbox" name="days" value="<%= d.n %>"<%= sla.days.includes(d.n) ? ' checked' : '' %>>
+            <%= d.label %>
+          </label>
+        <% }); %>
+      </div>
+      <% if (errors.days) { %><p class="field-error" role="alert"><%= errors.days %></p><% } %>
+    </fieldset>
+
+    <div class="field">
+      <div class="label-row">
+        <label for="holidays">Public holidays</label>
+        <%- include('../../partials/info', { text: 'Days the clock does not run, one per line: 2026-12-24 for that day only, 12-25 for every year.' }) %>
+      </div>
+      <textarea id="holidays" name="holidays" rows="4" class="mono" spellcheck="false"
+                placeholder="01-01&#10;12-24&#10;12-25&#10;2026-04-06"><%= (sla.holidays || []).join('\n') %></textarea>
+      <% if (errors.holidays) { %><p class="field-error" role="alert"><%= errors.holidays %></p><% } %>
+    </div>
+
+    <h3 class="section-title">Targets by priority</h3>
+    <div class="table-scroll">
+      <table class="table sla-table">
+        <thead>
+          <tr>
+            <th scope="col">Priority</th>
+            <th scope="col">First response (business hours)</th>
+            <th scope="col">Resolution (business hours)</th>
+          </tr>
+        </thead>
+        <tbody>
+          <% slaPriorities.forEach(function (p) { %>
+            <tr>
+              <td><span class="pill pill--p-<%= p %>"><%= priorityLabels[p] %></span></td>
+              <td>
+                <input name="response_<%= p %>" type="number" min="0.25" step="0.25" inputmode="decimal"
+                       aria-label="<%= priorityLabels[p] %> first response, hours"
+                       value="<%= Math.round(sla.targets[p].response / 60 * 100) / 100 %>">
+              </td>
+              <td>
+                <input name="resolution_<%= p %>" type="number" min="0.25" step="0.25" inputmode="decimal"
+                       aria-label="<%= priorityLabels[p] %> resolution, hours"
+                       value="<%= Math.round(sla.targets[p].resolution / 60 * 100) / 100 %>">
+                <% if (errors['target_' + p]) { %><p class="field-error" role="alert"><%= errors['target_' + p] %></p><% } %>
+              </td>
+            </tr>
+          <% }); %>
+        </tbody>
+      </table>
+    </div>
+    <p class="hint">A first response is a public reply or a status change by anyone but the requester.</p>
+
+    <div class="actions">
+      <button type="submit" class="btn btn--primary">Save service levels</button>
+    </div>
+  </form>
+</details>
+
+<details class="mode-panel settings-panel" id="status-notes"<%= panelOpen('status-notes') %>>
+  <summary>
+    <span class="mode-panel__title">Status notes</span>
+    <span class="small muted">
+      <% var notes = []; if (requireCancelNote) { notes.push('Cancelling'); } if (locals.requireResolveNote) { notes.push('Resolving'); } %>
+      <%= notes.length ? notes.join(' and ') + ' needs a note' : 'Not required' %>
+    </span>
+  </summary>
+  <form method="post" action="/admin/settings/templates/other/status-notes" class="mode-panel__body">
+    <input type="hidden" name="_csrf" value="<%= locals.csrfToken %>">
+    <div class="label-row">
+      <label class="check">
+        <input type="checkbox" name="requireCancelNote" value="on"<%= requireCancelNote ? ' checked' : '' %>>
+        <strong>Cancelling a ticket requires a note</strong>
+      </label>
+      <%- include('../../partials/info', { text: 'On the ticket page, choosing Cancelled asks for a note, which is posted as a comment the requester can see and sent with the status notification. An automation that cancels a ticket decides on its Set status step whether to add one.' }) %>
+    </div>
+    <div class="label-row">
+      <label class="check">
+        <input type="checkbox" name="requireResolveNote" value="on"<%= locals.requireResolveNote ? ' checked' : '' %>>
+        <strong>Resolving a ticket requires a note</strong>
+      </label>
+      <%- include('../../partials/info', { text: 'On the ticket page, choosing Resolved asks for a resolution note, posted as a comment the requester can see and sent with the resolved notification as {{statusNote}}. An automation that resolves a ticket decides on its Set status step whether to add one.' }) %>
+    </div>
+    <div class="actions">
+      <button type="submit" class="btn btn--primary">Save status notes</button>
+    </div>
+  </form>
+</details>
+
+<details class="mode-panel settings-panel" id="retention"<%= panelOpen('retention') %>>
+  <summary>
+    <span class="mode-panel__title">Delete closed tickets</span>
+    <span class="small muted"><%= deleteClosedAfterDays > 0 ? 'After ' + deleteClosedAfterDays + ' days' : 'Never - everything is kept' %></span>
+  </summary>
+  <form method="post" action="/admin/settings/templates/other/retention" class="mode-panel__body">
+    <input type="hidden" name="_csrf" value="<%= locals.csrfToken %>">
+    <div class="label-row">
+      <label class="check">
+        <input type="checkbox" name="enabled" value="on"<%= deleteClosedAfterDays > 0 ? ' checked' : '' %>>
+        <strong>Delete a closed ticket this long after it closed</strong>
+      </label>
+      <%- include('../../partials/info', { text: 'A sweep runs hourly. Only tickets with the status Closed, counted from the day they closed; a reopened one starts again. Its tasks, comments, attachments and mail thread go with it.' }) %>
+    </div>
+    <div class="field">
+      <label for="retention-days">Days</label>
+      <input id="retention-days" name="days" type="number" min="1" max="3650" step="1" class="input--short"
+             value="<%= deleteClosedAfterDays > 0 ? deleteClosedAfterDays : 365 %>">
+      <% if (errors.retention) { %><p class="field-error" role="alert"><%= errors.retention %></p><% } %>
+    </div>
+    <%#
+      This one stays on the page rather than going into an info bubble: it is
+      the warning that prevents the mistake, and a deleted ticket does not
+      come back.
+    %>
+    <p class="hint">
+      This is a real delete, not a hidden flag. The ticket, its comments, its
+      attachments and its mail thread are removed and cannot be recovered.
+      Each deletion is recorded in the audit trail.
+    </p>
+    <div class="actions">
+      <button type="submit" class="btn btn--primary">Save</button>
+    </div>
+  </form>
+</details>
+
+<%- include('_layout_end') %>

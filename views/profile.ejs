@@ -1,0 +1,252 @@
+<%- include('partials/header') %>
+
+<div class="page-head">
+  <div>
+    <p class="muted small">Your profile</p>
+    <h1><%= user.display_name %></h1>
+  </div>
+  <a class="btn btn--quiet" href="/tickets">Back to tickets</a>
+</div>
+
+<% if ((problems || []).length > 0) { %>
+  <div class="flash flash--error" role="alert">
+    <strong>Nothing was changed.</strong>
+    <ul class="tight-list">
+      <% problems.forEach(function (problem) { %>
+        <li><%= problem %></li>
+      <% }); %>
+    </ul>
+  </div>
+<% } %>
+
+<div class="columns">
+  <div class="col-main">
+    <div class="card">
+      <h2 class="section-title">Account</h2>
+      <dl class="details">
+        <dt>Name</dt>
+        <dd><%= user.display_name %></dd>
+
+        <dt>Email</dt>
+        <dd><%= user.email %></dd>
+
+        <% if (user.upn && user.upn !== user.email) { %>
+          <dt>User principal name</dt>
+          <dd><%= user.upn %></dd>
+        <% } %>
+
+        <%# What the directory, SCIM or an administrator has set: only what has a value. %>
+        <% [[t('First name'), user.first_name], [t('Last name'), user.last_name], [t('Company'), user.company], [t('Department'), user.department], [t('Job title'), user.job_title], [t('Office'), user.office], [t('Phone'), user.phone]].forEach(function (d) { %>
+          <% if (d[1]) { %>
+            <dt><%= d[0] %></dt>
+            <dd><%= d[1] %></dd>
+          <% } %>
+        <% }); %>
+
+        <dt>Role</dt>
+        <dd>
+          <span class="badge badge--<%= user.role %>"><%= roleLabel(user.role) %></span>
+          <% if (user.role_locked) { %>
+            <span class="badge badge--lock" title="Set by an administrator">locked</span>
+          <% } %>
+        </dd>
+
+        <dt>Status</dt>
+        <dd><span class="pill pill--<%= user.status === 'active' ? 'open' : 'closed' %>"><%= stateLabel(user.status) %></span></dd>
+
+        <dt>Account type</dt>
+        <dd>
+          <% if (locals.isBreakGlass) { %>
+            Break-glass administrator - signs in with a password
+          <% } else if (isLocalAccount) { %>
+            Local account - signs in with <%= locals.usesSignInCode ? 'a code sent by email' : 'a password' %>
+          <% } else { %>
+            Directory account - signs in through your organisation's identity provider
+          <% } %>
+        </dd>
+
+        <dt>Created</dt>
+        <dd><%= formatDateTime(user.created_at) %></dd>
+
+        <dt>Last sign-in</dt>
+        <dd><%= user.last_login_at ? formatDateTime(user.last_login_at) : 'this session' %></dd>
+
+        <% if (user.last_synced_at) { %>
+          <dt>Last directory sync</dt>
+          <dd><%= formatDateTime(user.last_synced_at) %></dd>
+        <% } %>
+      </dl>
+    </div>
+
+    <% if (selfEdit.length > 0) { %>
+      <form method="post" action="/profile/details" class="card stack" id="details">
+        <input type="hidden" name="_csrf" value="<%= locals.csrfToken %>">
+        <div class="label-row">
+          <h2 class="section-title">Your details</h2>
+          <% if (!isLocalAccount) { %><%- include('partials/info', { text: 'Your organisation\'s directory keeps these too: its next update may replace what you change here.' }) %><% } %>
+        </div>
+        <div class="grid-2">
+          <% selfEdit.forEach(function (f) { %>
+            <div class="field">
+              <label for="self-<%= f %>"><%= selfEditLabels[f] %></label>
+              <input id="self-<%= f %>" name="<%= f %>" type="<%= f === 'phone' ? 'tel' : 'text' %>" maxlength="<%= f === 'phone' ? 40 : 120 %>" value="<%= user[f] || '' %>">
+            </div>
+          <% }); %>
+        </div>
+        <div class="actions"><button type="submit" class="btn btn--primary">Save your details</button></div>
+      </form>
+    <% } %>
+
+    <% if ((locals.offeredLanguages || []).length > 0) { %>
+      <form method="post" action="/profile/language" class="card stack" id="language">
+        <input type="hidden" name="_csrf" value="<%= locals.csrfToken %>">
+        <h2 class="section-title">Language</h2>
+        <div class="field">
+          <label for="language-choice">Show the service desk in</label>
+          <select id="language-choice" name="language">
+            <option value=""<%= (user.language || '') === '' ? ' selected' : '' %>>Follow my browser</option>
+            <option value="en"<%= user.language === 'en' ? ' selected' : '' %>>English</option>
+            <% offeredLanguages.forEach(function (l) { %>
+              <option value="<%= l.tag %>"<%= user.language === l.tag ? ' selected' : '' %>><%= l.name %></option>
+            <% }); %>
+          </select>
+          <p class="hint">Words the service desk itself writes. Tickets, templates and anything people typed stay as they were written.</p>
+        </div>
+        <div class="actions"><button type="submit" class="btn btn--primary">Save</button></div>
+      </form>
+    <% } %>
+
+    <% if (isLocalAccount && locals.usesSignInCode) { %>
+      <div class="card card--info">
+        <h2 class="section-title">Password</h2>
+        <p class="small">You sign in with a code sent to your email address, so there is no password to change.</p>
+      </div>
+    <% } else if (isLocalAccount) { %>
+      <form method="post" action="/profile/password" class="card stack">
+        <input type="hidden" name="_csrf" value="<%= locals.csrfToken %>">
+        <h2 class="section-title">Change your password</h2>
+
+        <% if (localAdmin && localAdmin.mustChange) { %>
+          <p class="warning" role="alert">
+            You are still using the password generated when the service first
+            started. Set your own now.
+          </p>
+        <% } %>
+
+        <%#
+          Two columns: the boxes down the left, the rules beside them on the
+          right. The rules in a row of their own made that row as tall as the
+          box, which left a gap of the same height under New password.
+        %>
+        <div class="pw-grid">
+          <div class="field">
+            <label for="currentPassword">Current password</label>
+            <input id="currentPassword" name="currentPassword" type="password" required
+                   autocomplete="current-password">
+          </div>
+
+          <div class="field">
+            <label for="newPassword">New password</label>
+            <input id="newPassword" name="newPassword" type="password" required
+                   minlength="<%= minPasswordLength %>" autocomplete="new-password">
+          </div>
+
+          <%- include('partials/password-rules', { for: 'newPassword', rules: passwordRules }) %>
+
+          <div class="field">
+            <label for="confirmPassword">Confirm new password</label>
+            <input id="confirmPassword" name="confirmPassword" type="password" required
+                   minlength="<%= minPasswordLength %>" autocomplete="new-password">
+          </div>
+        </div>
+
+        <div class="actions">
+          <button type="submit" class="btn btn--primary">Change password</button>
+        </div>
+      </form>
+    <% } else { %>
+      <div class="card card--info">
+        <h2 class="section-title">Password</h2>
+        <p class="small">
+          Your password is managed by your organisation, not by this
+          application. Change it where you normally manage your work account.
+        </p>
+      </div>
+    <% } %>
+  </div>
+
+  <aside class="col-side">
+    <div class="card">
+      <h2 class="section-title">Your tickets</h2>
+      <div class="stats stats--stacked">
+        <div class="stat">
+          <span class="stat__value"><%= activity.open %></span>
+          <span class="stat__label">Open</span>
+        </div>
+        <div class="stat">
+          <span class="stat__value"><%= activity.raised %></span>
+          <span class="stat__label">Raised, all time</span>
+        </div>
+        <% if (locals.isStaff) { %>
+          <div class="stat">
+            <span class="stat__value"><%= activity.assigned %></span>
+            <span class="stat__label">Assigned to you</span>
+          </div>
+        <% } %>
+      </div>
+      <p><a class="btn btn--quiet" href="/tickets?scope=mine&amp;status=any">See your tickets</a></p>
+    </div>
+
+    <% if (!isLocalAccount) { %>
+      <div class="card">
+        <h2 class="section-title">Directory groups</h2>
+        <% if (groups.length === 0) { %>
+          <p class="muted small">
+            No groups were provided by the identity provider. Your role comes
+            from the default role for this installation.
+          </p>
+        <% } else { %>
+          <ul class="tight-list small mono">
+            <% groups.forEach(function (group) { %>
+              <li><%= group %></li>
+            <% }); %>
+          </ul>
+        <% } %>
+        <p class="hint">
+          Roles follow these groups unless an administrator has locked your role.
+        </p>
+      </div>
+    <% } %>
+
+    <% if (isLocalAccount && localAdmin) { %>
+      <div class="card">
+        <h2 class="section-title">Sign-in security</h2>
+        <dl class="details small">
+          <dt>Password changed</dt>
+          <dd><%= localAdmin.passwordUpdatedAt ? formatRelative(localAdmin.passwordUpdatedAt) : 'never' %></dd>
+          <dt>Last success</dt>
+          <dd><%= localAdmin.lastSuccessAt ? formatRelative(localAdmin.lastSuccessAt) : 'never' %></dd>
+          <% if (localAdmin.failedAttempts > 0) { %>
+            <dt>Failed attempts</dt>
+            <dd><%= localAdmin.failedAttempts %></dd>
+          <% } %>
+        </dl>
+        <p class="hint">
+          This account cannot be demoted or disabled, so administration is
+          always reachable. Every sign-in attempt against it is audited.
+        </p>
+      </div>
+    <% } %>
+  </aside>
+</div>
+
+<% if (locals.availability) { %>
+  <%- include('partials/availability') %>
+<% } %>
+
+<% if (isLocalAccount && !usesSignInCode) { %>
+  <%# Ticks the password rules as they are typed. See password-reveal.js. %>
+  <script src="/assets/js/password-reveal.js?v=<%= locals.assetVersion %>" defer></script>
+<% } %>
+
+<%- include('partials/footer') %>

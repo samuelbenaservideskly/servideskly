@@ -1,0 +1,83 @@
+<%- include('../partials/header') %>
+
+<div class="wrap--narrow">
+  <%#
+    No Cancel: nothing has been started yet, and the sidebar is the way out
+    of any page - reported 15 Oct 2026.
+
+    The New ticket button raises the chosen kind's default template, or the
+    service desk's own when no kind is chosen; it is only here when the
+    filter buttons are, because without them there is nothing to say what
+    "new ticket" would mean beyond the tiles themselves.
+  %>
+  <div class="page-head">
+    <h1><%= heading %></h1>
+  </div>
+
+  <% if (locals.kinds && kinds.length) { %>
+    <%#
+      The kinds, and the one action that depends on them: New ticket raises
+      whichever kind is selected, so it sits on their line rather than above
+      it (asked for 16 Oct 2026). Links, not a form - each is an address
+      somebody can keep.
+    %>
+    <div class="catalogue-filters">
+      <nav class="catalogue-filters__kinds" aria-label="Kinds of request">
+        <a class="btn<%= kind ? '' : ' btn--primary' %>" href="/tickets/new">All</a>
+        <% kinds.forEach(function (k) { %>
+          <a class="btn<%= kind === k ? ' btn--primary' : '' %>" href="/tickets/new?kind=<%= k %>"><%= typeLabels[k] %></a>
+        <% }); %>
+      </nav>
+      <% if (defaultTemplateId) { %>
+        <a class="btn btn--primary" href="/tickets/new?template=<%= defaultTemplateId %>">
+          New <%= kind ? typeLabels[kind].toLowerCase() : 'ticket' %>
+        </a>
+      <% } %>
+    </div>
+  <% } %>
+
+  <% if (!entries.length) { %>
+    <%#
+      Either nothing is in the catalogue yet, or none of it is theirs to
+      raise. Both read the same to a requester, and both are answered by the
+      same link: the form everybody may use.
+    %>
+    <p class="empty">
+      <%= locals.kind ? 'Nothing of that kind is offered.' : 'There is nothing to choose from yet.' %>
+    </p>
+    <% if (defaultTemplateId) { %>
+      <p><a class="btn btn--primary" href="/tickets/new?template=<%= defaultTemplateId %>">Raise a ticket</a></p>
+    <% } %>
+  <% } else { %>
+    <%#
+      Each tile in its own column, so a space the service desk left stays a
+      space. The grid is only as wide as the columns in use.
+    %>
+    <div class="catalogue-grid catalogue-grid--cols-<%= columns %>">
+      <% page.forEach(function (entry) { %>
+        <a class="catalogue-tile catalogue-tile--col-<%= Math.min(entry.column, columns) %>" href="/tickets/new?template=<%= entry.template.id %>">
+          <span class="catalogue-tile__icon"><%- include('../partials/icon', { name: entry.tile.icon }) %></span>
+          <span class="catalogue-tile__text">
+            <b><%= entry.label %></b>
+            <% if (entry.description) { %><span class="small muted"><%= entry.description %></span><% } %>
+          </span>
+        </a>
+      <% }); %>
+    </div>
+
+    <% if (pages > 1) { %>
+      <%# A page at a time, as the layout says. A link, so no script. %>
+      <nav class="pagination" aria-label="Catalogue pages">
+        <% if (pageNumber > 1) { %>
+          <a class="btn btn--quiet" href="/tickets/new?page=<%= pageNumber - 1 %><%= kind ? '&kind=' + kind : '' %>">Previous</a>
+        <% } %>
+        <span class="small muted">Page <%= pageNumber %> of <%= pages %></span>
+        <% if (pageNumber < pages) { %>
+          <a class="btn btn--quiet" href="/tickets/new?page=<%= pageNumber + 1 %><%= kind ? '&kind=' + kind : '' %>">Next</a>
+        <% } %>
+      </nav>
+    <% } %>
+  <% } %>
+</div>
+
+<%- include('../partials/footer') %>

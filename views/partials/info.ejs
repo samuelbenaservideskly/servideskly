@@ -1,0 +1,27 @@
+<%#
+  The ⓘ that explains a control.
+
+  Used instead of a paragraph of help under every setting: a page of those
+  reads as a page of warnings, and the explanation is only wanted the first
+  time or two.
+
+  Three things about the markup, all deliberate:
+
+  - **The focusable element wraps both parts**, so the explanation is shown on
+    hover *and* on keyboard focus. A tooltip only a mouse can reach is one
+    half the people cannot read.
+  - **The bubble is hidden with `opacity`, never `display: none` or
+    `visibility`.** Those two take it out of the accessibility tree as well as
+    off the screen; opacity leaves it readable by a screen reader at all
+    times, which is the simplest way to be sure the text is never lost.
+  - **It regains pointer events when shown**, so a long explanation can be
+    moved onto and read rather than vanishing on the way.
+
+  Takes `text` (escaped) or `html` (raw, for an explanation with a link or a
+  `<code>` in it). Nothing that prevents a mistake belongs in here - a warning
+  or a limit stays on the page where it cannot be missed.
+-%>
+<span class="info" tabindex="0">
+  <span class="info__mark" aria-hidden="true">i</span>
+  <span class="info__bubble" role="note"><% if (locals.html) { %><%- html %><% } else { %><%= locals.text %><% } %></span>
+</span>

@@ -1,0 +1,22 @@
+<nav class="subtabs" aria-label="Users">
+  <a href="/admin/settings/users"
+     class="<%= tab === 'local' ? 'subtabs__item--current' : '' %>"
+     <%- tab === 'local' ? 'aria-current="page"' : '' %>>Local users</a>
+  <% if (entraReady) { %>
+    <a href="/admin/settings/users/entra"
+       class="<%= tab === 'directory' ? 'subtabs__item--current' : '' %>"
+       <%- tab === 'directory' ? 'aria-current="page"' : '' %>>Identity providers</a>
+  <% } else { %>
+    <span class="subtabs__item--disabled" aria-disabled="true"
+          title="Set up an identity provider under Integrations first">Identity providers</span>
+  <% } %>
+  <%# A hosted helpdesk has none: the customer portal names its administrators. %>
+  <% if (locals.hasBreakGlass) { %>
+  <a href="/admin/settings/users/break-glass"
+     class="<%= tab === 'break-glass' ? 'subtabs__item--current' : '' %>"
+     <%- tab === 'break-glass' ? 'aria-current="page"' : '' %>>Break-glass account</a>
+  <% } %>
+  <a href="/admin/settings/users/other"
+     class="<%= tab === 'other' ? 'subtabs__item--current' : '' %>"
+     <%- tab === 'other' ? 'aria-current="page"' : '' %>>Other settings</a>
+</nav>

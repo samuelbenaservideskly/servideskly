@@ -1,0 +1,497 @@
+<%- include('_layout') %>
+
+<% if (isProtected) { %>
+  <%- include('_user-tabs', { tab: 'break-glass' }) %>
+
+  <%# The break-glass account's own sign-in-code switch, separate from the
+      one for local users: a mailbox outage must not lock out the account
+      that exists for outages, so it is off unless chosen here. %>
+  <form method="post" action="/admin/settings/users/break-glass/sign-in-code" class="card local-signin-card stack" id="sign-in-codes">
+    <input type="hidden" name="_csrf" value="<%= locals.csrfToken %>">
+    <% (locals.flashMessages || []).filter(function (m) { return m.where === 'sign-in-codes'; }).forEach(function (m) { %>
+      <div class="flash flash--<%= m.type %>" role="<%= m.type === 'error' ? 'alert' : 'status' %>"><%= m.message %></div>
+    <% }); %>
+    <div class="label-row">
+      <label class="check">
+        <input type="checkbox" name="enabled" value="on"<%= breakGlassCodes.enabled ? ' checked' : '' %>>
+        <strong>Sign in with a code sent by email</strong>
+      </label>
+      <%- include('../../partials/info', { text: 'The code goes to the address below instead of the password being asked for. If mail stops working, set FORCE_LOCAL_SIGNIN=true in the environment and restart to sign in with the password again.' }) %>
+    </div>
+    <% if (breakGlassCodes.enabled && breakGlassCodes.forced) { %>
+      <p class="hint">The password is in use for now: <code>FORCE_LOCAL_SIGNIN</code> is set in the environment.</p>
+    <% } %>
+    <div class="actions">
+      <button type="submit" class="btn btn--small">Save</button>
+    </div>
+  </form>
+<% } else { %>
+  <p class="breadcrumb"><%- include('../../partials/back-link', { href: isLocal ? '/admin/settings/users' : '/admin/settings/users/entra', label: 'All users' }) %></p>
+<% } %>
+
+<div class="card stack">
+  <h2 class="section-title">Identity</h2>
+  <dl class="details small">
+    <dt>Display name</dt>
+    <dd><%= user.display_name %></dd>
+    <% if (user.display_name_source && user.display_name_source !== user.display_name) { %>
+      <dt><%= isLocal ? 'Name as typed' : 'Name in the directory' %></dt>
+      <dd><%= user.display_name_source %></dd>
+    <% } %>
+    <dt>Email</dt>
+    <%# An address is read as a word, not inspected character by character: the monospaced face only made it look like a different kind of value - reported 15 Oct 2026. %>
+    <dd>
+      <%= user.email %>
+      <% if (!isLocal) { %>
+        <span class="muted small"> - from the directory</span>
+      <% } %>
+    </dd>
+    <% if (user.upn) { %>
+      <dt>UPN</dt>
+      <dd><%= user.upn %></dd>
+    <% } %>
+    <dt>Signs in with</dt>
+    <dd>
+      <% if (isLocal) { %>
+        A password set in this application
+        <% if (isProtected) { %><span class="pill pill--muted">break-glass</span><% } %>
+      <% } else { %>
+        <%= providerNameOf(user.issuer) %> (<%= sourceLabel(user.source) %>)
+      <% } %>
+    </dd>
+    <dt>Last sign-in</dt>
+    <dd><%= user.last_login_at ? formatRelative(user.last_login_at) : 'never' %></dd>
+    <dt>Account created</dt>
+    <dd><%= formatRelative(user.created_at) %></dd>
+  </dl>
+</div>
+
+<%#
+  Not for the break-glass account: its role is fixed, it belongs in no
+  group, it raises no tickets and it has no profile to fill in. A card
+  that only says "not this account" is worse than no card - reported
+  15 Oct 2026.
+%>
+<% if (!isProtected) { %>
+<div class="card stack">
+  <h2 class="section-title">Role</h2>
+  <% if (isProtected) { %>
+    <p class="small">
+      <span class="badge badge--admin">Administrator</span> - fixed. This is the break-glass account; it keeps the administrator
+      role so a broken identity provider can never lock everybody out.
+    </p>
+  <% } else if (adminLocked) { %>
+    <p class="small"><span class="badge badge--admin">Administrator</span> - <%= adminLocked %></p>
+  <% } else { %>
+    <form method="post" action="/admin/settings/users/<%= user.id %>/role" class="stack">
+      <input type="hidden" name="_csrf" value="<%= locals.csrfToken %>">
+      <div class="field">
+        <div class="label-row">
+          <label for="role">Role</label>
+          <%- include('../../partials/info', { text: 'Roles are managed only here; groups and roles from the identity provider are ignored. A change takes effect on the next request of the user.' }) %>
+        </div>
+        <select id="role" name="role">
+          <option value="user"<%= user.role === 'user' ? ' selected' : '' %>>User - raises tickets, sees only their own</option>
+          <option value="agent"<%= user.role === 'agent' ? ' selected' : '' %>>Agent (technician) - sees and triages the whole queue</option>
+          <% if (!locals.adminsInPortal || user.role === 'admin') { %>
+          <option value="admin"<%= user.role === 'admin' ? ' selected' : '' %>>Administrator - also reaches these settings</option>
+          <% } %>
+        </select>
+        <% if (locals.adminsInPortal && user.role !== 'admin') { %><p class="hint muted"><%= adminsInPortal %></p><% } %>
+        <% if (isSelf) { %>
+          <p class="hint muted">This is your own account: you cannot remove your own administrator role.</p>
+        <% } %>
+      </div>
+      <div class="actions">
+        <button type="submit" class="btn btn--primary">Save role</button>
+      </div>
+    </form>
+  <% } %>
+</div>
+<% } %>
+
+<%#
+  Not for the break-glass account: its role is fixed, it belongs in no
+  group, it raises no tickets and it has no profile to fill in. A card
+  that only says "not this account" is worse than no card - reported
+  15 Oct 2026.
+%>
+<% if (!isProtected) { %>
+<div class="card stack">
+  <h2 class="section-title">Technician groups</h2>
+
+  <% if (!canHaveGroups) { %>
+    <p class="small muted">
+      Only agents and administrators belong to a technician group - a plain
+      user has no queue to route anything into. Change the role above first.
+    </p>
+  <% } else if (allGroups.length === 0) { %>
+    <p class="small muted">
+      No groups exist yet. <a href="/admin/settings/groups">Create one</a> and
+      they will appear here.
+    </p>
+  <% } else { %>
+    <form method="post" action="/admin/settings/users/<%= user.id %>/groups" class="stack">
+      <input type="hidden" name="_csrf" value="<%= locals.csrfToken %>">
+      <fieldset class="fieldset">
+        <legend>Member of</legend>
+        <% allGroups.forEach(function (group) { %>
+          <label class="checkbox checkbox--block">
+            <input type="checkbox" name="groups" value="<%= group.id %>"
+                   <%= groupIds.indexOf(group.id) >= 0 ? 'checked' : '' %>>
+            <span>
+              <strong><%= group.name %></strong>
+              <% if (group.description) { %>
+                <span class="muted small"> - <%= group.description %></span>
+              <% } %>
+            </span>
+          </label>
+        <% }); %>
+      </fieldset>
+      <p class="hint">
+        Membership routes work to them; it grants nothing on its own. The role
+        above decides what they can do.
+      </p>
+      <div class="actions">
+        <button type="submit" class="btn btn--primary">Save groups</button>
+      </div>
+    </form>
+  <% } %>
+</div>
+<% } %>
+
+<%#
+  Not for the break-glass account: its role is fixed, it belongs in no
+  group, it raises no tickets and it has no profile to fill in. A card
+  that only says "not this account" is worse than no card - reported
+  15 Oct 2026.
+%>
+<% if (!isProtected) { %>
+<div class="card stack" id="user-groups">
+  <h2 class="section-title">User groups</h2>
+  <% if (allUserGroups.length === 0) { %>
+    <p class="small muted">No user groups exist yet. <a href="/admin/settings/groups/users">Create one</a> and it will appear here.</p>
+  <% } else { %>
+    <form method="post" action="/admin/settings/users/<%= user.id %>/user-groups" class="stack">
+      <input type="hidden" name="_csrf" value="<%= locals.csrfToken %>">
+      <fieldset class="fieldset">
+        <legend>Member of</legend>
+        <% allUserGroups.forEach(function (group) { var source = userGroupSources[group.id]; %>
+          <label class="checkbox checkbox--block">
+            <%# A rule's membership is shown, not offered: the rule would put it back. %>
+            <input type="checkbox" name="userGroups" value="<%= group.id %>"<%= source ? ' checked' : '' %><%= source === 'rule' ? ' disabled' : '' %>>
+            <span>
+              <strong><%= group.name %></strong>
+              <% if (source === 'rule') { %><span class="pill pill--muted">By a rule</span><% } %>
+              <% if (group.description) { %><span class="muted small"> - <%= group.description %></span><% } %>
+            </span>
+          </label>
+        <% }); %>
+      </fieldset>
+      <div class="actions">
+        <button type="submit" class="btn btn--primary">Save user groups</button>
+      </div>
+    </form>
+  <% } %>
+</div>
+<% } %>
+
+<% if (isLocal) { %>
+  <form method="post" action="/admin/settings/users/<%= user.id %>/email" class="card stack">
+    <input type="hidden" name="_csrf" value="<%= locals.csrfToken %>">
+    <h2 class="section-title">Email</h2>
+
+    <div class="field">
+      <label class="visually-hidden" for="email">Email</label>
+      <input id="email" name="email" type="email" required maxlength="200"
+             value="<%= user.email %>">
+    </div>
+
+    <div class="actions">
+      <button type="submit" class="btn btn--primary">Save email</button>
+    </div>
+  </form>
+<% } %>
+
+<%#
+  Not for the break-glass account: its role is fixed, it belongs in no
+  group, it raises no tickets and it has no profile to fill in. A card
+  that only says "not this account" is worse than no card - reported
+  15 Oct 2026.
+%>
+<% if (!isProtected) { %>
+<form method="post" action="/admin/settings/users/<%= user.id %>/profile" class="card stack">
+  <input type="hidden" name="_csrf" value="<%= locals.csrfToken %>">
+  <h2 class="section-title">Profile</h2>
+
+  <div class="grid-2">
+    <div class="field">
+      <label for="firstName">First name</label>
+      <input id="firstName" name="firstName" type="text" maxlength="100" value="<%= user.first_name %>" autocomplete="off">
+    </div>
+    <div class="field">
+      <label for="lastName">Last name</label>
+      <input id="lastName" name="lastName" type="text" maxlength="100" value="<%= user.last_name %>" autocomplete="off">
+    </div>
+    <% if (isLocal) { %>
+      <div class="field">
+        <div class="label-row">
+          <label for="profileDisplayName">Display name</label>
+          <%- include('../../partials/info', { text: 'Shown as it is while no display name format is set, or while there is no first or last name. The format is under Users - Other settings.' }) %>
+        </div>
+        <input id="profileDisplayName" name="displayName" type="text" maxlength="120" value="<%= user.display_name_source || user.display_name %>">
+      </div>
+    <% } %>
+    <div class="field">
+      <label for="company">Company</label>
+      <input id="company" name="company" type="text" maxlength="120" value="<%= user.company %>" placeholder="e.g. Contoso">
+    </div>
+    <div class="field">
+      <label for="department">Department</label>
+      <input id="department" name="department" type="text" maxlength="120"
+             value="<%= user.department %>" placeholder="e.g. HR">
+    </div>
+
+    <div class="field">
+      <label for="jobTitle">Job title</label>
+      <input id="jobTitle" name="jobTitle" type="text" maxlength="120"
+             value="<%= user.job_title %>">
+    </div>
+
+    <div class="field">
+      <label for="office">Office</label>
+      <input id="office" name="office" type="text" maxlength="120"
+             value="<%= user.office %>">
+    </div>
+
+    <div class="field">
+      <label for="phone">Phone</label>
+      <input id="phone" name="phone" type="tel" maxlength="40" autocomplete="off"
+             value="<%= user.phone || '' %>" placeholder="+420 123 456 789">
+    </div>
+
+    <% [1, 2, 3].forEach(function (n) { %>
+      <div class="field">
+        <label for="extension<%= n %>">Extension attribute <%= n %></label>
+        <input id="extension<%= n %>" name="extension<%= n %>" type="text" maxlength="200"
+               value="<%= user['extension_attribute_' + n] %>">
+      </div>
+    <% }); %>
+  </div>
+
+  <div class="actions">
+    <button type="submit" class="btn btn--primary">Save profile</button>
+  </div>
+</form>
+<% } %>
+
+<%#
+  Not for the break-glass account: its role is fixed, it belongs in no
+  group, it raises no tickets and it has no profile to fill in. A card
+  that only says "not this account" is worse than no card - reported
+  15 Oct 2026.
+%>
+<% if (!isProtected) { %>
+<div class="card stack">
+  <h2 class="section-title">Activity</h2>
+  <div class="stats">
+    <div class="stat">
+      <span class="stat__label">Raised, all time</span>
+      <span class="stat__value"><%= activity.raised %></span>
+    </div>
+    <div class="stat">
+      <span class="stat__label">Assigned to them</span>
+      <span class="stat__value"><%= activity.assigned %></span>
+    </div>
+    <div class="stat">
+      <span class="stat__label">Still open</span>
+      <span class="stat__value"><%= activity.open %></span>
+    </div>
+  </div>
+</div>
+<% } %>
+
+<% if (isLocal) { %>
+  <div class="card stack">
+    <h2 class="section-title">Password</h2>
+    <dl class="details small">
+      <dt>Last changed</dt>
+      <dd><%= local && local.passwordUpdatedAt ? formatRelative(local.passwordUpdatedAt) : 'never' %></dd>
+      <dt>Failed attempts</dt>
+      <dd><%= local ? local.failedAttempts : 0 %><% if (local && local.lockedUntil) { %> - locked until <%= formatDateTime(local.lockedUntil) %><% } %></dd>
+      <% if (local && local.mustChange) { %>
+        <dt>State</dt>
+        <dd>Must be changed at next sign-in</dd>
+      <% } %>
+    </dl>
+
+    <form method="post" action="/admin/settings/users/<%= user.id %>/password" class="stack">
+      <input type="hidden" name="_csrf" value="<%= locals.csrfToken %>">
+      <div class="field">
+        <div class="label-row">
+          <label for="password">New password</label>
+          <span class="info" tabindex="0"><span class="info__mark" aria-hidden="true">i</span><span class="info__bubble" role="note"><%= passwordPolicy %> The new password is shown once after saving, and all sessions of this account are signed out.</span></span>
+        </div>
+        <%- include('../../partials/password-input', { id: 'password', name: 'password', placeholder: 'Leave blank to generate one' }) %>
+      </div>
+      <div class="actions">
+        <button type="submit" class="btn">Reset password</button>
+      </div>
+    </form>
+
+    <% if (!isProtected) { %>
+      <%#
+        The same reset, delivered: a generated password that meets the
+        policy goes to the address on the account, and they must change it
+        at the next sign-in. Its wording is a built-in notification
+        (Settings - Mail - Notifications - Your temporary password), and
+        nothing is changed if nothing could be sent.
+      %>
+      <form method="post" action="/admin/settings/users/<%= user.id %>/password/send" class="stack">
+        <input type="hidden" name="_csrf" value="<%= locals.csrfToken %>">
+        <div class="actions actions--middle">
+          <button type="submit" class="btn">Send temporary password</button>
+          <span class="small muted">to <%= user.email %></span>
+        </div>
+      </form>
+    <% } %>
+  </div>
+<% } %>
+
+<div class="card stack" id="access">
+  <h2 class="section-title">Access</h2>
+
+  <% if (isProtected) { %>
+    <p class="small muted">
+      The break-glass account cannot be disabled or removed. To take it out of
+      use, change its password and keep that somewhere safe.
+    </p>
+  <% } else { %>
+    <%#
+      One row, both the same size: a card that is a grid stretches a lone
+      button across it - reported 15 Oct 2026. Disabling is undone by one
+      press, so it is the quiet one; removing is not, so it is the red one.
+    %>
+    <div class="actions">
+    <% if (adminLocked) { %>
+      <% if (user.status === 'active') { %><button type="button" class="btn" disabled>Disable this account</button><% } %>
+    <% } else if (user.status === 'active') { %>
+      <a class="btn" href="#disable-account">Disable this account</a>
+    <% } else { %>
+      <%# Enabling takes nothing away, so it needs no second press. %>
+      <form method="post" action="/admin/settings/users/<%= user.id %>/status" class="inline-form">
+        <input type="hidden" name="_csrf" value="<%= locals.csrfToken %>">
+        <input type="hidden" name="status" value="active">
+        <button type="submit" class="btn">Enable this account</button>
+      </form>
+    <% } %>
+
+    <% if (!isSelf && adminLocked) { %>
+      <button type="button" class="btn btn--danger" disabled>Remove account</button>
+      <button type="button" class="btn btn--danger" disabled>Remove and anonymise</button>
+    <% } else if (!isSelf) { %>
+      <a class="btn btn--danger" href="#remove-account">Remove account</a>
+      <a class="btn btn--danger" href="#erase-account">Remove and anonymise</a>
+    <% } %>
+    </div>
+    <% if (adminLocked && !isSelf) { %><p class="hint"><%= adminLocked %></p><% } %>
+
+    <% if (user.status === 'active') { %>
+      <div class="dialog" id="disable-account">
+        <a class="dialog__backdrop" href="#access" aria-label="Close"></a>
+        <div class="dialog__panel" role="dialog" aria-modal="true" aria-labelledby="disable-account-title">
+          <div class="dialog__head">
+            <h2 id="disable-account-title">Disable this account?</h2>
+            <a class="dialog__close" href="#access" aria-label="Close">&times;</a>
+          </div>
+          <form method="post" action="/admin/settings/users/<%= user.id %>/status" class="stack">
+            <input type="hidden" name="_csrf" value="<%= locals.csrfToken %>">
+            <input type="hidden" name="status" value="disabled">
+            <p class="small">
+              <strong><%= user.display_name %></strong> is signed out immediately and
+              cannot sign in again until the account is enabled. Their tickets and
+              history are untouched.
+            </p>
+            <div class="dialog__actions">
+              <button type="submit" class="btn btn--danger">Disable this account</button>
+              <a class="btn btn--quiet" href="#access">Cancel</a>
+            </div>
+          </form>
+        </div>
+      </div>
+    <% } %>
+
+    <% if (!isSelf) { %>
+      <div class="dialog" id="erase-account">
+        <a class="dialog__backdrop" href="#access" aria-label="Close"></a>
+        <div class="dialog__panel" role="dialog" aria-modal="true" aria-labelledby="erase-account-title">
+          <div class="dialog__head">
+            <h2 id="erase-account-title">Remove and anonymise?</h2>
+            <a class="dialog__close" href="#access" aria-label="Close">&times;</a>
+          </div>
+          <form method="post" action="/admin/settings/users/<%= user.id %>/erase" class="stack">
+            <input type="hidden" name="_csrf" value="<%= locals.csrfToken %>">
+            <p class="small">
+              <strong><%= user.display_name %></strong> is deleted - name, address,
+              profile, groups and sign-in. Their work stays and is filed under
+              <strong>Anonymous</strong>, a placeholder account nobody can sign in to:
+              <%= footprint.tickets %> ticket<%= footprint.tickets === 1 ? '' : 's' %>
+              and <%= footprint.comments %> comment<%= footprint.comments === 1 ? '' : 's' %>.
+            </p>
+            <%#
+              Said plainly rather than hidden in a mark: it is the one thing
+              somebody doing this for a data-protection request has to know,
+              and finding out afterwards is too late.
+            %>
+            <p class="hint">
+              Words people typed are not rewritten - a comment that names them still
+              names them. This cannot be undone.
+            </p>
+            <div class="dialog__actions">
+              <button type="submit" class="btn btn--danger">Remove and anonymise</button>
+              <a class="btn btn--quiet" href="#access">Cancel</a>
+            </div>
+          </form>
+        </div>
+      </div>
+
+      <div class="dialog" id="remove-account">
+        <a class="dialog__backdrop" href="#access" aria-label="Close"></a>
+        <div class="dialog__panel" role="dialog" aria-modal="true" aria-labelledby="remove-account-title">
+          <div class="dialog__head">
+            <h2 id="remove-account-title">Remove this account?</h2>
+            <a class="dialog__close" href="#access" aria-label="Close">&times;</a>
+          </div>
+          <form method="post" action="/admin/settings/users/<%= user.id %>/delete" class="stack">
+            <input type="hidden" name="_csrf" value="<%= locals.csrfToken %>">
+            <p class="small">
+              <strong><%= user.display_name %></strong> is removed for good. An account
+              that has raised or been assigned tickets is disabled instead, so its
+              history survives.
+            </p>
+            <div class="dialog__actions">
+              <button type="submit" class="btn btn--danger">Remove account</button>
+              <a class="btn btn--quiet" href="#access">Cancel</a>
+            </div>
+          </form>
+        </div>
+      </div>
+    <% } %>
+  <% } %>
+</div>
+
+<%#
+  Not on the break-glass page either: that account exists for the day the
+  identity provider is broken, and when it goes to work it does so through
+  a real account. It is still counted in the availability dashboard when it
+  is in a technician group - that is the dashboard, which somebody who put
+  it in a group expects to see it in - but its own page does not ask it to
+  keep a usual week. Reported 16 Oct 2026.
+%>
+<% if (locals.availability && !isProtected) { %>
+  <%- include('../../partials/availability') %>
+<% } %>
+
+<%# The eye beside a password box. See password-reveal.js. %>
+<script src="/assets/js/password-reveal.js?v=<%= locals.assetVersion %>" defer></script>
+<%- include('_layout_end') %>

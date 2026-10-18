@@ -1,0 +1,125 @@
+# Deploys one release of the helpdesk to one customer's web app.
+#
+# Started by the customer portal (workflow_dispatch through the GitHub API)
+# right after it has created the web app, or by hand from the Actions tab.
+#
+# Two channels, each a branch in this repository (16 Oct 2026; the tags
+# stable and previous are no longer used):
+#   production  - the branch `production`, moved by "Promote to production"
+#   development - the branch `main`, whatever is on it now
+#
+# Signs in to Azure with OpenID Connect - a federated credential on the
+# deploying app registration - so no Azure secret is stored in GitHub.
+# Repository variables: AZURE_CLIENT_ID, AZURE_TENANT_ID, AZURE_SUBSCRIPTION_ID.
+name: Deploy to a customer
+
+on:
+  workflow_dispatch:
+    inputs:
+      app_name:
+        description: The customer's web app name (<name>.azurewebsites.net)
+        required: true
+        type: string
+      resource_group:
+        description: The customer's resource group (empty - helpdesk-<app name>)
+        required: false
+        type: string
+      channel:
+        description: Which release
+        required: true
+        default: production
+        type: choice
+        options: [production, development]
+
+permissions:
+  id-token: write
+  contents: read
+
+# One deployment per customer at a time; a newer request waits.
+concurrency:
+  group: deploy-${{ inputs.app_name }}
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check the app name
+        # It reaches a shell and an Azure call: letters, digits and hyphens only.
+        env:
+          APP_NAME: ${{ inputs.app_name }}
+        run: |
+          [[ "$APP_NAME" =~ ^[a-z][a-z0-9-]{1,38}[a-z0-9]$ ]] || { echo "Invalid app name"; exit 1; }
+
+      - name: Which commit
+        id: ref
+        env:
+          CHANNEL: ${{ inputs.channel }}
+        run: |
+          case "$CHANNEL" in
+            production)  echo "ref=refs/heads/production" >> "$GITHUB_OUTPUT" ;;
+            development) echo "ref=refs/heads/main" >> "$GITHUB_OUTPUT" ;;
+            *) echo "Unknown channel"; exit 1 ;;
+          esac
+
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ steps.ref.outputs.ref }}
+
+      # Production is built once, when it is promoted (promote-release.yml):
+      # the package is helpdesk-<commit>.zip on the release "builds". Copying
+      # it in saves the build here. Without one - development, or a commit
+      # promoted before packages existed - the steps below build it as before.
+      - name: Ready-made package
+        id: pkg
+        if: inputs.channel == 'production'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          sha=$(git rev-parse HEAD)
+          if gh release download builds --pattern "helpdesk-$sha.zip" --output helpdesk.zip 2>/dev/null; then
+            echo "found=true" >> "$GITHUB_OUTPUT"
+            echo "Using the package built when $(git rev-parse --short HEAD) was promoted."
+          else
+            echo "No package for $sha - building it here."
+          fi
+
+      # The same Node version as the web app (CUSTOMER_NODE_VERSION in the
+      # portal): better-sqlite3 is a native module built here for it.
+      - uses: actions/setup-node@v4
+        if: steps.pkg.outputs.found != 'true'
+        with:
+          node-version: 24
+          cache: npm
+
+      - name: Build
+        if: steps.pkg.outputs.found != 'true'
+        run: |
+          npm ci
+          npm run build
+          npm ci --omit=dev
+
+      - name: Package
+        if: steps.pkg.outputs.found != 'true'
+        run: |
+          echo "${{ inputs.channel }} $(git rev-parse --short HEAD)" > RELEASE
+          # src/i18n/strings.json is read at start-up (src/i18n/index.ts).
+          zip -qr helpdesk.zip dist node_modules views public package.json RELEASE src/i18n/strings.json
+
+      - uses: azure/login@v2
+        with:
+          client-id: ${{ vars.AZURE_CLIENT_ID }}
+          tenant-id: ${{ vars.AZURE_TENANT_ID }}
+          subscription-id: ${{ vars.AZURE_SUBSCRIPTION_ID }}
+
+      - uses: azure/webapps-deploy@v3
+        with:
+          app-name: ${{ inputs.app_name }}
+          resource-group-name: ${{ inputs.resource_group || format('helpdesk-{0}', inputs.app_name) }}
+          package: helpdesk.zip
+          # Remove what an earlier deployment left: a stale build archive
+          # (oryx-manifest.toml + node_modules.tar.zst) is otherwise unpacked
+          # over the modules we deploy, at every start.
+          clean: true
+
+      - name: Summary
+        run: echo "Deployed ${{ inputs.channel }} ($(git rev-parse --short HEAD)) to ${{ inputs.app_name }}, ${{ steps.pkg.outputs.found == 'true' && 'from the ready-made package' || 'built here' }}" >> "$GITHUB_STEP_SUMMARY"

@@ -1,0 +1,99 @@
+<%- include('_layout') %>
+
+<%- include('_template-tabs', { tab: 'custom-fields' }) %>
+
+<div class="toolbar">
+  <a class="btn btn--primary" href="#new-field"><span aria-hidden="true">+</span> New custom field</a>
+  <%- include('../../partials/info', { text: 'Add one to a template from the builder\'s palette, under From the library. A change here updates every template that asks it; each template keeps its own mandatory, width and placeholder.' }) %>
+</div>
+
+<% if (fields.length === 0) { %>
+  <div class="card">
+    <p><strong>No custom fields in the library yet.</strong></p>
+    <p class="small muted">Start with <a href="#new-field">New custom field</a>, or tick "Also save to the library" when adding one in a template.</p>
+  </div>
+<% } else { %>
+  <div class="table-scroll">
+    <table class="table">
+      <thead>
+        <tr>
+          <th scope="col">Label</th>
+          <th scope="col">Type</th>
+          <th scope="col">Used by</th>
+          <th scope="col"><span class="visually-hidden">Actions</span></th>
+        </tr>
+      </thead>
+      <tbody>
+        <% fields.forEach(function (f) { %>
+          <tr id="row-<%= f.id %>">
+            <td><%= f.label %><% if (f.choices.length) { %><div class="small muted"><%= f.choices.join(', ') %></div><% } %></td>
+            <td class="small"><%= typeLabels[f.field_type] || f.field_type %></td>
+            <td class="small"><%= f.usedBy.length ? f.usedBy.join(', ') : '-' %></td>
+            <td class="row-actions">
+              <a class="btn btn--quiet btn--small" href="#field-<%= f.id %>">Edit</a>
+              <form method="post" action="/admin/settings/templates/custom-fields/<%= f.id %>/delete" class="inline-form">
+                <input type="hidden" name="_csrf" value="<%= locals.csrfToken %>">
+                <%- include('../../partials/bin-button', { label: 'Remove ' + f.label + ' from the library' }) %>
+              </form>
+            </td>
+          </tr>
+        <% }); %>
+      </tbody>
+    </table>
+  </div>
+<% } %>
+
+<%
+  var dialogs = [{ id: 'new-field', title: 'New custom field', action: '/admin/settings/templates/custom-fields', button: 'Add to the library', f: null, closeTo: '#top' }]
+    .concat(fields.map(function (f) {
+      return { id: 'field-' + f.id, title: 'Edit ' + f.label, action: '/admin/settings/templates/custom-fields/' + f.id, button: 'Save field', f: f, closeTo: '#row-' + f.id };
+    }));
+%>
+<% dialogs.forEach(function (d) {
+     var reopened = openDialog === d.id;
+     var label = reopened ? (values.label || '') : (d.f ? d.f.label : '');
+     var type = reopened ? (values.fieldType || 'text') : (d.f ? d.f.field_type : 'text');
+     var options = reopened ? (values.options || '') : (d.f ? d.f.choices.join('\n') : '');
+%>
+  <div class="dialog<%= reopened ? ' dialog--open' : '' %>" id="<%= d.id %>">
+    <a class="dialog__backdrop" href="<%= d.closeTo %>" aria-label="Close"></a>
+    <div class="dialog__panel" role="dialog" aria-modal="true" aria-labelledby="<%= d.id %>-title">
+      <div class="dialog__head">
+        <h2 id="<%= d.id %>-title"><%= d.title %></h2>
+        <a class="dialog__close" href="<%= d.closeTo %>" aria-label="Close">&times;</a>
+      </div>
+      <form method="post" action="<%= d.action %>" class="stack">
+        <input type="hidden" name="_csrf" value="<%= locals.csrfToken %>">
+        <% if (reopened && errors.form) { %><p class="field-error" role="alert"><%= errors.form %></p><% } %>
+        <div class="field">
+          <label for="<%= d.id %>-label">Label <span class="required">*</span></label>
+          <input id="<%= d.id %>-label" name="label" type="text" required maxlength="120" value="<%= label %>" placeholder="e.g. Which building are you in?">
+          <% if (reopened && errors.label) { %><p class="field-error" role="alert"><%= errors.label %></p><% } %>
+        </div>
+        <div class="field">
+          <label for="<%= d.id %>-type">Type</label>
+          <select id="<%= d.id %>-type" name="fieldType">
+            <% types.forEach(function (t) { %><option value="<%= t.key %>"<%= type === t.key ? ' selected' : '' %>><%= t.label %></option><% }); %>
+          </select>
+        </div>
+        <div class="field">
+          <div class="label-row">
+            <label for="<%= d.id %>-options">Options</label>
+            <%- include('../../partials/info', { text: 'For a choice: one option per line, at least two. Ignored for the other types.' }) %>
+          </div>
+          <textarea id="<%= d.id %>-options" name="options" rows="4" maxlength="3200" placeholder="Prague&#10;Brno&#10;Ostrava"><%= options %></textarea>
+          <% if (reopened && errors.options) { %><p class="field-error" role="alert"><%= errors.options %></p><% } %>
+        </div>
+        <% if (d.f && d.f.usedBy.length) { %>
+          <p class="small muted">Saving updates it on <%= d.f.usedBy.join(', ') %>.</p>
+        <% } %>
+        <div class="dialog__actions">
+          <button type="submit" class="btn btn--primary"><%= d.button %></button>
+          <a class="btn btn--quiet" href="<%= d.closeTo %>">Cancel</a>
+        </div>
+      </form>
+    </div>
+  </div>
+<% }); %>
+
+<%- include('_layout_end') %>

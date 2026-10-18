@@ -1,0 +1,10 @@
+<%# The variables a text in an automation step may use. %>
+<span class="info" tabindex="0"><span class="info__mark" aria-hidden="true">i</span><span class="info__bubble" role="note">
+  From the ticket:
+  <% ticketVariables.forEach(function (v, i) { %><%= i ? ', ' : ' ' %><code>{{ticket.<%= v %>}}</code><% }); %>.
+  <% if (outputs.length > 0) { %>
+    <br>From earlier steps:
+    <% outputs.forEach(function (o, i) { %><%= i ? ', ' : ' ' %><code>{{<%= o %>.status}}</code> <code>{{<%= o %>.json.field}}</code><% }); %>.
+  <% } %>
+  <br>In a JSON body, put each variable inside quotes; it is escaped for you.
+</span></span>

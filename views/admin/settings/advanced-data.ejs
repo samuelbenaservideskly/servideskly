@@ -1,0 +1,80 @@
+<%- include('_layout') %>
+
+<%- include('_advanced-tabs', { tab: 'data' }) %>
+
+<div class="card stack">
+  <h2 class="section-title">Export everything</h2>
+  <p class="small">
+    One zip: every table as JSON, and every uploaded file. It is the whole
+    service desk as it stands - what to take before a move, and what to hand
+    over when somebody asks for their data.
+  </p>
+  <p class="hint">
+    <%= size.rows.toLocaleString('en-GB') %> rows across <%= size.tables %> tables,
+    and <%= size.files.toLocaleString('en-GB') %> files (<%= megabytes %> MB).
+    The export is built in memory, so a very large service desk may take a moment.
+  </p>
+  <%# Encrypted at rest, decrypted for the export (lib/field-crypto.ts): a security warning stays on the page. %>
+  <p class="warning">
+    <strong>The export is not encrypted.</strong> In the service desk, personal details and attachments are stored encrypted; the zip holds them readable, so keep it somewhere only the people who need it can open.
+  </p>
+  <div class="actions">
+    <a class="btn btn--primary" href="/admin/settings/advanced/data/export">Download everything</a>
+  </div>
+</div>
+
+<div class="card stack">
+  <h2 class="section-title">Delete everything</h2>
+  <p class="small">
+    Every ticket, comment, file, template, group, automation, mailbox and
+    account - gone, with nothing to undo it. What is left is an empty service
+    desk you can still sign in to: this installation's settings, and the
+    break-glass administrator.
+  </p>
+  <p class="hint">Take an export first. Afterwards there is nothing to export.</p>
+  <div class="actions">
+    <% if (canDeleteEverything) { %>
+    <a class="btn btn--danger" href="#delete-everything">Delete all data</a>
+    <% } else { %>
+    <button type="button" class="btn btn--danger" disabled>Delete all data</button>
+    <% } %>
+  </div>
+  <% if (!canDeleteEverything) { %>
+  <p class="hint">Only the break-glass account can delete everything.</p>
+  <% } %>
+</div>
+
+<% if (canDeleteEverything) { %>
+<div class="dialog<%= locals.openDialog === 'delete-everything' ? ' dialog--open' : '' %>" id="delete-everything">
+  <a class="dialog__backdrop" href="#top" aria-label="Close"></a>
+  <div class="dialog__panel" role="dialog" aria-modal="true" aria-labelledby="delete-everything-title">
+    <div class="dialog__head">
+      <h2 id="delete-everything-title">Delete everything?</h2>
+      <a class="dialog__close" href="#top" aria-label="Close">&times;</a>
+    </div>
+    <form method="post" action="/admin/settings/advanced/data/delete" class="stack">
+      <input type="hidden" name="_csrf" value="<%= locals.csrfToken %>">
+
+      <p>
+        This removes <strong><%= size.rows.toLocaleString('en-GB') %> rows</strong>
+        and <strong><%= size.files.toLocaleString('en-GB') %> files</strong>.
+        There is no undo, and no copy kept anywhere.
+      </p>
+
+      <div class="field">
+        <label for="phrase">Type <code><%= phrase %></code> to confirm</label>
+        <input id="phrase" name="phrase" type="text" autocomplete="off" spellcheck="false" required
+               placeholder="<%= phrase %>">
+        <% if (locals.deleteError) { %><p class="field-error" role="alert"><%= deleteError %></p><% } %>
+      </div>
+
+      <div class="dialog__actions">
+        <button type="submit" class="btn btn--danger">Delete everything</button>
+        <a class="btn btn--quiet" href="#top">Cancel</a>
+      </div>
+    </form>
+  </div>
+</div>
+<% } %>
+
+<%- include('_layout_end') %>

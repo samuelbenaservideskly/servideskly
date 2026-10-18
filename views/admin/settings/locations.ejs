@@ -1,0 +1,109 @@
+<%- include('_layout') %>
+
+<%- include('_dashboard-tabs', { tab: 'locations' }) %>
+
+<div class="toolbar">
+  <a class="btn btn--primary" href="#new-location">
+    <span aria-hidden="true">+</span> New location
+  </a>
+</div>
+
+<%
+  var groupName = {};
+  userGroups.forEach(function (g) { groupName[g.id] = g.name; });
+%>
+
+<% if (locations.length === 0) { %>
+  <div class="card">
+    <p><strong>No locations yet.</strong></p>
+    <p class="small muted">Start with <a href="#new-location">New location</a>. Technicians choose from these when they say where they are.</p>
+  </div>
+<% } else { %>
+  <div class="table-scroll">
+    <table class="table">
+      <thead>
+        <tr>
+          <th scope="col">Location</th>
+          <th scope="col">Shown to</th>
+          <th scope="col"><span class="visually-hidden">Actions</span></th>
+        </tr>
+      </thead>
+      <tbody>
+        <% locations.forEach(function (l) { %>
+          <tr id="row-<%= l.id %>">
+            <td><%= l.name %></td>
+            <td class="small">
+              <%= l.visible_to_everyone ? 'Everyone' : l.groupIds.map(function (g) { return groupName[g] || 'a removed group'; }).join(', ') %>
+            </td>
+            <td class="row-actions">
+              <a class="btn btn--quiet btn--small" href="#location-<%= l.id %>">Edit</a>
+              <form method="post" action="/admin/settings/dashboards/locations/<%= l.id %>/delete" class="inline-form">
+                <input type="hidden" name="_csrf" value="<%= locals.csrfToken %>">
+                <%- include('../../partials/bin-button', { label: 'Remove ' + l.name }) %>
+              </form>
+            </td>
+          </tr>
+        <% }); %>
+      </tbody>
+    </table>
+  </div>
+<% } %>
+
+<%
+  // One dialog per location plus the new one: the same fields each time.
+  var dialogs = [{ id: 'new-location', title: 'New location', action: '/admin/settings/dashboards/locations', button: 'Add location', loc: null, closeTo: '#top' }]
+    .concat(locations.map(function (l) {
+      return { id: 'location-' + l.id, title: 'Edit ' + l.name, action: '/admin/settings/dashboards/locations/' + l.id, button: 'Save location', loc: l, closeTo: '#row-' + l.id };
+    }));
+%>
+<% dialogs.forEach(function (d) {
+     var reopened = openDialog === d.id;
+     var name = reopened ? (values.name || '') : (d.loc ? d.loc.name : '');
+     var everyone = reopened ? values.everyone === 'on' : (d.loc ? d.loc.visible_to_everyone : true);
+     var ticked = reopened ? [].concat(values.groupIds || []) : (d.loc ? d.loc.groupIds : []);
+%>
+  <div class="dialog<%= reopened ? ' dialog--open' : '' %>" id="<%= d.id %>">
+    <a class="dialog__backdrop" href="<%= d.closeTo %>" aria-label="Close"></a>
+    <div class="dialog__panel" role="dialog" aria-modal="true" aria-labelledby="<%= d.id %>-title">
+      <div class="dialog__head">
+        <h2 id="<%= d.id %>-title"><%= d.title %></h2>
+        <a class="dialog__close" href="<%= d.closeTo %>" aria-label="Close">&times;</a>
+      </div>
+      <form method="post" action="<%= d.action %>" class="stack">
+        <input type="hidden" name="_csrf" value="<%= locals.csrfToken %>">
+        <% if (reopened && errors.form) { %><p class="field-error" role="alert"><%= errors.form %></p><% } %>
+
+        <div class="field">
+          <label for="<%= d.id %>-name">Name <span class="required">*</span></label>
+          <input id="<%= d.id %>-name" name="name" type="text" required maxlength="100" value="<%= name %>" placeholder="Prague office">
+          <% if (reopened && errors.name) { %><p class="field-error" role="alert"><%= errors.name %></p><% } %>
+        </div>
+
+        <fieldset class="field">
+          <legend>Shown to</legend>
+          <label class="check">
+            <input type="checkbox" name="everyone" value="on"<%= everyone ? ' checked' : '' %>>
+            Everyone
+          </label>
+          <% if (userGroups.length > 0) { %>
+            <p class="hint">Or only to members of:</p>
+            <% userGroups.forEach(function (g) { %>
+              <label class="check">
+                <input type="checkbox" name="groupIds" value="<%= g.id %>"<%= ticked.indexOf(g.id) >= 0 ? ' checked' : '' %>>
+                <%= g.name %>
+              </label>
+            <% }); %>
+          <% } %>
+          <% if (reopened && errors.groupIds) { %><p class="field-error" role="alert"><%= errors.groupIds %></p><% } %>
+        </fieldset>
+
+        <div class="dialog__actions">
+          <button type="submit" class="btn btn--primary"><%= d.button %></button>
+          <a class="btn btn--quiet" href="<%= d.closeTo %>">Cancel</a>
+        </div>
+      </form>
+    </div>
+  </div>
+<% }); %>
+
+<%- include('_layout_end') %>

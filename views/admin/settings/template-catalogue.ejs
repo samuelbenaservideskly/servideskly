@@ -1,0 +1,266 @@
+<%- include('_layout') %>
+
+<%- include('_template-tabs', { tab: 'catalogue' }) %>
+
+<form method="post" action="/admin/settings/templates/catalogue/switch" class="card stack">
+  <input type="hidden" name="_csrf" value="<%= locals.csrfToken %>">
+  <div class="label-row">
+    <label class="check">
+      <input type="checkbox" name="enabled" value="on"<%= enabled ? ' checked' : '' %>>
+      <strong>New ticket opens the service catalogue</strong>
+    </label>
+    <%- include('../../partials/info', { text: 'Off, New ticket opens the default request form as it always has. On, it opens these tiles, and choosing one opens that form. A tile whose form somebody may not raise is left out for them, and the rest close the gap.' }) %>
+  </div>
+  <div class="actions">
+    <button type="submit" class="btn btn--primary"><%= enabled ? 'Save' : 'Turn it on' %></button>
+  </div>
+</form>
+
+<div class="grid-2">
+  <form method="post" action="/admin/settings/templates/catalogue/heading" class="card stack">
+    <input type="hidden" name="_csrf" value="<%= locals.csrfToken %>">
+    <h2 class="section-title">Heading</h2>
+    <%# The line above the tiles. Field and button on one row: a lone input
+        under a title with a button under that read as three cards. %>
+    <div class="field-row">
+      <div class="field">
+        <label class="visually-hidden" for="heading">Heading</label>
+        <input id="heading" name="heading" type="text" maxlength="80" value="<%= heading %>"
+               placeholder="What do you need?">
+      </div>
+      <button type="submit" class="btn">Save</button>
+    </div>
+  </form>
+
+  <form method="post" action="/admin/settings/templates/catalogue/grid" class="card stack">
+    <input type="hidden" name="_csrf" value="<%= locals.csrfToken %>">
+    <h2 class="section-title">Layout</h2>
+    <div class="grid-2">
+      <div class="field">
+        <div class="label-row">
+          <label for="columns">Columns</label>
+          <%- include('../../partials/info', { text: 'At most this many tiles across. A narrow screen still shows fewer.' }) %>
+        </div>
+        <input id="columns" name="columns" type="number" min="1" max="5" step="1" class="input--short"
+               value="<%= grid.columns %>">
+      </div>
+      <div class="field">
+        <div class="label-row">
+          <label for="rows">Rows per page</label>
+          <%- include('../../partials/info', { text: 'Tiles past the last row go on a second page, with Next and Previous under the grid.' }) %>
+        </div>
+        <input id="rows" name="rows" type="number" min="1" max="10" step="1" class="input--short"
+               value="<%= grid.rows %>">
+      </div>
+    </div>
+    <div class="label-row">
+      <label class="check">
+        <input type="checkbox" name="filters" value="on"<%= grid.filters ? ' checked' : '' %>>
+        <span>Buttons for the kind of request</span>
+      </label>
+      <%- include('../../partials/info', { text: 'Service request, Incident and Change request above the tiles, each showing only that kind - and a New ticket button that raises that kind’s default template. Only the kinds your tiles actually offer get a button.' }) %>
+    </div>
+    <% if (errors.form) { %><p class="field-error" role="alert"><%= errors.form %></p><% } %>
+    <p class="hint"><%= grid.perPage %> tiles to a page.</p>
+    <div class="actions">
+      <button type="submit" class="btn">Save layout</button>
+    </div>
+  </form>
+</div>
+
+<%# No New tile button: every empty cell of the grid below has a + in
+    it, and that one says where the tile goes - reported 15 Oct 2026. %>
+<h2 class="section-title">Tile preview</h2>
+
+<%#
+  The preview *is* the editor: the grid a requester will see, in the columns
+  and rows the layout above sets, with every empty cell offering a + that
+  puts a tile *there* - a tile needs no neighbour (asked for 16 Oct 2026).
+
+  There is always one page past the last tile, so a second page is a thing
+  somebody can place a tile on rather than a thing they have to earn.
+
+  A tile can be dragged onto any cell, empty or taken (catalogue-grid.js);
+  the arrows under each tile move it one cell without a script.
+%>
+<%
+  var perPage = grid.perPage;
+  // The page the last tile sits on, then one more to place things on.
+  var pageCount = Math.min(
+    Math.ceil(200 / perPage),
+    Math.floor(Math.max(locals.lastCell, -1) / perPage) + 2,
+  );
+  var byCell = {};
+  tiles.forEach(function (tile) { byCell[tile.cell] = tile; });
+%>
+
+<% for (var p = 0; p < pageCount; p++) { %>
+  <% if (pageCount > 1) { %>
+    <p class="small muted catalogue-page-label">Page <%= p + 1 %> of <%= pageCount %></p>
+  <% } %>
+  <div class="catalogue-preview catalogue-preview--cols-<%= grid.columns %>" data-catalogue-grid>
+    <% for (var c = 0; c < perPage; c++) { %>
+      <% var cell = p * perPage + c; var tile = byCell[cell]; %>
+      <% if (tile) { %>
+        <div class="catalogue-tile catalogue-tile--editing<%= tile.template ? '' : ' catalogue-tile--broken' %>"
+             id="tile-<%= tile.id %>" data-tile="<%= tile.id %>" data-cell="<%= cell %>" draggable="true">
+          <span class="catalogue-tile__icon"><%- include('../../partials/icon', { name: tile.icon }) %></span>
+          <span class="catalogue-tile__text">
+            <b><%= tile.label %></b>
+            <% if (tile.description) { %><span class="small muted"><%= tile.description %></span><% } %>
+            <% if (!tile.template) { %>
+              <%# The form behind it is retired or gone, so nobody sees this tile. %>
+              <span class="small catalogue-tile__warn">No form - nobody is shown this tile</span>
+            <% } else if (tile.offeredTo.length) { %>
+              <%#
+                The form is offered to some user groups only, so anybody
+                outside them is not shown this tile. Said here because the
+                missing tile is otherwise unexplainable.
+              %>
+              <span class="small catalogue-tile__note">Only <%= tile.offeredTo.join(', ') %></span>
+            <% } %>
+          </span>
+
+          <span class="catalogue-tile__tools">
+            <%#
+              The arrows move a tile one cell, which is how it is placed
+              without a script; with one, dragging does the same and these
+              are hidden (data-has-script, handled by catalogue-grid.js).
+            %>
+            <form method="post" action="/admin/settings/templates/catalogue/tiles/<%= tile.id %>/move" class="inline" data-has-script>
+              <input type="hidden" name="_csrf" value="<%= locals.csrfToken %>">
+              <input type="hidden" name="direction" value="up">
+              <button type="submit" class="btn btn--quiet btn--small" aria-label="Move <%= tile.label %> one cell back"<%= cell === 0 ? ' disabled' : '' %>>&#9650;</button>
+            </form>
+            <form method="post" action="/admin/settings/templates/catalogue/tiles/<%= tile.id %>/move" class="inline" data-has-script>
+              <input type="hidden" name="_csrf" value="<%= locals.csrfToken %>">
+              <input type="hidden" name="direction" value="down">
+              <button type="submit" class="btn btn--quiet btn--small" aria-label="Move <%= tile.label %> one cell on">&#9660;</button>
+            </form>
+            <%# draggable=false: a link is draggable by itself, which would
+                start a link drag instead of the tile's. %>
+            <a class="btn btn--quiet btn--small btn--icon" draggable="false" href="#tile-edit-<%= tile.id %>" title="Change <%= tile.label %>">
+              <%- include('../../partials/icon-gear') %>
+              <span class="visually-hidden">Change <%= tile.label %></span>
+            </a>
+            <form method="post" action="/admin/settings/templates/catalogue/tiles/<%= tile.id %>/remove" class="inline">
+              <input type="hidden" name="_csrf" value="<%= locals.csrfToken %>">
+              <%- include('../../partials/bin-button', { label: 'Remove ' + tile.label }) %>
+            </form>
+          </span>
+        </div>
+      <% } else { %>
+        <a class="catalogue-slot" href="?add=<%= cell %>#new-tile" id="slot-<%= cell %>"
+           data-cell="<%= cell %>" aria-label="Add a tile in row <%= Math.floor(c / grid.columns) + 1 %>, column <%= (c % grid.columns) + 1 %> of page <%= p + 1 %>">
+          <span class="catalogue-slot__plus" aria-hidden="true">+</span>
+        </a>
+      <% } %>
+    <% } %>
+  </div>
+<% } %>
+
+<%# What a drop posts. The arrows above post the same move, one cell at a time. %>
+<form method="post" action="/admin/settings/templates/catalogue/tiles/position" id="tile-position-form" hidden>
+  <input type="hidden" name="_csrf" value="<%= locals.csrfToken %>">
+  <input type="hidden" name="id" value="">
+  <input type="hidden" name="cell" value="">
+</form>
+
+<%
+  // One dialog body, drawn for the new tile and for each existing one. The
+  // fields are the same; only where it posts and what it starts from differ.
+  var tileDialog = function (id, title, action, current, open, backTo, index) { %>
+  <div class="dialog<%= open ? ' dialog--open' : '' %>" id="<%= id %>">
+    <a class="dialog__backdrop" href="<%= backTo %>" aria-label="Close"></a>
+    <div class="dialog__panel" role="dialog" aria-modal="true" aria-labelledby="<%= id %>-title">
+      <div class="dialog__head">
+        <h2 id="<%= id %>-title"><%= title %></h2>
+        <a class="dialog__close" href="<%= backTo %>" aria-label="Close">&times;</a>
+      </div>
+
+      <form method="post" action="<%= action %>" class="stack">
+        <input type="hidden" name="_csrf" value="<%= locals.csrfToken %>">
+        <%# Which cell of the grid was pressed. Absent: added at the end. %>
+        <% if (index !== undefined) { %><input type="hidden" name="index" value="<%= index %>"><% } %>
+
+        <% if (errors.form) { %><p class="field-error" role="alert"><%= errors.form %></p><% } %>
+
+        <div class="field">
+          <label for="<%= id %>-template">Form <span class="required">*</span></label>
+          <select id="<%= id %>-template" name="templateId" required>
+            <option value="">Choose a form</option>
+            <% templates.forEach(function (t) { %>
+              <option value="<%= t.id %>"<%= current.templateId === t.id ? ' selected' : '' %>><%= t.name %></option>
+            <% }); %>
+          </select>
+          <% if (errors.templateId) { %><p class="field-error" role="alert"><%= errors.templateId %></p><% } %>
+        </div>
+
+        <div class="field">
+          <div class="label-row">
+            <label for="<%= id %>-label">Label</label>
+            <%- include('../../partials/info', { text: "Empty: the form's own name, so renaming the form renames the tile." }) %>
+          </div>
+          <input id="<%= id %>-label" name="label" type="text" maxlength="60" value="<%= current.label || '' %>">
+        </div>
+
+        <div class="field">
+          <label for="<%= id %>-description">Description</label>
+          <input id="<%= id %>-description" name="description" type="text" maxlength="140"
+                 value="<%= current.description || '' %>" placeholder="A line under the label">
+        </div>
+
+        <fieldset class="field">
+          <legend>Icon</legend>
+          <div class="icon-picker">
+            <% icons.forEach(function (icon) { %>
+              <label class="icon-picker__choice">
+                <input type="radio" name="icon" value="<%= icon.key %>"<%= (current.icon || 'ticket') === icon.key ? ' checked' : '' %>>
+                <span class="icon-picker__box" title="<%= icon.label %>">
+                  <%- include('../../partials/icon', { name: icon.key }) %>
+                  <span class="visually-hidden"><%= icon.label %></span>
+                </span>
+              </label>
+            <% }); %>
+          </div>
+        </fieldset>
+
+        <div class="dialog__actions">
+          <button type="submit" class="btn btn--primary"><%= title %></button>
+          <a class="btn btn--quiet" href="<%= backTo %>">Cancel</a>
+        </div>
+      </form>
+    </div>
+  </div>
+<% }; %>
+
+<%#
+  The one Add dialog. It is open when a cell's + was pressed (?add=), and
+  carries that cell's position; the dialog's own id keeps :target working
+  for a browser that follows the link without the query reaching us.
+-%>
+<% tileDialog(
+  'new-tile',
+  'Add tile',
+  '/admin/settings/templates/catalogue/tiles',
+  locals.openDialog === 'new-tile' ? values : {},
+  locals.openDialog === 'new-tile',
+  locals.addAt === null ? '#top' : '#slot-' + locals.addAt,
+  locals.addAt === null ? undefined : locals.addAt,
+) %>
+
+<% tiles.forEach(function (tile) { %>
+  <% tileDialog(
+    'tile-edit-' + tile.id,
+    'Save tile',
+    '/admin/settings/templates/catalogue/tiles/' + tile.id,
+    locals.openDialog === 'tile-' + tile.id ? values : tile,
+    locals.openDialog === 'tile-' + tile.id,
+    '#tile-' + tile.id,
+  ) %>
+<% }); %>
+
+<%# Dragging a tile onto another. Everything here works without it. %>
+<script src="/assets/js/catalogue-grid.js?v=<%= locals.assetVersion %>" defer></script>
+
+<%- include('_layout_end') %>

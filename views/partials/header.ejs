@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<%# A page is dressed in a portal only when one was composed for it - a
+    view's own `portal` local (the portal editor passes the row it edits)
+    must not turn the page into one. %>
+<% var dressed = !!(locals.portal && typeof locals.portal.stylesheet === 'string'); %>
+<%# Signed in, and not a custom portal or a framed preview: the app shell - a
+    sidebar, a search bar, then the page. footer.ejs closes it on the same
+    test, so keep the two in step. %>
+<% var shell = !!locals.currentUser && !dressed && !locals.portalFrame; %>
+<html lang="en"<%- locals.themeAttribute || '' %>>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="referrer" content="no-referrer">
+  <meta name="robots" content="noindex, nofollow">
+  <title><%= locals.title ? locals.title + ' - ' : '' %><%= locals.appName %></title>
+  <%# The six licensed fonts, served from /assets/fonts. See
+      public/fonts/NOTICES.md and ALLOWED_FONTS in services/branding.ts. %>
+  <%# Inter's latin file, fetched with the page so it is ready before the
+      text is drawn (fonts.css uses font-display: optional). %>
+  <link rel="preload" href="/assets/fonts/inter/UcC73FwrK3iLTeHuS_nVMrMxCp50SjIa1ZL7.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="stylesheet" href="/assets/css/fonts.css?v=<%= locals.assetVersion %>">
+  <link rel="stylesheet" href="/assets/css/app.css?v=<%= locals.assetVersion %>">
+  <%# Generated from the colours set under Customisation. Served as a
+      same-origin stylesheet because the CSP forbids inline styles entirely.
+      Not on a custom portal page: a portal is styled by its own CSS alone,
+      on top of the neutral defaults in app.css - Appearance is the built-in
+      look's settings, and leaking them in made a portal depend on a page it
+      does not control. %>
+  <% if (!dressed) { %>
+    <link rel="stylesheet" href="/branding/theme.css?v=<%= locals.brandingVersion %>">
+  <% } %>
+  <link rel="icon" href="/branding/favicon?v=<%= locals.brandingVersion %>">
+  <% if (dressed) { %>
+    <%# The requester portal's own CSS, after the standard sheets so it wins. %>
+    <link rel="stylesheet" href="<%= locals.portal.stylesheet %>">
+    <% if (locals.portal.script) { %>
+      <%# The administrator's own script (Settings - Advanced - JavaScript).
+          A file from this origin; the page policy names it and nothing inline. %>
+      <script src="<%= locals.portal.script %>" defer></script>
+    <% } %>
+  <% } %>
+</head>
+<body class="<%= locals.portalFrame ? 'portal-frame' : '' %><%= shell ? ' has-shell' : '' %>">
+<span id="top" class="page-top"></span>
+<a class="skip-link" href="#main">Skip to content</a>
+
+<% if (locals.portalPreview) { %>
+  <div class="portal-preview-bar" role="status">
+    <% if (locals.portalPreview.exitAction) { %>
+      <span>Previewing the <strong><%= locals.portalPreview.name %></strong> portal. Forms here are real.</span>
+    <% } else { %>
+      <span>Previewing the <strong><%= locals.portalPreview.name %></strong> approval page with a sample request. Its buttons do nothing.</span>
+    <% } %>
+    <% if (locals.portalPreview.editUrl) { %>
+      <a class="btn btn--small" href="<%= locals.portalPreview.editUrl %>">Back to editor</a>
+    <% } %>
+    <% if (locals.portalPreview.exitAction) { %>
+      <form method="post" action="<%= locals.portalPreview.exitAction %>" class="inline-form">
+        <input type="hidden" name="_csrf" value="<%= locals.csrfToken %>">
+        <button type="submit" class="btn btn--small">Exit preview</button>
+      </form>
+    <% } %>
+  </div>
+<% } %>
+
+<% if (dressed) { %>
+<%# An administrator's HTML, trusted as written; every value its variables
+    insert was escaped when it was composed (services/portal.ts). %>
+<%- locals.portal.head %>
+<main id="main" class="wrap portal-content">
+<% } else if (shell) { %>
+<%
+  var path = locals.originalPath || locals.currentPath || '';
+  var user = locals.currentUser;
+  var staff = user.role !== 'user';
+  var initials = (user.display_name || user.email || '?').split(/[\s@.]+/).filter(Boolean).slice(0, 2).map(function (w) { return w[0].toUpperCase(); }).join('');
+  /*
+   * A sidebar link. Its label arrives **already translated**: it is built
+   * inside an EJS tag rather than written between two tags, so the rewriter
+   * never sees it and a Czech service desk kept an English sidebar
+   * (reported 16 Oct 2026). Each call below wraps its own words in t(),
+   * which is also how the catalogue finds them.
+   *
+   * Translating here instead would catch a pinned dashboard's name, and
+   * that is the person's own text - nothing here second-guesses what
+   * language it is in.
+   */
+  var link = function (href, icon, label, on, badge) {
+    return '<a class="side-link" href="' + href + '"' + (on ? ' aria-current="page"' : '') + '>' +
+      include('icon', { name: icon }) + '<span>' + label + '</span>' +
+      (badge ? '<em class="side-link__badge">' + badge + '</em>' : '') + '</a>';
+  };
+%>
+<div class="shell">
+  <%# The sidebar. On a narrow screen it is hidden until the address names it
+      (#sidebar, the menu button), and closed by going back to #top - the same
+      :target technique as the dialogs, so no script. %>
+  <aside class="sidebar" id="sidebar" aria-label="Main">
+    <div class="sidebar__head">
+      <a class="sidebar__brand" href="/home">
+        <% if (locals.brandingLogo) { %>
+          <img class="brand__logo" src="/branding/logo?v=<%= locals.brandingVersion %>" alt="<%= locals.appName %>">
+        <% } else { %>
+          <span class="sidebar__mark" aria-hidden="true"></span>
+          <span class="brand__name"><%= locals.appName %></span>
+        <% } %>
+      </a>
+      <a class="sidebar__close" href="#top" aria-label="Close menu"><%- include('icon', { name: 'x' }) %></a>
+    </div>
+
+    <nav class="sidebar__nav" aria-label="Main">
+      <%- link('/tickets/new', 'ticket', t('New ticket'), path === '/tickets/new') %>
+      <%- link('/tickets', 'inbox', staff ? t('Tickets') : t('My tickets'), (path === '/tickets' || (path.indexOf('/tickets/') === 0 && path !== '/tickets/new')) && !(locals.sidebarPins || []).some(function (p) { return p.href === locals.currentUrl; }), locals.sidebarTicketCount) %>
+      <% if (locals.showWorkDashboard) { %>
+        <%- link('/dashboard', 'grid', t('Dashboard'), path.indexOf('/dashboard') === 0) %>
+      <% } %>
+      <% if (locals.isAdmin || locals.showWorkDashboard) { %>
+        <%- link('/reports', 'chart', t('Reports'), path.indexOf('/reports') === 0 && !(locals.sidebarPins || []).some(function (p) { return p.href === locals.currentUrl; })) %>
+      <% } %>
+      <%# Only for somebody the directory is open to; see routes/people.ts. %>
+      <% if (locals.canUseDirectory) { %>
+        <%- link('/people', 'users', t('People'), path.indexOf('/people') === 0) %>
+      <% } %>
+    </nav>
+
+    <% if (staff) { %>
+      <%# The person's own pins: dashboards, filtered queues, reports. %>
+      <div class="sidebar__pins">
+        <div class="sidebar__pins-head">
+          <span class="sidebar__label">Pinned</span>
+          <a class="btn btn--quiet btn--small sidebar__manage" href="/boards" title="Rename, reorder and unpin"<%= path === '/boards' ? ' aria-current=page' : '' %>>Manage</a>
+        </div>
+        <nav class="sidebar__nav" aria-label="Pinned">
+          <% (locals.sidebarPins || []).forEach(function (p) { %>
+            <%- link(p.href, p.icon, p.label, p.href === locals.currentUrl || (p.href.indexOf('/boards/') === 0 && path === p.href)) %>
+          <% }); %>
+          <% if (!(locals.sidebarPins || []).length) { %>
+            <a class="side-link side-link--hint" href="/boards"><%- include('icon', { name: 'plus' }) %><span>Add a dashboard</span></a>
+          <% } %>
+        </nav>
+      </div>
+    <% } %>
+
+    <div class="sidebar__foot">
+      <%# Everything that is set up rather than worked in: the ways into
+          Settings, apart from the daily work above. %>
+      <% if (locals.isAdmin) { %>
+        <nav class="sidebar__nav sidebar__nav--setup" aria-label="Settings">
+          <%- link('/admin/settings/advanced/automation', 'workflow', t('Automation'), path.indexOf('/admin/settings/advanced/automation') === 0) %>
+          <%- link('/admin/settings/groups', 'users', t('Groups'), path.indexOf('/admin/settings/groups') === 0) %>
+          <%- link('/admin/settings/users', 'user', t('Users'), path.indexOf('/admin/settings/users') === 0) %>
+          <%- link('/admin/settings', 'settings', t('Settings'), path.indexOf('/admin/settings') === 0
+                && path.indexOf('/admin/settings/advanced/automation') !== 0
+                && path.indexOf('/admin/settings/groups') !== 0
+                && path.indexOf('/admin/settings/users') !== 0) %>
+        </nav>
+      <% } %>
+      <%- include('colour-mode', { up: true, withLabel: true }) %>
+      <div class="sidebar__me">
+        <a class="sidebar__person" href="/profile" title="<%= user.email %>"<%= path === '/profile' ? ' aria-current=page' : '' %>>
+          <span class="avatar" aria-hidden="true"><%= initials %></span>
+          <span class="sidebar__who"><b><%= user.display_name %></b><small><%= roleLabel(user.role) %></small></span>
+        </a>
+        <form method="post" action="/auth/logout" class="inline-form">
+          <input type="hidden" name="_csrf" value="<%= locals.csrfToken %>">
+          <button type="submit" class="icon-button" title="Sign out"><%- include('icon', { name: 'logout' }) %><span class="visually-hidden">Sign out</span></button>
+        </form>
+      </div>
+    </div>
+  </aside>
+  <a class="sidebar-scrim" href="#top" tabindex="-1" aria-hidden="true"></a>
+
+  <div class="shell__main">
+    <div class="app-top">
+      <a class="menu-link" href="#sidebar" aria-label="Menu"><%- include('icon', { name: 'menu' }) %></a>
+      <form class="searchbar" method="get" action="/search" role="search">
+        <%- include('icon', { name: 'search' }) %>
+        <label for="app-search" class="visually-hidden">Search tickets, people and references</label>
+        <%# No avatar here: the person is at the foot of the sidebar, and one
+            way to their profile is enough. Removed 15 Oct 2026. %>
+        <input id="app-search" type="search" name="q" placeholder="Search tickets, people, references..." data-no-search>
+      </form>
+    </div>
+    <main id="main" class="wrap">
+<% } else { %>
+<%# Signed out there is nothing above the card. Every signed-out page is a
+    sign-in page and carries the service desk's mark in its own card
+    (partials/signin-mark.ejs), so the masthead repeated the logo and ruled
+    a line across an otherwise empty page - and the colour-mode control
+    left behind it was one mark floating in a corner with nothing to
+    belong to. Both asked for 16 Oct 2026. It is in the sidebar, signed
+    in. %>
+<main id="main" class="wrap">
+<% } %>
+  <%# One with a `where` is rendered by the page, beside what it refers to. -%>
+  <% (locals.flashMessages || []).filter(function (m) { return !m.where; }).forEach(function (message) { %>
+    <div class="flash flash--<%= message.type %>" role="status"><%= message.message %></div>
+  <% }); %>

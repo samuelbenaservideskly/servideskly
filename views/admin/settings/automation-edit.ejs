@@ -1,0 +1,661 @@
+<%- include('_layout') %>
+
+<p class="breadcrumb"><%- include('../../partials/back-link', { href: '/admin/settings/advanced/automation', label: 'All automations' }) %></p>
+
+<section class="card stack">
+  <div class="local-signin-card__row">
+    <form method="post" action="/admin/settings/advanced/automation/<%= automation.id %>/rename" class="inline-form automation-rename">
+      <input type="hidden" name="_csrf" value="<%= locals.csrfToken %>">
+      <label for="automation-name" class="visually-hidden">Name</label>
+      <input id="automation-name" name="name" type="text" required maxlength="80" value="<%= automation.name %>">
+      <button type="submit" class="btn btn--small">Rename</button>
+    </form>
+    <div class="row-actions">
+      <span class="pill pill--<%= automation.is_enabled ? 'ok' : 'muted' %>"><%= automation.is_enabled ? 'On' : 'Off' %></span>
+      <form method="post" action="/admin/settings/advanced/automation/<%= automation.id %>/enabled" class="inline-form">
+        <input type="hidden" name="_csrf" value="<%= locals.csrfToken %>">
+        <% if (automation.is_enabled) { %>
+          <button type="submit" class="btn btn--small">Turn off</button>
+        <% } else { %>
+          <input type="hidden" name="enabled" value="on">
+          <button type="submit" class="btn btn--primary btn--small"<%- graphIssues.length > 0 ? ' disabled title="' + graphIssues.length + ' thing(s) to finish first"' : '' %>>Turn on</button>
+        <% } %>
+      </form>
+      <a class="btn btn--quiet btn--small btn--danger" href="#delete-automation">Delete</a>
+    </div>
+  </div>
+  <% if (graphIssues.length > 0) { %>
+    <div class="flash flash--info" role="status">
+      <strong>To finish before it can be turned on:</strong>
+      <ul class="tight-list"><% graphIssues.forEach(function (p) { %><li><%= p %></li><% }); %></ul>
+    </div>
+  <% } %>
+</section>
+
+<%# The diagram, drawn here from the saved graph. With the canvas script
+    (public/js/automation-canvas.js) a box can be dragged and an output dot
+    dragged onto another box; without it, the steps below do the same. %>
+<section class="card automation-diagram-card" id="diagram" aria-label="Diagram">
+  <div class="automation-diagram__bar">
+    <span class="small muted automation-diagram__hint" data-canvas-hint hidden>Right-click to add an action. Drag a step to move it, and drag from a dot onto another step to connect them.</span>
+    <%# Zoom: revealed by the canvas script. Without it the diagram simply
+        fits the window and scrolls. %>
+    <span class="automation-zoom" data-canvas-zoom hidden>
+      <button type="button" class="icon-btn" data-zoom="out" title="Zoom out">&minus;<span class="visually-hidden">Zoom out</span></button>
+      <button type="button" class="btn btn--quiet btn--small" data-zoom="fit" title="Fit the window">Fit</button>
+      <button type="button" class="icon-btn" data-zoom="in" title="Zoom in">+<span class="visually-hidden">Zoom in</span></button>
+    </span>
+    <form method="post" action="/admin/settings/advanced/automation/<%= automation.id %>/arrange" class="inline-form">
+      <input type="hidden" name="_csrf" value="<%= locals.csrfToken %>">
+      <button type="submit" class="btn btn--quiet btn--small">Arrange automatically</button>
+    </form>
+  </div>
+  <div class="automation-viewport" data-canvas-viewport>
+    <svg class="automation-diagram" width="<%= picture.width %>" height="<%= picture.height %>"
+         viewBox="0 0 <%= picture.width %> <%= picture.height %>" role="img" aria-label="Diagram of <%= automation.name %>"
+         data-canvas data-box-w="<%= picture.boxW %>" data-box-h="<%= picture.boxH %>">
+      <g data-wires>
+        <% picture.wires.forEach(function (w) { %>
+          <path class="automation-diagram__wire" d="<%= w.d %>" data-from="<%= w.from %>" data-to="<%= w.to %>"/>
+          <%# A wide, invisible twin that is easy to hit: click it to disconnect. %>
+          <path class="automation-diagram__wire-hit" d="<%= w.d %>" data-from="<%= w.from %>" data-to="<%= w.to %>" data-pin="<%= w.edgePin %>"><title>Click to disconnect</title></path>
+          <% if (w.pin) { %><text class="automation-diagram__pin" x="<%= w.lx %>" y="<%= w.ly %>" data-label-from="<%= w.from %>"><%= w.pin === 'true' ? 'Yes' : 'No' %></text><% } %>
+        <% }); %>
+      </g>
+      <% picture.boxes.forEach(function (b) { %>
+        <g class="automation-diagram__node" data-node="<%= b.id %>" data-x="<%= b.x %>" data-y="<%= b.y %>" data-trigger="<%= b.kind === 'trigger' ? '1' : '' %>">
+          <a href="#edit-<%= b.id %>">
+            <rect class="automation-diagram__box automation-diagram__box--<%= b.kind %><%= b.problem ? ' automation-diagram__box--problem' : '' %><%= b.reached ? '' : ' automation-diagram__box--loose' %>"
+                  x="<%= b.x %>" y="<%= b.y %>" width="<%= picture.boxW %>" height="<%= picture.boxH %>" rx="8"/>
+            <text class="automation-diagram__label" x="<%= b.x + 12 %>" y="<%= b.y + 23 %>"><%= b.label %></text>
+            <text class="automation-diagram__summary" x="<%= b.x + 12 %>" y="<%= b.y + 42 %>"><%= b.reached ? b.summary : 'Not connected' %></text>
+          </a>
+          <% if (b.input) { %>
+            <circle class="automation-diagram__dot automation-diagram__dot--in" cx="<%= b.input.cx %>" cy="<%= b.input.cy %>" r="5"><title>Wires arrive here</title></circle>
+          <% } %>
+          <% b.pins.forEach(function (p) { %>
+            <circle class="automation-diagram__dot" cx="<%= p.cx %>" cy="<%= p.cy %>" r="6" data-pin="<%= p.pin %>">
+              <title><%= p.label ? 'If ' + p.label.toLowerCase() : 'Then' %></title>
+            </circle>
+          <% }); %>
+        </g>
+      <% }); %>
+    </svg>
+  </div>
+
+  <%# What the canvas submits. Filled in and posted by the script. %>
+  <form method="post" class="visually-hidden" data-canvas-move>
+    <input type="hidden" name="_csrf" value="<%= locals.csrfToken %>">
+    <input type="hidden" name="x" value="">
+    <input type="hidden" name="y" value="">
+  </form>
+  <form method="post" class="visually-hidden" data-canvas-connect>
+    <input type="hidden" name="_csrf" value="<%= locals.csrfToken %>">
+    <input type="hidden" name="pin" value="">
+    <input type="hidden" name="to" value="">
+  </form>
+  <span hidden data-canvas-base="/admin/settings/advanced/automation/<%= automation.id %>/nodes/"></span>
+  <%# The canvas's right-click menu. Hidden until the script opens it; every
+      item is an ordinary form post, the same as "Add an action" below. %>
+  <div class="canvas-menu" data-canvas-menu hidden>
+    <form method="post" action="/admin/settings/advanced/automation/<%= automation.id %>/nodes" data-canvas-menu-form>
+      <input type="hidden" name="_csrf" value="<%= locals.csrfToken %>">
+      <input type="hidden" name="x" value="" data-menu-x>
+      <input type="hidden" name="y" value="" data-menu-y>
+      <input type="hidden" name="after" value="" data-menu-after>
+      <p class="canvas-menu__heading" data-menu-heading>Add an action</p>
+      <label class="canvas-menu__branch" data-menu-branch hidden>
+        Branch
+        <select data-menu-pin>
+          <option value="true">If yes</option>
+          <option value="false">If no</option>
+        </select>
+      </label>
+      <% nodeTypes.forEach(function (t) { %>
+        <button type="submit" name="type" value="<%= t.key %>" class="canvas-menu__item">
+          <span aria-hidden="true">+</span> <%= t.label %>
+        </button>
+      <% }); %>
+    </form>
+    <div class="canvas-menu__wire" data-menu-wire hidden>
+      <p class="canvas-menu__heading" data-menu-wire-heading>Connection</p>
+      <form method="post" action="/admin/settings/advanced/automation/<%= automation.id %>/disconnect">
+        <input type="hidden" name="_csrf" value="<%= locals.csrfToken %>">
+        <input type="hidden" name="from" value="" data-wire-from>
+        <input type="hidden" name="pin" value="" data-wire-pin>
+        <input type="hidden" name="to" value="" data-wire-to>
+        <button type="submit" class="canvas-menu__item canvas-menu__item--danger">Remove this connection</button>
+      </form>
+    </div>
+    <div class="canvas-menu__node" data-menu-node hidden>
+      <a href="#" class="canvas-menu__item" data-menu-edit>Edit</a>
+      <form method="post" action="" data-menu-remove-form>
+        <input type="hidden" name="_csrf" value="<%= locals.csrfToken %>">
+        <button type="submit" class="canvas-menu__item canvas-menu__item--danger" data-menu-remove>Remove</button>
+      </form>
+    </div>
+  </div>
+
+</section>
+
+<%
+  var others = function (id) { return nodes.filter(function (n) { return n.id !== id && n.type !== 'trigger'; }); };
+  var pinLabel = { next: 'Then', true: 'If yes', false: 'If no' };
+%>
+
+<section class="card stack" id="steps">
+  <h2 class="section-title">Trigger and actions</h2>
+  <ul class="automation-steps">
+    <% nodes.forEach(function (n) { %>
+      <li class="automation-steps__item<%= n.type === 'trigger' ? ' automation-steps__item--trigger' : '' %>" id="step-<%= n.id %>">
+        <div class="automation-steps__main">
+          <a class="link-strong" href="#edit-<%= n.id %>"><%= n.title %></a>
+          <% if (n.problem) { %><span class="pill pill--warn">Needs: <%= n.problem %></span><% } %>
+          <% (locals.flashMessages || []).filter(function (m) { return m.where === 'node-' + n.id; }).forEach(function (m) { %>
+            <div class="flash flash--<%= m.type %>" role="status"><%= m.message %></div>
+          <% }); %>
+        </div>
+        <span class="row-actions">
+          <a class="btn btn--quiet btn--small" href="#edit-<%= n.id %>">Edit</a>
+          <% if (n.type !== 'trigger') { %>
+            <form method="post" action="/admin/settings/advanced/automation/<%= automation.id %>/nodes/<%= n.id %>/delete" class="inline-form">
+              <input type="hidden" name="_csrf" value="<%= locals.csrfToken %>">
+              <%- include('../../partials/bin-button', { label: 'Remove ' + n.title }) %>
+            </form>
+          <% } %>
+        </span>
+      </li>
+    <% }); %>
+  </ul>
+</section>
+
+<form method="post" action="/admin/settings/advanced/automation/<%= automation.id %>/nodes" class="card stack" id="add-step">
+  <input type="hidden" name="_csrf" value="<%= locals.csrfToken %>">
+  <h2 class="section-title">Add an action</h2>
+  <div class="automation-step__grid">
+    <div class="field">
+      <label for="new-type">Action</label>
+      <select id="new-type" name="type">
+        <% nodeTypes.forEach(function (t) { %><option value="<%= t.key %>"><%= t.label %></option><% }); %>
+      </select>
+    </div>
+    <div class="field">
+      <label for="new-after">After</label>
+      <select id="new-after" name="after">
+        <option value="">Not connected yet</option>
+        <% nodes.forEach(function (n) { (n.spec ? n.spec.pins : []).forEach(function (pin) { %>
+          <option value="<%= n.id %>:<%= pin %>"><%= n.title %><%= pin === 'next' ? '' : (pin === 'true' ? ' - if yes' : ' - if no') %></option>
+        <% }); }); %>
+      </select>
+    </div>
+  </div>
+  <div class="actions"><button type="submit" class="btn"><span aria-hidden="true">+</span> Add action</button></div>
+</form>
+
+<section class="card stack">
+  <h2 class="section-title">Recent runs</h2>
+  <% if (runs.length === 0) { %>
+    <p class="small muted">It has not run yet.</p>
+  <% } else { %>
+    <div class="table-scroll">
+      <table class="table">
+        <thead><tr><th scope="col">When</th><th scope="col">Outcome</th><th scope="col">Steps</th></tr></thead>
+        <tbody>
+          <% runs.forEach(function (r) { %>
+            <tr>
+              <td class="small"><%= formatDateTime(r.ran_at) %><% if (r.ticket_id) { %><br><a href="/tickets/<%= r.ticket_id %>">Ticket</a><% } %></td>
+              <td><span class="pill pill--<%= r.outcome === 'success' ? 'ok' : 'warn' %>"><%= r.outcome %></span></td>
+              <td class="small mono"><% r.stepList.forEach(function (s) { %><div><%= s %></div><% }); %></td>
+            </tr>
+          <% }); %>
+        </tbody>
+      </table>
+    </div>
+  <% } %>
+</section>
+
+<% nodes.forEach(function (n) { var c = n.config; %>
+  <div class="dialog dialog--wide" id="edit-<%= n.id %>">
+    <a class="dialog__backdrop" href="#step-<%= n.id %>" aria-label="Close"></a>
+    <div class="dialog__panel" role="dialog" aria-modal="true" aria-labelledby="edit-<%= n.id %>-title">
+      <div class="dialog__head">
+        <h2 id="edit-<%= n.id %>-title"><%= n.spec ? n.spec.label : 'Step' %></h2>
+        <a class="dialog__close" href="#step-<%= n.id %>" aria-label="Close">&times;</a>
+      </div>
+  <form method="post" action="/admin/settings/advanced/automation/<%= automation.id %>/nodes/<%= n.id %>" class="stack automation-step">
+    <input type="hidden" name="_csrf" value="<%= locals.csrfToken %>">
+    <% if (n.problem) { %><p class="flash flash--info" role="status">Still needed: <%= n.problem %></p><% } %>
+    <% if (httpTest && httpTest.nodeId === n.id) { %>
+      <div class="http-test http-test--<%= httpTest.ok ? 'ok' : 'failed' %>" role="status">
+        <p class="http-test__head">
+          <span class="pill pill--<%= httpTest.ok ? 'ok' : 'warn' %>"><%= httpTest.ok ? 'Connected' : 'Failed' %></span>
+          <span class="mono small"><%= httpTest.line %></span>
+        </p>
+        <% if (httpTest.contentType) { %><p class="small muted">Answer: <%= httpTest.contentType %></p><% } %>
+        <% if (httpTest.preview) { %><pre class="http-test__body"><%= httpTest.preview %></pre><% } %>
+      </div>
+    <% } %>
+
+    <div class="automation-step__grid">
+    <% if (n.type === 'trigger') { %>
+      <div class="field">
+        <label for="f-<%= n.id %>-event">When</label>
+        <select id="f-<%= n.id %>-event" name="event">
+          <% triggers.forEach(function (t) { %><option value="<%= t.key %>"<%= c.event === t.key ? ' selected' : '' %>><%= t.label %></option><% }); %>
+        </select>
+      </div>
+      <%# Shown only while "SLA is breached" is chosen above (.only-sla in app.css). %>
+      <div class="only-sla">
+        <div class="field">
+          <label for="f-<%= n.id %>-clock">Which clock</label>
+          <select id="f-<%= n.id %>-clock" name="clock">
+            <% slaClocks.forEach(function (k) { %><option value="<%= k.key %>"<%= (c.clock || '') === k.key ? ' selected' : '' %>><%= k.label %></option><% }); %>
+          </select>
+          <% if (!slaEnabled) { %><p class="hint">SLA is off, so this never starts. Turn it on under <a href="/admin/settings/templates/other/sla">Tickets - Other settings - SLA</a>.</p><% } %>
+        </div>
+      </div>
+      <%# Shown only while "An HTTP request is received" is chosen above (.only-http in app.css). %>
+      <div class="only-http">
+      <div class="field">
+        <div class="label-row">
+          <label for="f-<%= n.id %>-key">API key</label>
+          <%- include('../../partials/info', { text: 'The key the request must carry. It can run only the steps ticked on the key, under Advanced settings - API keys.' }) %>
+        </div>
+        <select id="f-<%= n.id %>-key" name="apiKeyId">
+          <option value="">Choose a key</option>
+          <% apiKeys.forEach(function (k) { %><option value="<%= k.id %>"<%= c.apiKeyId === k.id ? ' selected' : '' %>><%= k.name %> (hd_<%= k.prefix %>...)</option><% }); %>
+        </select>
+        <% if (apiKeys.length === 0) { %><p class="hint">No API keys yet. Make one under <a href="/admin/settings/advanced/api-keys">API keys</a>.</p><% } %>
+      </div>
+      <% if (hookUrl) { %>
+        <div class="field">
+          <span class="label">Send it to</span>
+          <pre class="http-test__body">POST <%= hookUrl %>
+Authorization: Bearer hd_<%= (apiKeys.filter(function (k) { return k.id === c.apiKeyId; })[0] || { prefix: '...' }).prefix %>_...
+Content-Type: application/json
+
+{ "ticket": "INC-000123", "anything": "else" }</pre>
+          <p class="hint">"ticket" names the ticket the steps act on, by reference. Leave it out when a "Create a ticket" step makes one. The rest reads as {{request.json.anything}}. More examples under <a href="/admin/settings/advanced/api-keys#how-to-call">API keys</a>.</p>
+        </div>
+      <% } %>
+      </div>
+    <% } else if (n.type === 'if') { %>
+      <div class="field">
+        <label for="f-<%= n.id %>-field">Check</label>
+        <select id="f-<%= n.id %>-field" name="field">
+          <option value="">Choose</option>
+          <% conditionFields.forEach(function (f) { %><option value="<%= f.key %>"<%= c.field === f.key ? ' selected' : '' %>><%= f.label %></option><% }); %>
+        </select>
+      </div>
+      <div class="field if-variable">
+        <div class="label-row">
+          <label for="f-<%= n.id %>-variable">Value from an earlier step</label>
+          <%- include('../../partials/info', { text: 'Only for "A value from an earlier step": an output name and what to read, such as lookup.status, lookup.ok or lookup.json.id.' }) %>
+        </div>
+        <input id="f-<%= n.id %>-variable" name="variable" type="text" maxlength="200" value="<%= c.variable || '' %>" placeholder="lookup.status">
+      </div>
+      <div class="field">
+        <label for="f-<%= n.id %>-op">Comparison</label>
+        <select id="f-<%= n.id %>-op" name="op">
+          <% operators.forEach(function (o) { %><option value="<%= o.key %>"<%= c.op === o.key ? ' selected' : '' %>><%= o.label %></option><% }); %>
+        </select>
+      </div>
+      <%#
+        The value, as a real dropdown for a field that has a fixed list and a
+        text box for one that does not. One control per kind, each with its
+        own name (a hidden control still posts); only the one matching the
+        chosen field shows (.if-value in app.css, no script) and the server
+        reads only that one. The browser's own suggestion list (datalist) was
+        what this replaced: it cannot be styled.
+      %>
+      <% var choices = {
+           priority: priorities.map(function (p) { return { v: p.key, l: p.label }; }),
+           status: statuses.map(function (s) { return { v: s.key, l: s.label }; }),
+           type: ticketTypes.map(function (t) { return { v: t.key, l: t.label }; }),
+           group: groups.map(function (g) { return { v: g.id, l: g.name }; }),
+           requester_group: userGroups.map(function (g) { return { v: g.id, l: g.name }; }),
+           template: templates.map(function (t) { return { v: t.id, l: t.name }; })
+         }; %>
+      <% Object.keys(choices).forEach(function (field) { %>
+        <div class="field if-value if-value--<%= field %>">
+          <label for="f-<%= n.id %>-value-<%= field %>">Value</label>
+          <select id="f-<%= n.id %>-value-<%= field %>" name="value_<%= field %>">
+            <option value="">Choose</option>
+            <% choices[field].forEach(function (o) { %><option value="<%= o.v %>"<%= c.field === field && c.value === o.v ? ' selected' : '' %>><%= o.l %></option><% }); %>
+          </select>
+        </div>
+      <% }); %>
+      <div class="field if-value if-value--text">
+        <label for="f-<%= n.id %>-value">Value</label>
+        <input id="f-<%= n.id %>-value" name="value_text" type="text" maxlength="400"
+               value="<%= ['priority', 'status', 'type', 'group', 'requester_group', 'template'].indexOf(c.field) < 0 ? (c.value || '') : '' %>"
+               placeholder="Text to compare with">
+      </div>
+    <% } else if (n.type === 'send_notification') { %>
+      <div class="field">
+        <label for="f-<%= n.id %>-nid">Notification</label>
+        <select id="f-<%= n.id %>-nid" name="notificationId">
+          <option value="">Choose a notification</option>
+          <% notifications.forEach(function (x) { %><option value="<%= x.id %>"<%= c.notificationId === x.id ? ' selected' : '' %>><%= x.name %></option><% }); %>
+        </select>
+      </div>
+      <div class="field">
+        <label for="f-<%= n.id %>-rcpt">To</label>
+        <select id="f-<%= n.id %>-rcpt" name="recipient">
+          <% [['requester','The requester'],['group','The technician group'],['assignee','The assignee'],['manager','The group manager'],['approver','The approver'],['email','An address']].forEach(function (r) { %>
+            <option value="<%= r[0] %>"<%= c.recipient === r[0] ? ' selected' : '' %>><%= r[1] %></option>
+          <% }); %>
+        </select>
+      </div>
+      <div class="field">
+        <label for="f-<%= n.id %>-email">Address</label>
+        <input id="f-<%= n.id %>-email" name="email" type="email" maxlength="200" value="<%= c.email || '' %>" placeholder="Only for &quot;An address&quot;">
+      </div>
+    <% } else if (n.type === 'set_status') { %>
+      <div class="field">
+        <label for="f-<%= n.id %>-status">Status</label>
+        <select id="f-<%= n.id %>-status" name="status">
+          <option value="">Choose a status</option>
+          <% statuses.forEach(function (s) { %><option value="<%= s.key %>"<%= c.status === s.key ? ' selected' : '' %>><%= s.label %></option><% }); %>
+          <option value="variable"<%= c.status === 'variable' ? ' selected' : '' %>>From the request or an earlier step</option>
+        </select>
+      </div>
+      <div class="field only-variable">
+        <div class="label-row">
+          <label for="f-<%= n.id %>-svar">Read it from</label>
+          <%- include('../../partials/info', { text: 'Such as request.json.status. The value may be the stored one (in_progress) or the label (In progress); anything else stops the run.' }) %>
+        </div>
+        <input id="f-<%= n.id %>-svar" name="variable" type="text" maxlength="200" value="<%= c.variable || '' %>" placeholder="request.json.status">
+      </div>
+      <label class="check automation-step__wide">
+        <input type="checkbox" name="addNote" value="on"<%= c.addNote === 'on' ? ' checked' : '' %>>
+        Add a note to the ticket with the change
+      </label>
+      <div class="field automation-step__wide only-note">
+        <div class="label-row">
+          <label for="f-<%= n.id %>-note">Note</label>
+          <%- include('_automation-variables') %>
+        </div>
+        <textarea id="f-<%= n.id %>-note" name="note" rows="2" maxlength="2000" placeholder="Closed automatically: no reply in 14 days."><%= c.note || '' %></textarea>
+        <label class="check"><input type="checkbox" name="noteInternal" value="on"<%= c.noteInternal === 'on' ? ' checked' : '' %>> Internal note - the requester does not see it</label>
+        <p class="hint">Notes begin "Cancelled:", "Resolved:" or "On hold:", as by hand. When the settings require a note for cancelling or resolving, an automation still decides here.</p>
+      </div>
+    <% } else if (n.type === 'set_priority') { %>
+      <div class="field">
+        <label for="f-<%= n.id %>-priority">Priority</label>
+        <select id="f-<%= n.id %>-priority" name="priority">
+          <option value="">Choose a priority</option>
+          <% priorities.forEach(function (p) { %><option value="<%= p.key %>"<%= c.priority === p.key ? ' selected' : '' %>><%= p.label %></option><% }); %>
+          <option value="variable"<%= c.priority === 'variable' ? ' selected' : '' %>>From the request or an earlier step</option>
+        </select>
+      </div>
+      <div class="field only-variable">
+        <div class="label-row">
+          <label for="f-<%= n.id %>-pvar">Read it from</label>
+          <%- include('../../partials/info', { text: 'Such as request.json.priority: low, normal, high or urgent. Anything else stops the run.' }) %>
+        </div>
+        <input id="f-<%= n.id %>-pvar" name="variable" type="text" maxlength="200" value="<%= c.variable || '' %>" placeholder="request.json.priority">
+      </div>
+    <% } else if (n.type === 'route_group') { %>
+      <div class="field">
+        <label for="f-<%= n.id %>-group">Group</label>
+        <select id="f-<%= n.id %>-group" name="groupId">
+          <option value="">Choose a group</option>
+          <% groups.forEach(function (g) { %><option value="<%= g.id %>"<%= c.groupId === g.id ? ' selected' : '' %>><%= g.name %></option><% }); %>
+        </select>
+      </div>
+    <% } else if (n.type === 'assign') { %>
+      <div class="field">
+        <label for="f-<%= n.id %>-user">Technician</label>
+        <select id="f-<%= n.id %>-user" name="userId">
+          <option value="">Choose a technician</option>
+          <% staff.forEach(function (u) { %><option value="<%= u.id %>"<%= c.userId === u.id ? ' selected' : '' %>><%= u.display_name %></option><% }); %>
+        </select>
+      </div>
+    <% } else if (n.type === 'create_ticket') { %>
+      <div class="field">
+        <label for="f-<%= n.id %>-tpl">Raised from</label>
+        <select id="f-<%= n.id %>-tpl" name="templateId">
+          <option value="">Choose a template</option>
+          <% templates.filter(function (t) { return t.type !== 'task'; }).forEach(function (t) { %><option value="<%= t.id %>"<%= c.templateId === t.id ? ' selected' : '' %>><%= t.name %><%= t.is_default ? ' (default)' : '' %></option><% }); %>
+        </select>
+      </div>
+      <div class="field">
+        <div class="label-row">
+          <label for="f-<%= n.id %>-reqmail">Requester's email</label>
+          <%- include('../../partials/info', { text: 'Such as {{request.json.email}}. An address with no account gets a ticket and the replies, never an account. Empty: the requester of the ticket the run is about, if any.' }) %>
+        </div>
+        <input id="f-<%= n.id %>-reqmail" name="requesterEmail" type="text" maxlength="300" value="<%= c.requesterEmail || '' %>" placeholder="{{request.json.email}}">
+      </div>
+      <div class="field automation-step__wide">
+        <div class="label-row">
+          <label for="f-<%= n.id %>-ttitle">Title</label>
+          <%- include('_automation-variables') %>
+        </div>
+        <input id="f-<%= n.id %>-ttitle" name="title" type="text" maxlength="300" value="<%= c.title || '' %>" placeholder="{{request.json.title}}">
+      </div>
+      <div class="field automation-step__wide">
+        <label for="f-<%= n.id %>-tdesc">Description</label>
+        <textarea id="f-<%= n.id %>-tdesc" name="description" rows="3" maxlength="4000" placeholder="{{request.json.description}}"><%= c.description || '' %></textarea>
+      </div>
+      <p class="hint automation-step__wide">The steps after this one act on the new ticket.</p>
+    <% } else if (n.type === 'create_template') { %>
+      <div class="field automation-step__wide">
+        <div class="label-row">
+          <label for="f-<%= n.id %>-tname">Name</label>
+          <%- include('_automation-variables') %>
+        </div>
+        <input id="f-<%= n.id %>-tname" name="name" type="text" maxlength="300" value="<%= c.name || '' %>" placeholder="{{request.json.name}}">
+      </div>
+      <div class="field automation-step__wide">
+        <label for="f-<%= n.id %>-tsum">Summary</label>
+        <input id="f-<%= n.id %>-tsum" name="summary" type="text" maxlength="300" value="<%= c.summary || '' %>" placeholder="{{request.json.summary}}">
+      </div>
+      <div class="field">
+        <label for="f-<%= n.id %>-ttype">Raises</label>
+        <select id="f-<%= n.id %>-ttype" name="type">
+          <option value="">Choose a kind</option>
+          <% ticketTypes.filter(function (t) { return t.key !== 'task'; }).forEach(function (t) { %><option value="<%= t.key %>"<%= c.type === t.key ? ' selected' : '' %>><%= t.label %></option><% }); %>
+          <option value="variable"<%= c.type === 'variable' ? ' selected' : '' %>>From the request or an earlier step</option>
+        </select>
+      </div>
+      <div class="field only-variable">
+        <div class="label-row">
+          <label for="f-<%= n.id %>-tvar">Read from</label>
+          <%- include('../../partials/info', { text: 'Such as request.json.type: incident, service_request or change_request, or the label.' }) %>
+        </div>
+        <input id="f-<%= n.id %>-tvar" name="variable" type="text" maxlength="200" value="<%= c.variable || '' %>" placeholder="request.json.type">
+      </div>
+      <div class="field">
+        <div class="label-row">
+          <label for="f-<%= n.id %>-tbase">Based on</label>
+          <%- include('../../partials/info', { text: 'Copies that template\'s form, defaults and routing - not its tasks. Empty: the standard form (title, category, priority, description, attachments).' }) %>
+        </div>
+        <select id="f-<%= n.id %>-tbase" name="basedOnId">
+          <option value="">The standard form</option>
+          <% templates.filter(function (t) { return t.type !== 'task'; }).forEach(function (t) { %><option value="<%= t.id %>"<%= c.basedOnId === t.id ? ' selected' : '' %>><%= t.name %><%= t.is_default ? ' (default)' : '' %></option><% }); %>
+        </select>
+      </div>
+      <div class="field">
+        <label for="f-<%= n.id %>-texists">If the name is taken</label>
+        <select id="f-<%= n.id %>-texists" name="ifExists">
+          <option value="skip"<%= c.ifExists !== 'stop' ? ' selected' : '' %>>Leave that one and go on</option>
+          <option value="stop"<%= c.ifExists === 'stop' ? ' selected' : '' %>>Stop the run</option>
+        </select>
+      </div>
+      <label class="check automation-step__wide"><input type="checkbox" name="offer" value="on"<%= c.offer === 'on' ? ' checked' : '' %>> Offer it to requesters straight away</label>
+    <% } else if (n.type === 'create_notification') { %>
+      <div class="field automation-step__wide">
+        <div class="label-row">
+          <label for="f-<%= n.id %>-nname">Name</label>
+          <%- include('_automation-variables') %>
+        </div>
+        <input id="f-<%= n.id %>-nname" name="name" type="text" maxlength="300" value="<%= c.name || '' %>" placeholder="{{request.json.name}}">
+      </div>
+      <div class="field automation-step__wide">
+        <div class="label-row">
+          <label for="f-<%= n.id %>-nsubj">Subject</label>
+          <%- include('../../partials/info', { text: 'The notification\'s own placeholders - {{reference}}, {{title}}, {{requesterName}}, {{ticketUrl}} and the rest - are filled each time it is sent. The automation\'s, such as {{request.json.message}}, are filled now. Edit the wording later under Settings - Mail - Notifications.' }) %>
+        </div>
+        <input id="f-<%= n.id %>-nsubj" name="subject" type="text" maxlength="300" value="<%= c.subject || '' %>" placeholder="[{{reference}}] {{title}}">
+      </div>
+      <div class="field automation-step__wide">
+        <label for="f-<%= n.id %>-nbody">Body (HTML)</label>
+        <textarea id="f-<%= n.id %>-nbody" name="body" rows="4" maxlength="20000" placeholder="<p>Hello {{requesterName}},</p>"><%= c.body || '' %></textarea>
+      </div>
+      <div class="field">
+        <label for="f-<%= n.id %>-nexists">If the name is taken</label>
+        <select id="f-<%= n.id %>-nexists" name="ifExists">
+          <option value="skip"<%= c.ifExists !== 'stop' ? ' selected' : '' %>>Leave that one and go on</option>
+          <option value="stop"<%= c.ifExists === 'stop' ? ' selected' : '' %>>Stop the run</option>
+        </select>
+      </div>
+    <% } else if (n.type === 'attach_files') { %>
+      <p class="hint automation-step__wide">Stores the files the request carried on the ticket the run is about - after a Create a ticket step, the new one. The same checks as a browser upload: type, size and the per-ticket limit; a file that is refused is listed in an internal note.</p>
+      <label class="check"><input type="checkbox" name="internal" value="on"<%= c.internal === 'on' ? ' checked' : '' %>> Internal - the requester does not see them</label>
+    <% } else if (n.type === 'add_comment') { %>
+      <div class="field automation-step__wide">
+        <div class="label-row">
+          <label for="f-<%= n.id %>-body">Comment</label>
+          <%- include('_automation-variables') %>
+        </div>
+        <textarea id="f-<%= n.id %>-body" name="body" rows="3" maxlength="4000"><%= c.body || '' %></textarea>
+      </div>
+      <label class="check"><input type="checkbox" name="internal" value="on"<%= c.internal === 'on' ? ' checked' : '' %>> Internal note</label>
+    <% } else if (n.type === 'http_request' || n.type === 'http_request_auth') { %>
+      <% if (n.type === 'http_request_auth') { %>
+        <div class="field">
+          <label for="f-<%= n.id %>-conn">Connection</label>
+          <select id="f-<%= n.id %>-conn" name="connectionId">
+            <option value=""><%= connections.length === 0 ? 'No connections yet - add one under Connections' : 'Choose a connection' %></option>
+            <% connections.forEach(function (x) { %><option value="<%= x.id %>"<%= c.connectionId === x.id ? ' selected' : '' %>><%= x.name %></option><% }); %>
+          </select>
+        </div>
+      <% } %>
+      <div class="field">
+        <label for="f-<%= n.id %>-method">Method</label>
+        <select id="f-<%= n.id %>-method" name="method">
+          <% methods.forEach(function (m) { %><option value="<%= m %>"<%= (c.method || 'GET') === m ? ' selected' : '' %>><%= m %></option><% }); %>
+        </select>
+      </div>
+      <div class="field automation-step__wide">
+        <div class="label-row">
+          <label for="f-<%= n.id %>-url">Address</label>
+          <%- include('../../partials/info', { text: 'An https address. Variables may appear in the path, not in the host. Each value is URL-encoded.' }) %>
+        </div>
+        <input id="f-<%= n.id %>-url" name="url" type="text" maxlength="2000" spellcheck="false" class="mono" value="<%= c.url || '' %>" placeholder="https://api.example.com/v1/tickets/{{ticket.reference}}">
+      </div>
+      <div class="field">
+        <label for="f-<%= n.id %>-query">Query parameters</label>
+        <textarea id="f-<%= n.id %>-query" name="query" rows="3" spellcheck="false" class="mono" placeholder="source=servicedesk&#10;ref={{ticket.reference}}"><%= c.query || '' %></textarea>
+      </div>
+      <div class="field">
+        <div class="label-row">
+          <label for="f-<%= n.id %>-headers">Headers</label>
+          <%- include('../../partials/info', { text: 'Name: value, one per line. Authorization and Cookie are refused here - credentials belong in a connection.' }) %>
+        </div>
+        <textarea id="f-<%= n.id %>-headers" name="headers" rows="3" spellcheck="false" class="mono" placeholder="X-Source: servicedesk"><%= c.headers || '' %></textarea>
+      </div>
+      <div class="field">
+        <label for="f-<%= n.id %>-btype">Body</label>
+        <select id="f-<%= n.id %>-btype" name="bodyType">
+          <% bodyTypes.forEach(function (b) { %><option value="<%= b.key %>"<%= (c.bodyType || 'none') === b.key ? ' selected' : '' %>><%= b.label %></option><% }); %>
+        </select>
+      </div>
+      <div class="field automation-step__wide">
+        <div class="label-row">
+          <label for="f-<%= n.id %>-body">Body content</label>
+          <%- include('_automation-variables') %>
+        </div>
+        <textarea id="f-<%= n.id %>-body" name="body" rows="5" spellcheck="false" class="mono" maxlength="4000" placeholder="{&quot;summary&quot;: &quot;{{ticket.title}}&quot;, &quot;priority&quot;: &quot;{{ticket.priority}}&quot;}"><%= c.body || '' %></textarea>
+      </div>
+      <div class="field">
+        <label for="f-<%= n.id %>-timeout">Timeout, seconds</label>
+        <input id="f-<%= n.id %>-timeout" name="timeout" type="number" min="1" max="<%= maxTimeout %>" value="<%= c.timeout || '' %>" placeholder="10">
+      </div>
+      <div class="field">
+        <div class="label-row">
+          <label for="f-<%= n.id %>-retries">Retries</label>
+          <%- include('../../partials/info', { text: 'Tries again after a network failure, 429 or 5xx, waiting 1, 2 and 4 seconds, or as long as the server asks with Retry-After. Automations that call out run in the background, so nobody waits.' }) %>
+        </div>
+        <select id="f-<%= n.id %>-retries" name="retries">
+          <% ['0', '1', '2', '3'].forEach(function (r) { %><option value="<%= r %>"<%= (c.retries || '0') === r ? ' selected' : '' %>><%= r === '0' ? 'None' : r %></option><% }); %>
+        </select>
+      </div>
+      <div class="field">
+        <div class="label-row">
+          <label for="f-<%= n.id %>-output">Output name</label>
+          <%- include('../../partials/info', { text: 'Lets later steps read the answer: {{name.status}}, {{name.ok}}, {{name.body}}, {{name.json.field}}, {{name.header.x}}, {{name.error}}.' }) %>
+        </div>
+        <input id="f-<%= n.id %>-output" name="output" type="text" maxlength="32" spellcheck="false" class="mono" value="<%= c.output || '' %>" placeholder="lookup">
+      </div>
+      <div class="field">
+        <label for="f-<%= n.id %>-onerror">On failure</label>
+        <select id="f-<%= n.id %>-onerror" name="onError">
+          <option value="stop"<%= (c.onError || 'stop') === 'stop' ? ' selected' : '' %>>Stop the automation</option>
+          <option value="continue"<%= c.onError === 'continue' ? ' selected' : '' %>>Continue to the next step</option>
+        </select>
+      </div>
+    <% } %>
+
+    </div>
+
+    <% (n.spec ? n.spec.pins : []).forEach(function (pin) { var targets = n.wires[pin] || []; %>
+      <fieldset class="fieldset">
+        <legend class="label-row"><%= pinLabel[pin] %>
+          <%- include('../../partials/info', { text: 'Tick every action that should follow. They run in the order they were connected; none ticked ends the automation here.' }) %>
+        </legend>
+        <% if (others(n.id).length === 0) { %>
+          <p class="small muted">No other actions yet. Add one, then connect it here.</p>
+        <% } %>
+        <% others(n.id).forEach(function (o) { %>
+          <label class="check">
+            <input type="checkbox" name="pin_<%= pin %>" value="<%= o.id %>"<%= targets.indexOf(o.id) >= 0 ? ' checked' : '' %>>
+            <%= o.title %>
+          </label>
+        <% }); %>
+      </fieldset>
+    <% }); %>
+
+    <div class="dialog__actions">
+      <button type="submit" class="btn btn--primary">Save <%= n.type === 'trigger' ? 'trigger' : 'action' %></button>
+      <% if (n.type === 'http_request' || n.type === 'http_request_auth') { %>
+        <span class="label-row">
+          <button type="submit" class="btn" name="test" value="1">Save and test</button>
+          <%- include('../../partials/info', { text: 'Saves, then really sends the request once, with a sample ticket instead of a real one and no retries. Values from earlier steps are empty in a test. A POST may create something on the other side.' }) %>
+        </span>
+      <% } %>
+      <a class="btn btn--quiet" href="#step-<%= n.id %>">Cancel</a>
+      <% if (n.type !== 'trigger') { %>
+        <span class="dialog__actions-end">
+          <%- include('../../partials/bin-button', { label: 'Remove this step', formaction: '/admin/settings/advanced/automation/' + automation.id + '/nodes/' + n.id + '/delete' }) %>
+        </span>
+      <% } %>
+    </div>
+  </form>
+    </div>
+  </div>
+<% }); %>
+
+
+<div class="dialog" id="delete-automation">
+  <a class="dialog__backdrop" href="#top" aria-label="Close"></a>
+  <div class="dialog__panel" role="dialog" aria-modal="true" aria-labelledby="delete-automation-title">
+    <div class="dialog__head">
+      <h2 id="delete-automation-title">Delete <%= automation.name %>?</h2>
+      <a class="dialog__close" href="#top" aria-label="Close">&times;</a>
+    </div>
+    <form method="post" action="/admin/settings/advanced/automation/<%= automation.id %>/delete" class="stack">
+      <input type="hidden" name="_csrf" value="<%= locals.csrfToken %>">
+      <p>The automation and its run history are removed. Tickets it already changed stay as they are.</p>
+      <div class="dialog__actions">
+        <button type="submit" class="btn btn--danger">Delete automation</button>
+        <a class="btn btn--quiet" href="#top">Cancel</a>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script src="/assets/js/automation-canvas.js?v=<%= locals.assetVersion %>" defer></script>
+
+<%- include('_layout_end') %>

@@ -1,0 +1,134 @@
+<%#
+  Adding and editing an SMTP relay - one partial for both, like the mailbox
+  dialog, so the two forms cannot drift apart. `relay` is null when adding.
+  On a refused save the posted values come back in `values`, except the
+  password, which is never echoed into a page.
+%>
+<% var editing = relay !== null; %>
+<% var open = openDialog === dialogId; %>
+<% var close = editing ? '#row-' + relay.id : '#top'; %>
+<% function field(name, stored, fallback) {
+     if (open && values[name] !== undefined) return values[name];
+     return editing ? stored : fallback;
+   } %>
+<% var security = field('security', editing ? relay.security : '', 'starttls'); %>
+<% var enabled = open ? values.enabled === 'on' : (editing ? relay.is_enabled : true); %>
+<%
+  var posted = open && values.groupIds !== undefined ? [].concat(values.groupIds) : null;
+  var ticked = function (groupId) {
+    if (open) return posted ? posted.indexOf(groupId) >= 0 : false;
+    return editing && groupRelay[groupId] === relay.id;
+  };
+  var relayName = function (id) {
+    var r = relays.filter(function (x) { return x.id === id; })[0];
+    return r ? r.name : '';
+  };
+  var e = open ? errors : {};
+%>
+
+<div class="dialog<%= open ? ' dialog--open' : '' %>" id="<%= dialogId %>">
+  <a class="dialog__backdrop" href="<%= close %>" aria-label="Close"></a>
+  <div class="dialog__panel" role="dialog" aria-modal="true">
+    <div class="dialog__head">
+      <h2><%= editing ? relay.name : 'New relay' %></h2>
+      <a class="dialog__close" href="<%= close %>" aria-label="Close">&times;</a>
+    </div>
+
+    <form method="post" class="stack" autocomplete="off"
+          action="/admin/settings/mail/relay<%= editing ? '/' + relay.id : '' %>">
+      <input type="hidden" name="_csrf" value="<%= locals.csrfToken %>">
+      <% if (e.form) { %><p class="field-error" role="alert"><%= e.form %></p><% } %>
+
+      <div class="field">
+        <label for="name-<%= dialogId %>">Name</label>
+        <input id="name-<%= dialogId %>" name="name" type="text" maxlength="100" required
+               value="<%= field('name', editing ? relay.name : '', '') %>" placeholder="Office relay">
+        <% if (e.name) { %><p class="field-error" role="alert"><%= e.name %></p><% } %>
+      </div>
+
+      <div class="grid-2">
+        <div class="field">
+          <label for="host-<%= dialogId %>">Server</label>
+          <input id="host-<%= dialogId %>" name="host" type="text" maxlength="253" spellcheck="false" class="mono"
+                 value="<%= field('host', editing ? relay.host : '', '') %>" placeholder="smtp.example.com">
+          <% if (e.host) { %><p class="field-error" role="alert"><%= e.host %></p><% } %>
+        </div>
+        <div class="field">
+          <label for="port-<%= dialogId %>">Port</label>
+          <input id="port-<%= dialogId %>" name="port" type="number" min="1" max="65535"
+                 value="<%= field('port', editing ? relay.port : '', 587) %>">
+          <% if (e.port) { %><p class="field-error" role="alert"><%= e.port %></p><% } %>
+        </div>
+      </div>
+
+      <fieldset class="field">
+        <legend>Encryption</legend>
+        <label class="check"><input type="radio" name="security" value="starttls"<%= security === 'starttls' ? ' checked' : '' %>> STARTTLS (usually port 587)</label>
+        <label class="check"><input type="radio" name="security" value="tls"<%= security === 'tls' ? ' checked' : '' %>> TLS from the start (usually port 465)</label>
+        <label class="check"><input type="radio" name="security" value="none"<%= security === 'none' ? ' checked' : '' %>> None - an internal relay on port 25, without a password</label>
+      </fieldset>
+
+      <div class="grid-2">
+        <div class="field">
+          <div class="label-row">
+            <label for="username-<%= dialogId %>">Username</label>
+            <%- include('../../partials/info', { text: 'Leave empty for a relay that accepts mail from this server without signing in.' }) %>
+          </div>
+          <input id="username-<%= dialogId %>" name="username" type="text" maxlength="200" spellcheck="false" autocomplete="off"
+                 value="<%= field('username', editing ? relay.username : '', '') %>">
+          <% if (e.username) { %><p class="field-error" role="alert"><%= e.username %></p><% } %>
+        </div>
+        <div class="field">
+          <div class="label-row">
+            <label for="password-<%= dialogId %>">Password</label>
+            <%- include('../../partials/info', { text: 'Stored encrypted and never shown again. Leave empty to keep the current one.' }) %>
+          </div>
+          <input id="password-<%= dialogId %>" name="password" type="password" maxlength="500" autocomplete="new-password"
+                 placeholder="<%= editing && relay.password ? 'Unchanged' : '' %>">
+          <% if (e.password) { %><p class="field-error" role="alert"><%= e.password %></p><% } %>
+        </div>
+      </div>
+
+      <div class="grid-2">
+        <div class="field">
+          <label for="fromAddress-<%= dialogId %>">From address</label>
+          <input id="fromAddress-<%= dialogId %>" name="fromAddress" type="email" maxlength="200"
+                 value="<%= field('fromAddress', editing ? relay.from_address : '', '') %>" placeholder="servicedesk@example.com">
+          <% if (e.fromAddress) { %><p class="field-error" role="alert"><%= e.fromAddress %></p><% } %>
+        </div>
+        <div class="field">
+          <label for="fromName-<%= dialogId %>">From name</label>
+          <input id="fromName-<%= dialogId %>" name="fromName" type="text" maxlength="100"
+                 value="<%= field('fromName', editing ? relay.from_name : '', '') %>" placeholder="<%= locals.appName %>">
+        </div>
+      </div>
+
+      <fieldset class="field">
+        <legend>
+          Technician groups
+          <%- include('../../partials/info', { text: "Notifications about these groups' tickets go through this relay. A group follows one relay: ticking it here moves it from another. Groups not ticked anywhere use the default relay." }) %>
+        </legend>
+        <% if (groups.length === 0) { %>
+          <p class="small muted">No technician groups have been set up yet.</p>
+        <% } %>
+        <% groups.forEach(function (group) { %>
+          <% var elsewhere = groupRelay[group.id] && (!editing || groupRelay[group.id] !== relay.id) ? relayName(groupRelay[group.id]) : ''; %>
+          <label class="check">
+            <input type="checkbox" name="groupIds" value="<%= group.id %>"<%= ticked(group.id) ? ' checked' : '' %>>
+            <%= group.name %><% if (elsewhere) { %> <span class="small muted">(now: <%= elsewhere %>)</span><% } %>
+          </label>
+        <% }); %>
+      </fieldset>
+
+      <label class="check">
+        <input type="checkbox" name="enabled" value="on"<%= enabled ? ' checked' : '' %>>
+        Use this relay
+      </label>
+
+      <div class="dialog__actions">
+        <button type="submit" class="btn btn--primary"><%= editing ? 'Save relay' : 'Add relay' %></button>
+        <a class="btn btn--quiet" href="<%= close %>">Cancel</a>
+      </div>
+    </form>
+  </div>
+</div>

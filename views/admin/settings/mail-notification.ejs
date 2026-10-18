@@ -1,0 +1,182 @@
+<%- include('_layout') %>
+
+<p class="breadcrumb">
+  <%- include('../../partials/back-link', { href: '/admin/settings/mail/notifications', label: 'All notifications' }) %>
+</p>
+
+<%
+  var audienceLabels = {
+    requester: 'the requester',
+    group: 'everyone in the ticket\'s technician group',
+    assignee: 'the technician it is assigned to',
+    admins: 'every other administrator',
+    approver: 'the approver named on the ticket',
+    manager: 'the manager of the ticket\'s technician group',
+    manager_or_admins: 'the manager of the ticket\'s technician group, or every other administrator when it has none',
+  };
+  // On a redisplay after a validation error the typed text wins, so nothing
+  // an administrator wrote is thrown away by a missing subject.
+  var typed = locals.values || {};
+  var subject = typeof typed.subject === 'string' ? typed.subject : notification.subject;
+  var bodyHtml = typeof typed.bodyHtml === 'string' ? typed.bodyHtml : notification.body_html;
+  var enabled = locals.values && Object.keys(typed).length
+    ? typed.isEnabled === 'on' || typed.isEnabled === '1'
+    : notification.is_enabled;
+  var mailboxId = typeof typed.mailboxId === 'string'
+    ? typed.mailboxId
+    : (notification.via_relay ? (notification.relay_id ? 'relay:' + notification.relay_id : 'relay') : (notification.mailbox_id || ''));
+%>
+
+<div class="card stack">
+  <p class="small muted">
+    <% if (isCustom) { %>
+      A custom notification: an automation decides when it is sent and to whom.
+    <% } else { %>
+      <%= notification.description %> It goes to
+      <%= audienceLabels[audience[notification.event]] %>.
+    <% } %>
+  </p>
+
+  <form method="post" action="/admin/settings/mail/notifications/<%= notification.id %>"
+        class="stack">
+    <input type="hidden" name="_csrf" value="<%= locals.csrfToken %>">
+
+    <div class="field">
+      <label class="checkbox">
+        <input type="checkbox" name="isEnabled" value="1" <%= enabled ? 'checked' : '' %>>
+        Send this notification
+      </label>
+    </div>
+
+    <div class="field">
+      <div class="label-row">
+        <label for="subject">Subject</label>
+        <span class="info" tabindex="0"><span class="info__mark" aria-hidden="true">i</span><span class="info__bubble" role="note">Keep <code>{{reference}}</code> in the subject. It is used to match replies to the ticket when a mail client removes the threading headers.</span></span>
+      </div>
+      <input id="subject" name="subject" type="text" maxlength="200"
+             value="<%= subject %>" required>
+      <% if (errors.subject) { %>
+        <p class="field-error" role="alert"><%= errors.subject %></p>
+      <% } %>
+    </div>
+
+    <div class="field">
+      <div class="label-row">
+        <label for="mailboxId">Sent from</label>
+        <%- include('../../partials/info', { text: "The ticket's own mailbox or relay is the one assigned to the ticket's technician group, else the default one." }) %>
+      </div>
+      <select id="mailboxId" name="mailboxId">
+        <option value="">The ticket's own mailbox</option>
+        <% if (relays.length > 0 || mailboxId.indexOf('relay') === 0) { %>
+          <optgroup label="SMTP relays">
+            <option value="relay"<%= mailboxId === 'relay' ? ' selected' : '' %>>The ticket's own SMTP relay</option>
+            <% relays.forEach(function (relay) { %>
+              <option value="relay:<%= relay.id %>"<%= mailboxId === 'relay:' + relay.id ? ' selected' : '' %>><%= relay.name %> (<%= relay.from_address %>)</option>
+            <% }); %>
+          </optgroup>
+        <% } %>
+        <% if (mailboxes.length > 0) { %>
+          <optgroup label="Mailboxes">
+            <% mailboxes.forEach(function (mailbox) { %>
+              <option value="<%= mailbox.id %>" <%= mailboxId === mailbox.id ? 'selected' : '' %>>
+                <%= mailbox.address %>
+              </option>
+            <% }); %>
+          </optgroup>
+        <% } %>
+      </select>
+      <% if (locals.relaysOnly && mailboxId.indexOf('relay') !== 0) { %>
+        <p class="small muted">Notifications go only through the SMTP relays, so this one is sent through the ticket's own relay.</p>
+      <% } %>
+    </div>
+
+    <div class="field">
+      <div class="label-row">
+        <label for="bodyHtml">Body</label>
+        <span class="info" tabindex="0"><span class="info__mark" aria-hidden="true">i</span><span class="info__bubble" role="note">HTML. Most mail clients ignore stylesheets, so apply styling with inline <code>style</code> attributes, as the default templates do.</span></span>
+      </div>
+      <textarea id="bodyHtml" name="bodyHtml" rows="18" spellcheck="false"
+                class="mono"><%= bodyHtml %></textarea>
+      <p class="hint">
+        Add your logo with <code>&lt;img src="cid:<%= logoCid %>" alt=""&gt;</code>.
+        It travels with the message, so it shows without the reader allowing
+        images. The logo itself is the one under
+        <a href="/admin/settings/customization">Customisation</a>; it must be a
+        PNG or JPEG under 100 KB, because mail clients do not render SVG and
+        Outlook does not render WebP.
+      </p>
+      <% if (logoProblem) { %>
+        <p class="field-error" role="alert"><%= logoProblem %></p>
+      <% } %>
+    </div>
+
+    <div class="toolbar">
+      <button type="submit" class="btn btn--primary">Save</button>
+      <a class="btn" href="/admin/settings/mail/notifications">Cancel</a>
+    </div>
+  </form>
+</div>
+
+<div class="card stack">
+  <h2 class="section-title">Placeholders</h2>
+  <p class="small muted">
+    Each is written <code>{{like this}}</code> and may be used in the subject
+    or the body. One that has no value for a particular ticket comes out empty.
+  </p>
+  <ul class="placeholder-list">
+    <% placeholders.forEach(function (name) { %>
+      <li>
+        <code>{{<%= name %>}}</code>
+        <span class="muted small"><%= sample[name] %></span>
+      </li>
+    <% }); %>
+  </ul>
+</div>
+
+<div class="card stack">
+  <h2 class="section-title">Preview</h2>
+  <p class="small muted">
+    The saved wording, filled in with an example ticket. Save to see a change
+    here.
+  </p>
+  <div class="mail-preview">
+    <div class="mail-preview__subject">
+      <span class="muted small">Subject</span>
+      <strong><%= previewSubject %></strong>
+    </div>
+    <%#
+      In its own document: the body is HTML an administrator wrote, and a mail
+      client renders a message as its own document too, so this is both safer
+      and truer. Its Content-Security-Policy is set on that response.
+    %>
+    <iframe class="mail-preview__body" title="How the message will look"
+            src="/admin/settings/mail/notifications/<%= notification.id %>/preview"
+            sandbox=""></iframe>
+  </div>
+</div>
+
+<% if (isCustom) { %>
+<div class="card stack">
+  <h2 class="section-title">Remove</h2>
+  <form method="post" action="/admin/settings/mail/notifications/<%= notification.id %>/delete" class="inline">
+    <input type="hidden" name="_csrf" value="<%= locals.csrfToken %>">
+    <button type="submit" class="btn btn--danger">Remove this notification</button>
+  </form>
+</div>
+<% } else { %>
+<div class="card stack">
+  <h2 class="section-title">Start over</h2>
+  <p class="small muted">
+    Puts the subject and body back to the wording this application shipped
+    with. Whether it is switched on, and which mailbox sends it, are left
+    alone.
+  </p>
+  <form method="post"
+        action="/admin/settings/mail/notifications/<%= notification.id %>/reset">
+    <input type="hidden" name="_csrf" value="<%= locals.csrfToken %>">
+    <button type="submit" class="btn btn--danger">Restore the original wording</button>
+  </form>
+</div>
+<% } %>
+
+<%- include('_layout_end') %>

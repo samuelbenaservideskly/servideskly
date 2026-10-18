@@ -1,0 +1,71 @@
+<%- include('partials/header') %>
+
+<div class="wrap--narrow">
+  <div class="card stack">
+    <h1 class="page-title"><%= ticket.reference %></h1>
+
+    <% if (decided) { %>
+      <p class="flash flash--<%= ticket.approval_status === 'approved' ? 'success' : 'info' %>"
+         role="status">
+        <% if (ticket.approval_status === 'approved') { %>
+          This request has been approved. There is nothing more to do.
+        <% } else if (ticket.approval_status === 'rejected') { %>
+          This request was declined.
+        <% } else { %>
+          This request is no longer waiting for an answer.
+        <% } %>
+      </p>
+    <% } else { %>
+      <p class="small muted">
+        You have been asked to approve this request. Nobody can resolve it
+        until you answer.
+      </p>
+    <% } %>
+
+    <dl class="details small">
+      <dt>Request</dt>
+      <dd><strong><%= ticket.title %></strong></dd>
+      <dt>Kind</dt>
+      <dd><%= typeLabel %></dd>
+      <dt>Raised</dt>
+      <dd><%= formatDateTime(ticket.created_at) %></dd>
+    </dl>
+
+    <div class="prose"><%= ticket.description %></div>
+
+    <% if (!decided) { %>
+      <form method="post" action="/approvals/<%= token %>" class="stack"<%- locals.sample ? ' inert' : '' %>>
+        <input type="hidden" name="_csrf" value="<%= locals.csrfToken %>">
+
+        <div class="field">
+          <label for="note">A note, if you want to add one</label>
+          <textarea id="note" name="note" rows="3" maxlength="2000"
+                    placeholder="Required if you decline, so the service desk can tell the requester why."></textarea>
+          <% if (errors.note) { %>
+            <p class="field-error" role="alert"><%= errors.note %></p>
+          <% } %>
+        </div>
+
+        <%#
+          Two buttons on one form, each naming its own decision. A link that
+          decided on sight would be answered by any mail client that follows
+          links to build a preview.
+        -%>
+        <div class="actions">
+          <button type="submit" name="decision" value="approved" class="btn btn--primary">
+            Approve
+          </button>
+          <button type="submit" name="decision" value="rejected" class="btn btn--danger">
+            Decline
+          </button>
+        </div>
+      </form>
+
+      <% if (!locals.sample) { %>
+        <p class="hint">Answering as <%= locals.currentUser ? locals.currentUser.email : '' %>.</p>
+      <% } %>
+    <% } %>
+  </div>
+</div>
+
+<%- include('partials/footer') %>

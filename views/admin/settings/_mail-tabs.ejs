@@ -1,0 +1,32 @@
+<%# Mailboxes, Other settings, Advanced settings. Other settings holds the
+    rules about what happens after a message is read (General) and the
+    pages that are set up once and seldom visited: Notifications, the
+    Approval page and the SMTP relays. Their addresses did not move. %>
+<% var other = ['automation', 'notifications', 'approval', 'relay'].indexOf(locals.tab) >= 0; %>
+<nav class="subtabs" aria-label="Mail">
+  <a href="/admin/settings/mail"
+     class="<%= locals.tab === 'mailboxes' ? 'subtabs__item--current' : '' %>"
+     <%- locals.tab === 'mailboxes' ? 'aria-current="page"' : '' %>>Mailboxes</a>
+  <a href="/admin/settings/mail/automation"
+     class="<%= other ? 'subtabs__item--current' : '' %>"
+     <%- other ? 'aria-current="page"' : '' %>>Other settings</a>
+  <a href="/admin/settings/mail/advanced"
+     class="<%= locals.tab === 'advanced' ? 'subtabs__item--current' : '' %>"
+     <%- locals.tab === 'advanced' ? 'aria-current="page"' : '' %>>Advanced settings</a>
+</nav>
+<% if (other) { %>
+  <nav class="subtabs subtabs--nested" aria-label="Mail other settings">
+    <a href="/admin/settings/mail/automation"
+       class="<%= locals.tab === 'automation' ? 'subtabs__item--current' : '' %>"
+       <%- locals.tab === 'automation' ? 'aria-current="page"' : '' %>>General</a>
+    <a href="/admin/settings/mail/notifications"
+       class="<%= locals.tab === 'notifications' ? 'subtabs__item--current' : '' %>"
+       <%- locals.tab === 'notifications' ? 'aria-current="page"' : '' %>>Notifications</a>
+    <a href="/admin/settings/mail/approval"
+       class="<%= locals.tab === 'approval' ? 'subtabs__item--current' : '' %>"
+       <%- locals.tab === 'approval' ? 'aria-current="page"' : '' %>>Approval page</a>
+    <a href="/admin/settings/mail/relay"
+       class="<%= locals.tab === 'relay' ? 'subtabs__item--current' : '' %>"
+       <%- locals.tab === 'relay' ? 'aria-current="page"' : '' %>>SMTP relays</a>
+  </nav>
+<% } %>

@@ -1,0 +1,42 @@
+# Never send these to the build context: they are either rebuilt inside the
+# image, irrelevant to it, or secret.
+
+# Dependencies and build output are produced in the image.
+node_modules
+dist
+
+# Secrets and local state.
+.env
+.env.*
+!.env.example
+data
+secrets
+*.pem
+*.key
+*.pfx
+
+# Tooling, tests and documentation are not part of the runtime image.
+tests
+scripts
+tsconfig.test.json
+coverage
+.nyc_output
+*.md
+!README.md
+
+# Editors, OS and VCS noise.
+.git
+.gitignore
+.github
+.vscode
+.idea
+.claude
+Thumbs.db
+Desktop.ini
+.DS_Store
+
+# Container definitions themselves.
+Dockerfile
+.dockerignore
+compose.yaml
+compose.*.yaml

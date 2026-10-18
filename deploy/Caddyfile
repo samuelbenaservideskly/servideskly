@@ -1,0 +1,42 @@
+# TLS termination and reverse proxy for the helpdesk.
+#
+# Caddy obtains a certificate from Let's Encrypt on first start and renews it
+# on its own. Ports 80 and 443 must be reachable from the internet for the
+# HTTP-01 / TLS-ALPN challenge, and {$HELPDESK_DOMAIN} must already resolve to
+# this host.
+
+{
+	email {$ACME_EMAIL}
+	# Uncomment while testing to avoid the Let's Encrypt rate limits, then
+	# comment it out again and run `docker compose restart proxy`.
+	# acme_ca https://acme-staging-v02.api.letsencrypt.org/directory
+}
+
+{$HELPDESK_DOMAIN} {
+	encode zstd gzip
+
+	# HSTS. Two years, subdomains included. Remove `preload` unless you intend
+	# to submit the domain to the preload list - it is hard to undo.
+	header {
+		Strict-Transport-Security "max-age=63072000; includeSubDomains"
+		# The application sets its own CSP, X-Frame-Options, Referrer-Policy
+		# and friends; do not duplicate them here.
+		-Server
+	}
+
+	# Attachment uploads. Keep this at or above the app's own limit
+	# (Admin -> Settings -> Attachments, 10 MB by default) with a little room
+	# for the multipart envelope, or large uploads are cut off by the proxy
+	# before the application can report a clean error.
+	request_body {
+		max_size 32MB
+	}
+
+	reverse_proxy app:3000 {
+		# The application trusts X-Forwarded-Proto only with TRUST_PROXY set,
+		# which compose.yaml does. Caddy sets these headers itself.
+		health_uri /readyz
+		health_interval 15s
+		health_timeout 5s
+	}
+}

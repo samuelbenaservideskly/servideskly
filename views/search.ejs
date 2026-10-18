@@ -1,0 +1,88 @@
+<%- include('partials/header') %>
+
+<div class="page-head">
+  <h1><%= q ? 'Results for "' + q + '"' : 'Search' %></h1>
+</div>
+
+<%# The same field as the bar above, so a search can be changed here too. %>
+<form method="get" action="/search" class="filters">
+  <span class="filters__field">
+    <label for="search-q">Search</label>
+    <input id="search-q" name="q" type="search" maxlength="200" value="<%= q %>"
+           placeholder="A title, a name, or a reference like INC-000123">
+  </span>
+  <button type="submit" class="btn">Search</button>
+</form>
+
+<% if (!q) { %>
+  <p class="empty">Type what you are looking for.</p>
+<% } else { %>
+
+  <h2 class="section-title">Tickets<% if (ticketTotal) { %> <span class="report-count"><%= ticketTotal %></span><% } %></h2>
+  <% if (!tickets.length) { %>
+    <p class="empty">No ticket matches.</p>
+  <% } else { %>
+    <div class="table-scroll">
+      <table class="table ticket-table">
+        <thead>
+          <tr>
+            <th scope="col">Reference</th>
+            <th scope="col">Title</th>
+            <th scope="col">Status</th>
+            <th scope="col">Priority</th>
+          </tr>
+        </thead>
+        <tbody>
+          <% tickets.forEach(function (ticket) { %>
+            <tr>
+              <td class="mono"><a href="/tickets/<%= ticket.id %>"><%= ticket.reference %></a></td>
+              <td><a href="/tickets/<%= ticket.id %>" title="<%= ticket.title %>"><%= ticket.title %></a></td>
+              <td><span class="pill pill--s-<%= ticket.status %>"><%= statusLabels[ticket.status] %></span></td>
+              <td><span class="pill pill--p-<%= ticket.priority %>"><%= priorityLabels[ticket.priority] %></span></td>
+            </tr>
+          <% }); %>
+        </tbody>
+      </table>
+    </div>
+    <% if (ticketTotal > tickets.length) { %>
+      <p><a class="btn btn--quiet" href="/tickets?q=<%= encodeURIComponent(q) %>&amp;status=any">All <%= ticketTotal %> matching tickets</a></p>
+    <% } %>
+  <% } %>
+
+  <% if (canSearchPeople) { %>
+    <h2 class="section-title">People<% if (peopleTotal) { %> <span class="report-count"><%= peopleTotal %></span><% } %></h2>
+    <% if (!people.length) { %>
+      <p class="empty">Nobody matches.</p>
+    <% } else { %>
+      <div class="table-scroll">
+        <table class="table">
+          <thead>
+            <tr>
+              <th scope="col">Name</th>
+              <th scope="col">Company</th>
+              <th scope="col">Department</th>
+            </tr>
+          </thead>
+          <tbody>
+            <% people.forEach(function (person) { %>
+              <tr>
+                <td>
+                  <a href="/people/<%= person.id %>"><%= person.display_name %></a>
+                  <div class="small muted"><%= person.email %></div>
+                </td>
+                <td class="small"><%= person.company || '-' %></td>
+                <td class="small"><%= person.department || '-' %></td>
+              </tr>
+            <% }); %>
+          </tbody>
+        </table>
+      </div>
+      <% if (peopleTotal > people.length) { %>
+        <p><a class="btn btn--quiet" href="/people?q=<%= encodeURIComponent(q) %>">All <%= peopleTotal %> matching people</a></p>
+      <% } %>
+    <% } %>
+  <% } %>
+
+<% } %>
+
+<%- include('partials/footer') %>

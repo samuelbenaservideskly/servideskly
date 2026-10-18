@@ -1,0 +1,115 @@
+# =============================================================================
+#  Helpdesk Ticketing System - container stack
+#
+#  The database is SQLite: a file inside the "data" volume, alongside the
+#  attachments. There is no database service and no database port, so there is
+#  nothing on the network to reach it through.
+#
+#      internet ──► proxy (TLS) ──[edge]──► app ──► /data volume
+#
+#  That also sets the limit: one application container. SQLite is a file, not
+#  a server, so two containers cannot share it. Scaling past one instance
+#  means moving to a server database - see DEPLOYMENT.md.
+#
+#  Fill in .env (see deploy/env.example) and run:  docker compose up -d
+# =============================================================================
+
+name: helpdesk
+
+services:
+  app:
+    build:
+      context: .
+      target: runtime
+    image: helpdesk-ticketing:latest
+    restart: unless-stopped
+    # Publishes no ports: only the proxy may talk to it.
+    networks:
+      - edge
+    environment:
+      NODE_ENV: production
+      HOST: 0.0.0.0
+      PORT: '3000'
+
+      # Must match the name the proxy serves, and must be https:// - the
+      # session cookie is issued Secure, so anything else cannot sign in.
+      APP_BASE_URL: https://${HELPDESK_DOMAIN:?set HELPDESK_DOMAIN in .env}
+
+      # One proxy hop in front. Without this the app sees the proxy's address
+      # as the client address and refuses to trust X-Forwarded-Proto.
+      TRUST_PROXY: '1'
+
+      # Both live in the volume below.
+      DATABASE_PATH: /data/ticketing.sqlite
+      UPLOAD_DIR: /data/uploads
+
+      SESSION_SECRET: ${SESSION_SECRET:?set SESSION_SECRET in .env}
+      SESSION_IDLE_TIMEOUT_MINUTES: ${SESSION_IDLE_TIMEOUT_MINUTES:-30}
+      SESSION_ABSOLUTE_TIMEOUT_HOURS: ${SESSION_ABSOLUTE_TIMEOUT_HOURS:-12}
+
+      LOG_LEVEL: ${LOG_LEVEL:-info}
+
+      # Everything below here is optional and can be changed from
+      # Admin -> Settings without a restart. Leaving it unset starts an
+      # unconfigured installation, which the local administrator account can
+      # then set up through the UI.
+      ENTRA_TENANT_ID: ${ENTRA_TENANT_ID:-}
+      ENTRA_CLIENT_ID: ${ENTRA_CLIENT_ID:-}
+      ENTRA_CLIENT_SECRET: ${ENTRA_CLIENT_SECRET:-}
+      PROVISIONING_JIT: ${PROVISIONING_JIT:-true}
+    volumes:
+      # The database, attachments and uploaded branding. This one volume is
+      # the entire durable state of the service - back it up and you have
+      # everything.
+      - data:/data
+    # Nothing outside /data and /tmp is written at runtime.
+    read_only: true
+    tmpfs:
+      - /tmp
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    # Long enough for the 15s shutdown deadline in src/server.ts to elapse,
+    # so the write-ahead log is checkpointed before the process goes.
+    stop_grace_period: 30s
+    logging: &logging
+      driver: json-file
+      options:
+        max-size: '10m'
+        max-file: '5'
+
+  # ---------------------------------------------------------------------------
+  #  TLS termination. Caddy obtains and renews a certificate automatically.
+  # ---------------------------------------------------------------------------
+  proxy:
+    image: caddy:2-alpine
+    restart: unless-stopped
+    depends_on:
+      - app
+    networks:
+      - edge
+    ports:
+      - '80:80'
+      - '443:443'
+      - '443:443/udp'
+    environment:
+      HELPDESK_DOMAIN: ${HELPDESK_DOMAIN}
+      ACME_EMAIL: ${ACME_EMAIL:?set ACME_EMAIL in .env}
+    volumes:
+      - ./deploy/Caddyfile:/etc/caddy/Caddyfile:ro
+      # Holds the issued certificates and the ACME account key. Losing this
+      # volume means re-issuing certificates, which is rate limited.
+      - caddy_data:/data
+      - caddy_config:/config
+    security_opt:
+      - no-new-privileges:true
+    logging: *logging
+
+networks:
+  edge: {}
+
+volumes:
+  data: {}
+  caddy_data: {}
+  caddy_config: {}

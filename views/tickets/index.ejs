@@ -1,0 +1,286 @@
+<%- include('../partials/header') %>
+
+<div class="page-head">
+  <h1>Tickets</h1>
+</div>
+
+<%#
+  "Raise a ticket" sits at the end of the figures, its foot on their foot -
+  asked for 15 Oct 2026. There is no "Pin to sidebar" here: Tickets is a
+  sidebar link already, so pinning it offers somebody what they have.
+%>
+<div class="stats-row">
+  <div class="stats">
+  <% if (locals.isStaff) { %>
+    <div class="stat"><span class="stat__value"><%= counts.active %></span><span class="stat__label">Active</span></div>
+    <div class="stat"><span class="stat__value"><%= counts.unassigned %></span><span class="stat__label">Unassigned</span></div>
+    <div class="stat"><span class="stat__value"><%= counts.mine %></span><span class="stat__label">Assigned to me</span></div>
+    <div class="stat"><span class="stat__value"><%= counts.total %></span><span class="stat__label">All time</span></div>
+  <% } else { %>
+    <div class="stat"><span class="stat__value"><%= counts.active %></span><span class="stat__label">Your open tickets</span></div>
+    <div class="stat"><span class="stat__value"><%= counts.total %></span><span class="stat__label">Your tickets, all time</span></div>
+  <% } %>
+  </div>
+
+  <a class="btn btn--primary" href="/tickets/new">Raise a ticket</a>
+</div>
+
+<% (locals.dashboards || []).forEach(function (markup) { %>
+  <%# Drawn by services/dashboards.ts, every value escaped there. %>
+  <%- markup %>
+<% }); %>
+
+<% if (locals.requesterFilter) { %>
+  <p class="filter-note">
+    Tickets from <strong><%= requesterFilter.name %></strong>
+    <a class="btn btn--quiet btn--small" href="/tickets">Show everybody's</a>
+  </p>
+<% } %>
+
+<form method="get" action="/tickets" class="filters">
+  <% if (locals.requesterFilter) { %><input type="hidden" name="requester" value="<%= requesterFilter.id %>"><% } %>
+  <% if (locals.isStaff) { %>
+    <span class="filters__field">
+      <label for="scope">Show</label>
+      <select id="scope" name="scope">
+        <option value="all"<%= filters.scope === 'all' ? ' selected' : '' %>>All tickets</option>
+        <option value="assigned"<%= filters.scope === 'assigned' ? ' selected' : '' %>>Assigned to me</option>
+        <option value="unassigned"<%= filters.scope === 'unassigned' ? ' selected' : '' %>>Unassigned</option>
+        <option value="mine"<%= filters.scope === 'mine' ? ' selected' : '' %>>Raised by me</option>
+        <% if (viewerGroups.length > 0) { %>
+          <option value="myGroups"<%= filters.scope === 'myGroups' ? ' selected' : '' %>>My teams</option>
+        <% } %>
+      </select>
+    </span>
+
+    <% if (groups.length > 0) { %>
+      <span class="filters__field">
+        <label for="group">Team</label>
+        <select id="group" name="group">
+          <option value=""<%= filters.group ? '' : ' selected' %>>Any</option>
+          <% groups.forEach(function (group) { %>
+            <option value="<%= group.id %>"<%= filters.group === group.id ? ' selected' : '' %>><%= group.name %></option>
+          <% }); %>
+        </select>
+      </span>
+    <% } %>
+  <% } %>
+
+  <span class="filters__field">
+    <label for="type">Type</label>
+    <select id="type" name="type">
+      <option value="any"<%= filters.type === 'any' ? ' selected' : '' %>>Any</option>
+      <% types.forEach(function (option) { %>
+        <option value="<%= option %>"<%= filters.type === option ? ' selected' : '' %>><%= typeLabels[option] %></option>
+      <% }); %>
+    </select>
+  </span>
+
+  <% if (categoryOptions.length > 0) { %>
+    <span class="filters__field">
+      <label for="category">Category</label>
+      <select id="category" name="category">
+        <option value=""<%= filters.category ? '' : ' selected' %>>Any</option>
+        <% categoryOptions.forEach(function (node) { %>
+          <option value="<%= node.id %>"<%= filters.category === node.id ? ' selected' : '' %>><%= node.path %></option>
+        <% }); %>
+      </select>
+    </span>
+  <% } %>
+
+  <span class="filters__field">
+    <label for="status">Status</label>
+    <select id="status" name="status">
+      <option value="active"<%= filters.status === 'active' ? ' selected' : '' %>>Active</option>
+      <option value="any"<%= filters.status === 'any' ? ' selected' : '' %>>Any</option>
+      <% statuses.forEach(function (status) { %>
+        <option value="<%= status %>"<%= filters.status === status ? ' selected' : '' %>><%= statusLabels[status] %></option>
+      <% }); %>
+    </select>
+  </span>
+
+  <span class="filters__field">
+    <label for="priority">Priority</label>
+    <select id="priority" name="priority">
+      <option value="any"<%= filters.priority === 'any' ? ' selected' : '' %>>Any</option>
+      <% priorities.forEach(function (priority) { %>
+        <option value="<%= priority %>"<%= filters.priority === priority ? ' selected' : '' %>><%= priorityLabels[priority] %></option>
+      <% }); %>
+    </select>
+  </span>
+
+  <% if (locals.slaFilterOffered) { %>
+    <span class="filters__field">
+      <label for="sla">SLA</label>
+      <select id="sla" name="sla">
+        <option value="any"<%= filters.sla === 'any' ? ' selected' : '' %>>Any</option>
+        <option value="attention"<%= filters.sla === 'attention' ? ' selected' : '' %>>At risk or breached</option>
+        <option value="breached"<%= filters.sla === 'breached' ? ' selected' : '' %>>Breached</option>
+        <option value="at_risk"<%= filters.sla === 'at_risk' ? ' selected' : '' %>>At risk</option>
+        <option value="on_track"<%= filters.sla === 'on_track' ? ' selected' : '' %>>On track</option>
+      </select>
+    </span>
+  <% } %>
+
+  <span class="filters__field">
+    <label for="q">Search</label>
+    <input id="q" name="q" type="search" maxlength="200" value="<%= filters.q || '' %>" placeholder="Title or description">
+  </span>
+
+  <button type="submit" class="btn">Apply</button>
+  <a class="btn btn--quiet" href="/tickets">Reset</a>
+</form>
+
+<% if (page.items.length === 0) { %>
+  <div class="empty">
+    <p>No tickets match these filters.</p>
+    <p><a class="btn btn--primary" href="/tickets/new">Raise a ticket</a></p>
+  </div>
+<% } else { %>
+  <%#
+    Sortable headers, as plain links: each carries every filter plus its own
+    column, so sorting never drops a filter and the address is shareable.
+    Pressing the sorted column again reverses it. aria-sort tells a screen
+    reader which column is ordered and which way; the caret says the same
+    thing to everybody else.
+  %>
+  <%
+    var sortBase = {
+      scope: filters.scope, group: filters.group, type: filters.type,
+      category: filters.category, status: filters.status, priority: filters.priority,
+      sla: filters.sla, q: filters.q, requester: filters.requester,
+    };
+    function sortLink(key) {
+      var next = filters.sort === key && filters.dir !== 'desc' ? 'desc' : 'asc';
+      var state = {};
+      for (var k in sortBase) state[k] = sortBase[k];
+      state.sort = key;
+      state.dir = next;
+      return '/tickets' + queryString(state);
+    }
+    function ariaSort(key) {
+      if (filters.sort !== key) return 'none';
+      return filters.dir === 'desc' ? 'descending' : 'ascending';
+    }
+  %>
+  <div class="table-scroll">
+    <table class="table ticket-table">
+      <thead>
+        <tr>
+          <%
+            var columns = [
+              { key: 'reference', label: 'Reference' },
+              { key: 'title', label: 'Title' },
+              { key: 'type', label: 'Type' },
+              { key: 'status', label: 'Status' },
+              { key: 'priority', label: 'Priority' },
+            ];
+            if (locals.isStaff) {
+              columns.push({ key: 'requester', label: 'Requester' });
+              columns.push({ key: 'assignee', label: 'Assignee' });
+            }
+            columns.push({ key: 'updated', label: 'Updated' });
+          %>
+          <% columns.forEach(function (column) { %>
+            <th scope="col" class="col-<%= column.key %>" aria-sort="<%= ariaSort(column.key) %>">
+              <a class="th-sort<%= filters.sort === column.key ? ' th-sort--on' : '' %>"
+                 href="<%= sortLink(column.key) %>">
+                <%= column.label %>
+                <span class="th-sort__mark" aria-hidden="true"></span>
+              </a>
+            </th>
+          <% }); %>
+        </tr>
+      </thead>
+      <tbody>
+        <% page.items.forEach(function (ticket) { %>
+          <%# Only what needs attention: breached if either target was missed
+              (late, or running past it) - the SLA filter's rule; otherwise at
+              risk while a clock runs out. **One** treatment: a bar down the
+              left of the row, and the flag beside the status that names it in
+              words. The row used to be tinted as well, which put three reds
+              on one line and made the status badge hard to read. "On track"
+              would be noise. %>
+          <% var s = locals.slaById && slaById[ticket.id];
+             var clocks = s ? [s.response, s.resolution] : [];
+             var worst = clocks.find(function (c) { return c.state === 'breached'; }) || clocks.find(function (c) { return !c.doneAt && c.state === 'at_risk'; }); %>
+          <tr<%- worst ? ' class="ticket-row--' + worst.state + '"' : '' %>>
+            <td class="mono"><a href="/tickets/<%= ticket.id %>"><%= ticket.reference %></a></td>
+            <td>
+              <%# Title and comment count side by side on every row: the count
+                  never wraps under a long title on some rows and not others. %>
+              <div class="ticket-title-cell">
+                <a href="/tickets/<%= ticket.id %>" title="<%= ticket.title %>"><%= ticket.title %></a>
+                <% if (ticket.comment_count > 0) { %>
+                  <span class="chip ticket-comments" title="<%= ticket.comment_count %> comment<%= ticket.comment_count === 1 ? '' : 's' %>"><%- include('../partials/icon', { name: 'message' }) %><%= ticket.comment_count %><span class="visually-hidden"> comment<%= ticket.comment_count === 1 ? '' : 's' %></span></span>
+                <% } %>
+              </div>
+            </td>
+            <td class="small cell-nowrap col-type"><%= typeLabels[ticket.type] %></td>
+            <td class="ticket-status-cell">
+              <span class="pill pill--<%= ticket.status %>"><%= statusLabels[ticket.status] %></span>
+              <% if (worst) { %>
+                <span class="sla-flag sla-flag--<%= worst.state %>" title="SLA <%= slaStateLabels[worst.state].toLowerCase() %>"><%- include('../partials/icon', { name: worst.state === 'breached' ? 'alert' : 'clock' }) %><span class="visually-hidden">SLA </span><%= slaStateLabels[worst.state] %></span>
+              <% } %>
+            </td>
+            <td class="cell-nowrap"><span class="pill pill--p-<%= ticket.priority %>"><%= priorityLabels[ticket.priority] %></span></td>
+            <% if (locals.isStaff) { %>
+              <%# A name opens the person: their page under Users for an
+                  administrator; for a technician, who cannot open Settings,
+                  a requester's name opens all their tickets. Mail from a
+                  stranger hangs on one hidden account, so it is not a link. %>
+              <%
+                // The name first, the company under it. The display name may
+                // fold the company in ("Tomas Dvorak - (Contoso)"), which
+                // truncates in the middle of the company and buries the name.
+                function personName(first, last, display) {
+                  var name = [first, last].filter(Boolean).join(' ').trim();
+                  return name || display || '';
+                }
+                var rName = personName(ticket.requester_first_name, ticket.requester_last_name, ticket.requester_name);
+                var aName = personName(ticket.assignee_first_name, ticket.assignee_last_name, ticket.assignee_name);
+              %>
+              <td class="cell-person">
+                <% if (ticket.external_email) { %>
+                  <span class="cell-person__name" title="<%= ticket.external_email %>"><%= ticket.external_email %></span>
+                <% } else { %>
+                  <a class="person-cell-link cell-person__name" href="/people/<%= ticket.requester_id %>" title="<%= ticket.requester_name %>"><%= rName %></a>
+                  <% if (ticket.requester_company) { %>
+                    <span class="cell-person__org" title="<%= ticket.requester_company %>"><%= ticket.requester_company %></span>
+                  <% } %>
+                <% } %>
+              </td>
+              <td class="cell-person">
+                <% if (!ticket.assignee_id) { %>
+                  <span class="cell-person__none">Unassigned</span>
+                <% } else { %>
+                  <a class="person-cell-link cell-person__name" href="/people/<%= ticket.assignee_id %>" title="<%= ticket.assignee_name %>"><%= aName %></a>
+                  <% if (ticket.assignee_company) { %>
+                    <span class="cell-person__org" title="<%= ticket.assignee_company %>"><%= ticket.assignee_company %></span>
+                  <% } %>
+                <% } %>
+              </td>
+            <% } %>
+            <td class="cell-nowrap col-updated" title="<%= formatDateTime(ticket.updated_at) %>"><%= formatRelative(ticket.updated_at) %></td>
+          </tr>
+        <% }); %>
+      </tbody>
+    </table>
+  </div>
+
+  <% if (page.slaCapped) { %><p class="small muted">The SLA filter read the 2,000 most recently updated tickets that match the other filters.</p><% } %>
+
+  <% if (page.pageCount > 1) { %>
+    <nav class="pagination" aria-label="Pagination">
+      <% if (page.page > 1) { %>
+        <a class="btn btn--quiet" href="/tickets<%= queryString({ scope: filters.scope, group: filters.group, type: filters.type, category: filters.category, status: filters.status, priority: filters.priority, sla: filters.sla, q: filters.q, requester: filters.requester, sort: filters.sort, dir: filters.dir, page: page.page - 1 }) %>">Previous</a>
+      <% } %>
+      <span class="muted">Page <%= page.page %> of <%= page.pageCount %> &middot; <%= page.total %> ticket(s)</span>
+      <% if (page.page < page.pageCount) { %>
+        <a class="btn btn--quiet" href="/tickets<%= queryString({ scope: filters.scope, group: filters.group, type: filters.type, category: filters.category, status: filters.status, priority: filters.priority, sla: filters.sla, q: filters.q, requester: filters.requester, sort: filters.sort, dir: filters.dir, page: page.page + 1 }) %>">Next</a>
+      <% } %>
+    </nav>
+  <% } %>
+<% } %>
+
+<%- include('../partials/footer') %>

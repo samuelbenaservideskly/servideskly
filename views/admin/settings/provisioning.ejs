@@ -1,0 +1,132 @@
+<%- include('_layout') %>
+
+<%- include('_entra-tabs', { tab: 'provisioning' }) %>
+
+<% if (issuedToken) { %>
+  <div class="card card--token">
+    <h2 class="section-title">Your new SCIM bearer token</h2>
+    <p class="small">
+      Copy it now and paste it into Entra ID. <strong>It is shown once</strong> - only a hash of it is kept, so it cannot be shown again. Generating
+      another replaces this one.
+    </p>
+    <p class="token"><%= issuedToken %></p>
+    <dl class="details small">
+      <dt>Tenant URL</dt>
+      <dd class="mono"><%= fixed.scimEndpoint %></dd>
+      <dt>Secret Token</dt>
+      <dd class="mono">the value above</dd>
+    </dl>
+  </div>
+<% } %>
+
+<form method="post" action="/admin/settings/integrations/entra/provisioning" class="card stack">
+  <input type="hidden" name="_csrf" value="<%= locals.csrfToken %>">
+  <h2 class="section-title">Who may sign in</h2>
+
+  <div class="field">
+    <div class="label-row">
+      <label class="checkbox">
+        <input type="checkbox" name="jitEnabled" value="on"<%= doc.provisioning.jitEnabled ? ' checked' : '' %>>
+        Create an account on first sign-in (just-in-time)
+      </label>
+      <%- include('../../partials/info', { text: 'When enabled, any user in your tenant who completes sign-in receives an account with the User role. When disabled, only accounts provisioned through SCIM can sign in.' }) %>
+    </div>
+  </div>
+
+  <h2 class="section-title">Provisioning from Entra ID (SCIM)</h2>
+
+  <div class="field">
+    <div class="label-row">
+      <label class="checkbox">
+        <input type="checkbox" name="scimEnabled" value="on"<%= doc.scim.enabled ? ' checked' : '' %>>
+        Accept SCIM provisioning
+      </label>
+      <%- include('../../partials/info', { text: 'Entra ID provisions the members of assigned groups: it creates accounts, updates their details and deactivates them when they leave the group or the tenant. Requires the bearer token below.' }) %>
+    </div>
+  </div>
+
+  <div class="field">
+    <div class="label-row">
+      <label class="checkbox">
+        <input type="checkbox" name="disableOnDelete" value="on"<%= doc.scim.disableOnDelete ? ' checked' : '' %>>
+        Treat a SCIM delete as "disable"
+      </label>
+      <%- include('../../partials/info', { text: 'Recommended. Tickets reference the person who raised them, so deleting an account would remove that history. Disabling prevents sign-in and keeps existing tickets intact.' }) %>
+    </div>
+  </div>
+
+  <div class="actions">
+    <button type="submit" class="btn btn--primary">Save provisioning settings</button>
+  </div>
+</form>
+
+<div class="card stack">
+  <h2 class="section-title">
+    SCIM endpoint
+    <% if (scim.configured) { %>
+      <span class="pill pill--ok">Token set</span>
+    <% } else { %>
+      <span class="pill pill--warn">No token</span>
+    <% } %>
+  </h2>
+
+  <dl class="details small">
+    <dt>Tenant URL</dt>
+    <dd class="mono"><%= fixed.scimEndpoint %></dd>
+    <dt>Secret Token</dt>
+    <dd>
+      <% if (scim.configured) { %>
+        <span class="mono">&hellip;<%= scim.tokenHint %></span>
+        <span class="muted">set <%= scim.tokenSetAt ? formatRelative(scim.tokenSetAt) : 'at some point' %></span>
+      <% } else { %>
+        <span class="muted">none - generate one below</span>
+      <% } %>
+    </dd>
+  </dl>
+
+  <p class="small">
+    In Entra ID, open <em>Enterprise applications</em>, then your application,
+    then <em>Provisioning</em>. Set Provisioning Mode to <strong>Automatic</strong>,
+    paste the two values above and press Test Connection. Then assign the group
+    whose members should get accounts.
+  </p>
+  <p class="small muted">
+    Leave <em>Provision Microsoft Entra ID Groups</em> off in the mappings. This
+    service has no groups to provision into: group membership grants nothing
+    here, so only the Users mapping is needed.
+  </p>
+
+  <div class="actions">
+    <form method="post" action="/admin/settings/scim/token" class="inline-form">
+      <input type="hidden" name="_csrf" value="<%= locals.csrfToken %>">
+      <button type="submit" class="btn">
+        <%= scim.configured ? 'Replace token' : 'Generate token' %>
+      </button>
+    </form>
+    <% if (scim.configured) { %>
+      <form method="post" action="/admin/settings/scim/token/revoke" class="inline-form">
+        <input type="hidden" name="_csrf" value="<%= locals.csrfToken %>">
+        <button type="submit" class="btn btn--small btn--danger">Revoke token</button>
+      </form>
+    <% } %>
+  </div>
+  <% if (scim.configured) { %>
+    <p class="hint">
+      Replacing the token takes effect immediately - Entra will start failing
+      until the new one is pasted in there too.
+    </p>
+  <% } %>
+</div>
+
+<div class="card card--info">
+  <h2 class="section-title">What SCIM does and does not do</h2>
+  <ul class="small">
+    <li>Creates accounts as plain <strong>users</strong>. A role in the SCIM
+      payload is ignored.</li>
+    <li>Updates names and addresses, and activates or deactivates accounts.</li>
+    <li>Never changes a role. Promote people under <a href="/admin/settings/users">Users</a>.</li>
+    <li>Never deletes a person's tickets.</li>
+  </ul>
+</div>
+
+<%- include('_layout_end') %>

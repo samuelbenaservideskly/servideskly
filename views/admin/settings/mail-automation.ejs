@@ -1,0 +1,62 @@
+<%- include('_layout') %>
+
+<%- include('_mail-tabs') %>
+
+<form method="post" action="/admin/settings/mail/automation" class="card stack">
+  <input type="hidden" name="_csrf" value="<%= locals.csrfToken %>">
+  <h2 class="section-title">Who may raise a ticket by email</h2>
+
+  <div class="field">
+    <div class="label-row">
+      <label class="checkbox">
+        <input type="checkbox" name="knownSendersOnly" value="1"
+               <%= automation.knownSendersOnly ? 'checked' : '' %>>
+        Only create tickets from people who have an account here
+      </label>
+      <%- include('../../partials/info', { text: 'When enabled, mail from addresses without an account is discarded and no reply is sent. When disabled, such mail creates a ticket under a hidden account, and the sender address is recorded so replies still reach them. Replies to existing tickets are always accepted.' }) %>
+    </div>
+  </div>
+
+  <h2 class="section-title">Closing and reopening</h2>
+
+  <div class="field">
+    <div class="label-row">
+      <label for="autoCloseDays">Close a resolved ticket after</label>
+      <%- include('../../partials/info', { text: 'Measured from the time the ticket was resolved. Set to 0 to disable automatic closure. A ticket the requester replies to is reopened rather than closed.' }) %>
+    </div>
+    <div class="inline">
+      <input id="autoCloseDays" name="autoCloseDays" type="number" min="0" max="365"
+             class="input--short" value="<%= automation.autoCloseDays %>">
+      <span class="small muted">days (0 to leave them open)</span>
+    </div>
+  </div>
+
+  <div class="field">
+    <div class="label-row">
+      <label class="checkbox">
+        <input type="checkbox" name="reopenOnReply" value="1"
+               <%= automation.reopenOnReply ? 'checked' : '' %>>
+        A requester can reopen a ticket by replying to it
+      </label>
+      <%- include('../../partials/info', { text: 'A reply to a closed ticket usually means the issue persists. When disabled, the reply is added as a comment to the closed ticket.' }) %>
+    </div>
+  </div>
+
+  <div class="field">
+    <div class="label-row">
+      <label for="reopenWithinDays">Only within</label>
+      <%- include('../../partials/info', { text: 'Replies received after this period are added as comments instead, as they usually concern a new issue. Set to 0 for no limit.' }) %>
+    </div>
+    <div class="inline">
+      <input id="reopenWithinDays" name="reopenWithinDays" type="number" min="0" max="365"
+             class="input--short" value="<%= automation.reopenWithinDays %>">
+      <span class="small muted">days of it closing (0 for no limit)</span>
+    </div>
+  </div>
+
+  <div class="actions">
+    <button type="submit" class="btn btn--primary">Save</button>
+  </div>
+</form>
+
+<%- include('_layout_end') %>

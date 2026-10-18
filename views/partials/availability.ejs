@@ -1,0 +1,118 @@
+<%# A technician's availability, on their own profile page. Shown while the
+    Technician availability dashboard is on (Settings - Dashboards). %>
+<section class="card stack" id="availability">
+  <h2 class="section-title"><%= availability.ownPage ? 'Your availability' : 'Availability' %></h2>
+  <% (locals.flashMessages || []).filter(function (m) { return m.where === 'availability'; }).forEach(function (m) { %>
+    <div class="flash flash--<%= m.type %>" role="<%= m.type === 'error' ? 'alert' : 'status' %>"><%= m.message %></div>
+  <% }); %>
+
+  <form method="post" action="<%= availability.base %>/week" class="stack">
+    <input type="hidden" name="_csrf" value="<%= locals.csrfToken %>">
+    <h3 class="availability-form__title">Usual week</h3>
+    <div class="table-scroll">
+      <table class="table availability-form">
+        <thead>
+          <tr><th scope="col">Day</th><th scope="col">Status</th><th scope="col">Location</th></tr>
+        </thead>
+        <tbody>
+          <% availability.week.forEach(function (day) { %>
+            <tr>
+              <th scope="row"><label for="status-<%= day.weekday %>"><%= day.name %></label></th>
+              <td>
+                <select id="status-<%= day.weekday %>" name="status_<%= day.weekday %>">
+                  <option value="">Not set</option>
+                  <% availability.weeklyStatuses.forEach(function (s) { %>
+                    <option value="<%= s.key %>"<%= day.status === s.key ? ' selected' : '' %>><%= s.label %></option>
+                  <% }); %>
+                </select>
+              </td>
+              <td>
+                <select name="location_<%= day.weekday %>" aria-label="Location on <%= day.name %>"<%- availability.locations.length === 0 ? ' disabled' : '' %>>
+                  <option value=""><%= availability.locations.length === 0 ? 'No locations set up' : 'No location' %></option>
+                  <% availability.locations.forEach(function (l) { %>
+                    <option value="<%= l.id %>"<%= day.locationId === l.id ? ' selected' : '' %>><%= l.name %></option>
+                  <% }); %>
+                </select>
+              </td>
+            </tr>
+          <% }); %>
+        </tbody>
+      </table>
+    </div>
+    <div class="actions">
+      <button type="submit" class="btn">Save usual week</button>
+      <a class="btn" href="#add-availability"><span aria-hidden="true">+</span> Add a day or period</a>
+    </div>
+  </form>
+
+  <h3 class="availability-form__title">Coming up</h3>
+  <% if (availability.entries.length === 0) { %>
+    <p class="small muted">Nothing planned. Add vacation, a sick day or a day elsewhere with <a href="#add-availability">Add a day or period</a>.</p>
+  <% } else { %>
+    <div class="table-scroll">
+      <table class="table">
+        <thead><tr><th scope="col">When</th><th scope="col">Status</th><th scope="col">Location</th><th scope="col"><span class="visually-hidden">Actions</span></th></tr></thead>
+        <tbody>
+          <% availability.entries.forEach(function (e) { %>
+            <tr>
+              <td class="small"><%= e.when %></td>
+              <td><%= e.label %></td>
+              <td class="small"><%= e.location || '' %></td>
+              <td class="row-actions">
+                <form method="post" action="<%= availability.base %>/entries/<%= e.id %>/delete" class="inline-form">
+                  <input type="hidden" name="_csrf" value="<%= locals.csrfToken %>">
+                  <%- include('bin-button', { label: 'Remove ' + e.label + ', ' + e.when }) %>
+                </form>
+              </td>
+            </tr>
+          <% }); %>
+        </tbody>
+      </table>
+    </div>
+  <% } %>
+</section>
+
+<div class="dialog" id="add-availability">
+  <a class="dialog__backdrop" href="#availability" aria-label="Close"></a>
+  <div class="dialog__panel" role="dialog" aria-modal="true" aria-labelledby="add-availability-title">
+    <div class="dialog__head">
+      <h2 id="add-availability-title">Add a day or period</h2>
+      <a class="dialog__close" href="#availability" aria-label="Close">&times;</a>
+    </div>
+    <form method="post" action="<%= availability.base %>/entries" class="stack">
+      <input type="hidden" name="_csrf" value="<%= locals.csrfToken %>">
+      <div class="field">
+        <label for="startsOn">From <span class="required">*</span></label>
+        <input id="startsOn" name="startsOn" type="date" required value="<%= availability.today %>">
+      </div>
+      <div class="field">
+        <div class="label-row">
+          <label for="endsOn">To</label>
+          <%- include('info', { text: 'Leave empty for a single day.' }) %>
+        </div>
+        <input id="endsOn" name="endsOn" type="date">
+      </div>
+      <div class="field">
+        <label for="entryStatus">Status <span class="required">*</span></label>
+        <select id="entryStatus" name="status" required>
+          <% availability.statuses.forEach(function (s) { %>
+            <option value="<%= s.key %>"><%= s.label %></option>
+          <% }); %>
+        </select>
+      </div>
+      <div class="field">
+        <label for="entryLocation">Location</label>
+        <select id="entryLocation" name="locationId"<%- availability.locations.length === 0 ? ' disabled' : '' %>>
+          <option value=""><%= availability.locations.length === 0 ? 'No locations set up' : 'No location' %></option>
+          <% availability.locations.forEach(function (l) { %>
+            <option value="<%= l.id %>"><%= l.name %></option>
+          <% }); %>
+        </select>
+      </div>
+      <div class="dialog__actions">
+        <button type="submit" class="btn btn--primary">Add to availability</button>
+        <a class="btn btn--quiet" href="#availability">Cancel</a>
+      </div>
+    </form>
+  </div>
+</div>

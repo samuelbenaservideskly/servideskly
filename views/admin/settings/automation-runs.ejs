@@ -1,0 +1,72 @@
+<%- include('_layout') %>
+
+<%- include('_advanced-tabs', { tab: 'automation' }) %>
+
+<p class="breadcrumb"><%- include('../../partials/back-link', { href: '/admin/settings/advanced/automation', label: 'All automations' }) %></p>
+
+<h2 class="section-title">Last runs</h2>
+
+<% if (!runs.length) { %>
+  <%# An empty state says what to press, not why it is empty. %>
+  <p class="empty">Nothing has run yet. An automation runs when its trigger happens.</p>
+<% } else { %>
+  <div class="table-scroll">
+    <table class="table">
+      <thead>
+        <tr>
+          <th scope="col">When</th>
+          <th scope="col">Automation</th>
+          <th scope="col">Ticket</th>
+          <th scope="col">Outcome</th>
+          <th scope="col">Steps</th>
+        </tr>
+      </thead>
+      <tbody>
+        <% runs.forEach(function (run) { %>
+          <tr>
+            <td class="nowrap" title="<%= formatDateTime(run.ranAt) %>"><%= formatRelative(run.ranAt) %></td>
+            <td>
+              <a href="/admin/settings/advanced/automation/<%= run.automationId %>"><%= run.automationName %></a>
+            </td>
+            <td class="small">
+              <% if (run.ticketId && run.reference) { %>
+                <a href="/tickets/<%= run.ticketId %>" title="<%= run.ticketTitle %>"><%= run.reference %></a>
+              <% } else { %>
+                <%# A run with no ticket: an HTTP request that raised one, or
+                    a step that needed none. %>
+                <span class="muted">-</span>
+              <% } %>
+            </td>
+            <td>
+              <%# The three outcomes automation.ts records. %>
+              <% if (run.outcome === 'success') { %>
+                <span class="pill pill--ok">Finished</span>
+              <% } else if (run.outcome === 'stopped') { %>
+                <span class="pill pill--warn">Stopped</span>
+              <% } else if (run.outcome === 'failure') { %>
+                <span class="pill pill--p-urgent">Failed</span>
+              <% } else { %>
+                <span class="pill pill--muted"><%= run.outcome %></span>
+              <% } %>
+            </td>
+            <td class="small"><%= run.steps %></td>
+          </tr>
+        <% }); %>
+      </tbody>
+    </table>
+  </div>
+
+  <% if (page > 1 || more) { %>
+    <nav class="pagination" aria-label="Pages">
+      <% if (page > 1) { %>
+        <a class="btn btn--quiet" href="/admin/settings/advanced/automation/runs?page=<%= page - 1 %>">Previous</a>
+      <% } %>
+      <span class="small muted">Page <%= page %></span>
+      <% if (more) { %>
+        <a class="btn btn--quiet" href="/admin/settings/advanced/automation/runs?page=<%= page + 1 %>">Next</a>
+      <% } %>
+    </nav>
+  <% } %>
+<% } %>
+
+<%- include('_layout_end') %>

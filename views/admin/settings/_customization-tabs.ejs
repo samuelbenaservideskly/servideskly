@@ -1,0 +1,17 @@
+<nav class="subtabs" aria-label="Customisation">
+  <a href="/admin/settings/customization"
+     class="<%= locals.tab === 'appearance' ? 'subtabs__item--current' : '' %>"
+     <%- locals.tab === 'appearance' ? 'aria-current="page"' : '' %>>Appearance</a>
+  <a href="/admin/settings/customization/attachments"
+     class="<%= locals.tab === 'attachments' ? 'subtabs__item--current' : '' %>"
+     <%- locals.tab === 'attachments' ? 'aria-current="page"' : '' %>>Attachments</a>
+  <a href="/admin/settings/customization/portal"
+     class="<%= locals.tab === 'portal' ? 'subtabs__item--current' : '' %>"
+     <%- locals.tab === 'portal' ? 'aria-current="page"' : '' %>>Requester portal</a>
+  <a href="/admin/settings/customization/images"
+     class="<%= locals.tab === 'images' ? 'subtabs__item--current' : '' %>"
+     <%- locals.tab === 'images' ? 'aria-current="page"' : '' %>>Custom images</a>
+  <a href="/admin/settings/customization/locale"
+     class="<%= locals.tab === 'locale' ? 'subtabs__item--current' : '' %>"
+     <%- locals.tab === 'locale' ? 'aria-current="page"' : '' %>>Locale</a>
+</nav>

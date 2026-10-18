@@ -1,0 +1,63 @@
+<%- include('../../partials/header') %>
+
+<div class="page-head">
+  <div>
+    <p class="muted small">Settings</p>
+    <h1><%= t(sectionTitle) %></h1>
+  </div>
+  <%#
+    Only "last changed", and only once something has been. The other branch
+    said "Using the values from the environment", which meant nothing to
+    anybody reading the page: it was describing where the defaults came from,
+    which is a deployment detail, not a fact about this screen.
+  %>
+  <%# This page's own last change, from the audit trail (routes/last-change.ts):
+      the newest change to what this page shows, and who made it. %>
+  <% if (locals.lastChange) { %>
+    <span class="muted small" title="<%= formatDateTime(lastChange.at) %>">
+      Last changed <%= formatRelative(lastChange.at) %> by <%= lastChange.by || 'the system' %>
+    </span>
+  <% } %>
+</div>
+
+<% if ((problems || []).length > 0) { %>
+  <div class="flash flash--error" role="alert">
+    <strong>Nothing was saved.</strong>
+    <ul class="tight-list">
+      <% problems.forEach(function (problem) { %>
+        <li><%= problem %></li>
+      <% }); %>
+    </ul>
+  </div>
+<% } %>
+
+<%# `wide` gives the whole width to a page that needs it - the portal editor,
+    split between code and preview - at the cost of the sidebar. %>
+<div class="settings-layout<%= locals.wide ? ' settings-layout--wide' : '' %>">
+  <% if (!locals.wide) { %>
+  <div class="settings-side">
+  <%# Search across every settings page (services/settings-search.ts). A GET
+      form: Enter searches, and the list it lands on is an address. %>
+  <form class="settings-search" method="get" action="/admin/settings/search" role="search">
+    <%- include('../../partials/icon', { name: 'search' }) %>
+    <label for="settings-q" class="visually-hidden">Search settings</label>
+    <input id="settings-q" type="search" name="q" value="<%= locals.q || '' %>" placeholder="Search settings" autocomplete="off" data-no-search>
+    <button type="submit" class="visually-hidden">Search</button>
+  </form>
+  <nav class="settings-nav" aria-label="Settings sections">
+    <%# The section names and their lines are constants, so they reach the
+        catalogue through src/i18n/code-strings.ts rather than as text
+        nodes - and they are translated here. %>
+    <% sections.forEach(function (item) { %>
+      <a href="/admin/settings/<%= item.slug %>"
+         class="settings-nav__item<%= item.slug === section ? ' settings-nav__item--current' : '' %>"
+         <%= item.slug === section ? 'aria-current=page' : '' %>>
+        <span class="settings-nav__title"><%= t(item.title) %></span>
+        <span class="settings-nav__blurb"><%= t(item.blurb) %></span>
+      </a>
+    <% }); %>
+  </nav>
+  </div>
+  <% } %>
+
+  <div class="settings-body">

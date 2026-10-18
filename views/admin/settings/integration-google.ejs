@@ -1,0 +1,66 @@
+<%- include('_layout') %>
+
+<div class="integration-head">
+  <%- include('../../partials/back-link', { href: '/admin/settings/integrations', label: 'All integrations' }) %>
+  <h2 class="integration-head__title">
+    <%- include('_google-logo', { cls: 'entra-logo entra-logo--small' }) %>
+    Google Identity
+    <span class="pill pill--<%= configured ? 'ok' : 'muted' %>"><%= configured ? 'Sign-in on' : 'Not set up' %></span>
+  </h2>
+</div>
+
+<div class="card card--info">
+  <dl class="details small">
+    <dt>Redirect URI</dt>
+    <dd class="mono copyable"><%= redirectUri %></dd>
+  </dl>
+  <p class="small muted">Register this redirect URI with the provider exactly as shown.</p>
+</div>
+
+<form method="post" action="/admin/settings/integrations/google" class="card stack">
+  <input type="hidden" name="_csrf" value="<%= locals.csrfToken %>">
+  <h2 class="section-title">OpenID Connect</h2>
+
+  <div class="field">
+    <div class="label-row">
+      <label for="clientId">Client ID</label>
+      <%- include('../../partials/info', { text: 'The OAuth client ID from Google Cloud Console - APIs and Services - Credentials, of type Web application.' }) %>
+    </div>
+    <input id="clientId" name="clientId" type="text" maxlength="300" spellcheck="false"
+           value="<%= values.clientId !== undefined ? values.clientId : google.clientId %>"
+           placeholder="123456789-abc.apps.googleusercontent.com">
+  </div>
+
+    <div class="field">
+      <div class="label-row">
+        <label for="clientSecret">Client secret</label>
+        <%- include('../../partials/info', { text: hasSecret ? 'A client secret is stored, encrypted. Leave this field blank to keep it, or enter a new value to replace it. The value is never displayed after saving.' : 'Stored encrypted. The value is never displayed after saving.' }) %>
+      </div>
+      <input id="clientSecret" name="clientSecret" type="password" maxlength="500" autocomplete="off"
+             placeholder="<%= hasSecret ? 'Stored - leave blank to keep' : '' %>">
+    </div>
+
+  <div class="field">
+    <div class="label-row">
+      <label for="allowedDomains">Allowed Google Workspace domains</label>
+      <%- include('../../partials/info', { text: 'One per line. Only accounts from these Workspace domains can sign in; personal Google accounts are always refused. Required.' }) %>
+    </div>
+    <textarea id="allowedDomains" name="allowedDomains" rows="3" spellcheck="false"
+              placeholder="example.com"><%= values.allowedDomains !== undefined ? values.allowedDomains : google.allowedDomains.join('\n') %></textarea>
+  </div>
+
+  <div class="actions">
+    <button type="submit" class="btn btn--primary">Save Google settings</button>
+  </div>
+</form>
+
+<% if (hasSecret) { %>
+  <form method="post" action="/admin/settings/integrations/google/secret/clear" class="card stack">
+    <input type="hidden" name="_csrf" value="<%= locals.csrfToken %>">
+    <h2 class="section-title">Client secret</h2>
+    <p class="small muted">Removing the secret turns sign-in with this provider off.</p>
+    <div class="actions"><button type="submit" class="btn btn--danger">Remove client secret</button></div>
+  </form>
+<% } %>
+
+<%- include('_layout_end') %>

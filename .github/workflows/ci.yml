@@ -1,0 +1,60 @@
+# Every push to main and every pull request: typecheck (src and
+# tests), the whole test suite, and npm audit - the same `npm run verify`
+# that is run locally. "Promote to production" runs it again on the commit
+# it promotes.
+#
+# The suite runs twice: on SQLite (local development, the default) and on
+# PostgreSQL (what customers run on Azure), each test file in a database of
+# its own.
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  verify:
+    name: SQLite
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - run: npm run verify
+      - run: npm run build
+
+  postgres:
+    name: PostgreSQL
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_PASSWORD: postgres
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 5s --health-timeout 5s --health-retries 10
+    env:
+      TEST_PG_ADMIN_URL: postgres://postgres:postgres@localhost:5432/postgres
+      # The server's own errors, so a 500 in a test says why.
+      TEST_LOG_LEVEL: error
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - run: npm test

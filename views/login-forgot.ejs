@@ -1,0 +1,31 @@
+<%- include('partials/header') %>
+
+<div class="signin">
+  <div class="card signin-card">
+    <%- include("partials/signin-mark") %>
+    <h1>Reset your password</h1>
+
+    <% if (locals.noMail) { %>
+      <p class="lede">This service desk cannot send email yet, so a reset link cannot reach you. Ask your service desk or an administrator to set a new password for you.</p>
+      <a class="btn btn--primary btn--block" href="<%= email ? '/login/password' : '/login' %>">Back to sign in</a>
+    <% } else if (sent) { %>
+      <p class="lede signin-reveal">If a password account uses <strong><%= email %></strong>, a link to choose a new password is on its way. It works once, for 30 minutes.</p>
+      <p class="small muted">Nothing arrived? Check the junk folder, or ask again in a minute.</p>
+      <a class="btn btn--primary btn--block" href="/login/password">Back to sign in</a>
+    <% } else { %>
+      <p class="lede">We will email you a link to choose a new password.</p>
+      <form method="post" action="/auth/local/forgot" class="stack local-signin">
+        <input type="hidden" name="_csrf" value="<%= locals.csrfToken %>">
+        <div class="field">
+          <label for="email">Email</label>
+          <input id="email" name="email" type="email" inputmode="email" required maxlength="320"
+                 autocomplete="username" spellcheck="false" value="<%= email %>" placeholder="name@example.com" autofocus>
+        </div>
+        <button type="submit" class="btn btn--primary btn--block">Email me a link</button>
+      </form>
+      <a class="signin-back" href="<%= email ? '/login/password' : '/login' %>">Back to sign in</a>
+    <% } %>
+  </div>
+</div>
+
+<%- include('partials/footer') %>

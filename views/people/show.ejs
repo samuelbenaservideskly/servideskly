@@ -1,0 +1,124 @@
+<%- include('../partials/header') %>
+
+<%#
+  A person, read only, for anybody on the service desk. Everything that
+  changes an account is under Settings - Users; an administrator gets a link
+  to it from the head.
+%>
+<div class="page-head">
+  <h1><%= person.display_name %></h1>
+  <div class="page-head__actions">
+    <% if (isAdmin) { %>
+      <a class="btn" href="/admin/settings/users/<%= person.id %>">Open in Users</a>
+    <% } %>
+    <a class="btn btn--quiet" href="/tickets?requester=<%= person.id %>&amp;status=any">All their tickets</a>
+  </div>
+</div>
+
+<%# A back link only when the directory is where they came from. %>
+<div class="grid-2">
+  <div class="card stack">
+    <h2 class="section-title">Details</h2>
+    <% if (!details.length) { %>
+      <p class="small muted">Nothing but a name is recorded for this account.</p>
+    <% } else { %>
+      <dl class="details">
+        <% details.forEach(function (line) { %>
+          <dt><%= line.label %></dt>
+          <dd>
+            <% if (line.href) { %><a href="<%= line.href %>"><%= line.value %></a><% } else { %><%= line.value %><% } %>
+          </dd>
+        <% }); %>
+      </dl>
+    <% } %>
+
+    <% if (person.status !== 'active') { %>
+      <p><span class="pill pill--muted">Disabled</span></p>
+    <% } %>
+  </div>
+
+  <% if (locals.seesTickets) { %>
+  <div class="card stack">
+    <h2 class="section-title">Tickets</h2>
+    <div class="stats">
+      <div class="stat"><span class="stat__value"><%= openCount %></span><span class="stat__label">Open</span></div>
+      <div class="stat"><span class="stat__value"><%= raisedTotal %></span><span class="stat__label">Raised, all time</span></div>
+      <% if (assignedTotal > 0) { %>
+        <div class="stat"><span class="stat__value"><%= assignedTotal %></span><span class="stat__label">Assigned to them</span></div>
+      <% } %>
+    </div>
+
+    <% if (technicianGroups.length) { %>
+      <div class="stack name-block">
+        <span class="field-label">Technician groups</span>
+        <p class="small"><%= technicianGroups.map(function (g) { return g.name; }).join(', ') %></p>
+      </div>
+    <% } %>
+    <% if (userGroups.length) { %>
+      <div class="stack name-block">
+        <span class="field-label">User groups</span>
+        <p class="small"><%= userGroups.join(', ') %></p>
+      </div>
+    <% } %>
+  </div>
+  <% } %>
+</div>
+
+<% if (locals.seesTickets) { %>
+<h2 class="section-title">Latest tickets they raised</h2>
+<% if (!raised.length) { %>
+  <p class="empty">They have not raised a ticket.</p>
+<% } else { %>
+  <div class="table-scroll">
+    <table class="table ticket-table">
+      <thead>
+        <tr>
+          <th scope="col">Reference</th>
+          <th scope="col">Title</th>
+          <th scope="col">Status</th>
+          <th scope="col">Priority</th>
+        </tr>
+      </thead>
+      <tbody>
+        <% raised.forEach(function (ticket) { %>
+          <tr>
+            <td><a href="/tickets/<%= ticket.id %>"><%= ticket.reference %></a></td>
+            <td><a href="/tickets/<%= ticket.id %>" title="<%= ticket.title %>"><%= ticket.title %></a></td>
+            <td><span class="pill pill--s-<%= ticket.status %>"><%= statusLabels[ticket.status] %></span></td>
+            <td><span class="pill pill--p-<%= ticket.priority %>"><%= priorityLabels[ticket.priority] %></span></td>
+          </tr>
+        <% }); %>
+      </tbody>
+    </table>
+  </div>
+<% } %>
+
+<% if (assigned.length) { %>
+  <h2 class="section-title">Open and assigned to them</h2>
+  <div class="table-scroll">
+    <table class="table ticket-table">
+      <thead>
+        <tr>
+          <th scope="col">Reference</th>
+          <th scope="col">Title</th>
+          <th scope="col">Status</th>
+          <th scope="col">Priority</th>
+        </tr>
+      </thead>
+      <tbody>
+        <% assigned.forEach(function (ticket) { %>
+          <tr>
+            <td><a href="/tickets/<%= ticket.id %>"><%= ticket.reference %></a></td>
+            <td><a href="/tickets/<%= ticket.id %>" title="<%= ticket.title %>"><%= ticket.title %></a></td>
+            <td><span class="pill pill--s-<%= ticket.status %>"><%= statusLabels[ticket.status] %></span></td>
+            <td><span class="pill pill--p-<%= ticket.priority %>"><%= priorityLabels[ticket.priority] %></span></td>
+          </tr>
+        <% }); %>
+      </tbody>
+    </table>
+  </div>
+<% } %>
+
+<% } %>
+
+<%- include('../partials/footer') %>

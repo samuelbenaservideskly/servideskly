@@ -1,0 +1,284 @@
+<%- include('_layout') %>
+
+<%- include('_user-tabs', { tab: 'other' }) %>
+
+<form method="post" action="/admin/settings/users/other" class="card stack">
+  <input type="hidden" name="_csrf" value="<%= locals.csrfToken %>">
+  <h2 class="section-title">Display name</h2>
+
+  <div class="field">
+    <div class="label-row">
+      <label for="displayNameFormat">Format</label>
+      <%- include('../../partials/info', { text: 'Text with variables in square brackets. Anything else - spaces, hyphens, commas, brackets - is kept as typed. A variable with no value leaves nothing, and the empty brackets or separators around it are removed. People with no first or last name keep the name from the directory or as typed. Empty: names are shown as the directory or the person gave them.' }) %>
+    </div>
+    <input id="displayNameFormat" name="displayNameFormat" type="text" maxlength="200" class="mono"
+           value="<%= format %>" placeholder="[First] [Last] - ([Company])"<%- error ? ' aria-invalid="true"' : '' %>>
+    <% if (error) { %><p class="field-error" role="alert"><%= error %></p><% } %>
+  </div>
+
+  <div class="stack name-block">
+    <span class="field-label">Variables</span>
+    <div class="name-variables">
+      <% variables.forEach(function (v) { %>
+        <span class="name-variable" title="<%= v.label %>"><code>[<%= v.token %>]</code> <span class="muted small"><%= v.label %></span></span>
+      <% }); %>
+    </div>
+  </div>
+
+  <% if (examples.length) { %>
+    <div class="stack name-block">
+      <span class="field-label">How names read</span>
+      <ul class="name-examples">
+        <% examples.forEach(function (e) { %><li><%= e %></li><% }); %>
+      </ul>
+    </div>
+  <% } %>
+
+  <p class="small muted">The same parts are in notifications as <code>{{requesterFirstName}}</code>, <code>{{requesterLastName}}</code>, <code>{{requesterCompany}}</code> and the assignee's equivalents.</p>
+
+  <div class="actions">
+    <button type="submit" class="btn btn--primary">Save and apply to everyone</button>
+  </div>
+</form>
+
+<%# Each further setting behind its own chevron: one card per decision. %>
+<details class="mode-panel settings-panel" id="registration"<%= (locals.flashMessages || []).some(function (m) { return m.where === 'registration'; }) ? ' open' : '' %>>
+  <summary>
+    <span class="mode-panel__title">Let people create their own account</span>
+    <span class="small muted"><%= registration.enabled ? 'On' + (registration.domains.length ? ' - ' + registration.domains.map(function (d) { return '@' + d; }).join(', ') : ' - any address') : 'Off' %></span>
+  </summary>
+  <form method="post" action="/admin/settings/users/other/registration" class="mode-panel__body">
+    <input type="hidden" name="_csrf" value="<%= locals.csrfToken %>">
+    <% (locals.flashMessages || []).filter(function (m) { return m.where === 'registration'; }).forEach(function (m) { %>
+      <div class="flash flash--<%= m.type %>" role="<%= m.type === 'error' ? 'alert' : 'status' %>"><%= m.message %></div>
+    <% }); %>
+    <div class="label-row">
+      <label class="check"><input type="checkbox" name="enabled" value="on"<%= registration.enabled ? ' checked' : '' %>><span>"Create an account" on the sign-in page</span></label>
+      <%- include('../../partials/info', { text: 'People give their first name, last name, email and a password (the password policy applies). Nothing is created until they use the link mailed to that address. New accounts are plain users; roles are set here, under Users.' }) %>
+    </div>
+    <div class="field">
+      <label for="reg-domains">Only these email domains</label>
+      <textarea id="reg-domains" name="domains" rows="2" class="mono" placeholder="contoso.com, fabrikam.com"><%= registration.domains.join(', ') %></textarea>
+    </div>
+    <p class="small muted">Empty: any address may register.</p>
+    <div class="actions"><button type="submit" class="btn btn--primary">Save</button></div>
+  </form>
+</details>
+
+<details class="mode-panel settings-panel" id="access"<%= locals.accessError ? ' open' : '' %>>
+  <summary>
+    <span class="mode-panel__title">Conditional access</span>
+    <span class="small muted">
+      <%
+        var bits = [];
+        if (access.allowedRanges.length) { bits.push(access.allowedRanges.length + (access.allowedRanges.length === 1 ? ' range' : ' ranges')); }
+        if (access.codeForEveryone) { bits.push('code for everyone'); }
+        else if (access.allowedRanges.length && access.elsewhereNeedsCode) { bits.push('code elsewhere'); }
+      %>
+      <%= bits.length ? bits.join(' - ') : 'Anywhere, password only' %>
+    </span>
+  </summary>
+  <form method="post" action="/admin/settings/users/other/access" class="mode-panel__body">
+    <input type="hidden" name="_csrf" value="<%= locals.csrfToken %>">
+
+    <div class="field">
+      <div class="label-row">
+        <label for="allowedRanges">Sign-in is allowed from these addresses</label>
+        <%- include('../../partials/info', { text: 'One address or CIDR range per line - 203.0.113.0/24, 10.0.0.0/8, 2001:db8::/32. Empty: anywhere. This governs password accounts only; an identity provider gates its own accounts, and it has conditional access of its own.' }) %>
+      </div>
+      <textarea id="allowedRanges" name="allowedRanges" rows="4" class="mono" spellcheck="false"
+                placeholder="203.0.113.0/24&#10;10.0.0.0/8"><%= locals.accessRanges !== undefined ? locals.accessRanges : access.allowedRanges.join('\n') %></textarea>
+      <% if (locals.accessError) { %>
+        <p class="field-error" role="alert"><%= locals.accessError %></p>
+      <% } %>
+    </div>
+
+    <p class="hint">
+      This device signs in from <code><%= locals.yourAddress || 'an address the service desk cannot read' %></code><%
+        %><% if (access.allowedRanges.length && locals.yourAddress) { %>, which <%= locals.yourAddressAllowed ? 'is inside the list above' : 'is not in the list above' %><% } %>.
+      It is read from the connection, not from the internet - a browser on
+      <code>localhost</code> arrives as <code>::1</code> whatever a public
+      address lookup says.
+    </p>
+
+    <div class="label-row">
+      <label class="check">
+        <input type="checkbox" name="elsewhereNeedsCode" value="on"<%= access.elsewhereNeedsCode ? ' checked' : '' %>>
+        <span>Allow other addresses, but ask for a code by email</span>
+      </label>
+      <%- include('../../partials/info', { text: 'Somebody signing in from anywhere else gives their password and then a six-digit code sent to their address. Without this, a sign-in from outside the ranges is refused.' }) %>
+    </div>
+
+    <div class="label-row">
+      <label class="check">
+        <input type="checkbox" name="codeForEveryone" value="on"<%= access.codeForEveryone ? ' checked' : '' %>>
+        <span>Ask every password account for a code, wherever they are</span>
+      </label>
+      <%- include('../../partials/info', { text: 'A code on every sign-in, inside the allowed addresses as well.' }) %>
+    </div>
+
+    <% if (locals.hasBreakGlass) { %>
+    <div class="field">
+      <div class="label-row">
+        <label for="breakGlassRanges">The break-glass account may sign in from</label>
+        <%- include('../../partials/info', { text: 'Its own list, which the addresses above never apply to. Empty: anywhere, as before. Asked for 16 Oct 2026 - the one account with a role nothing can take away is worth pinning to the office.' }) %>
+      </div>
+      <textarea id="breakGlassRanges" name="breakGlassRanges" rows="2" class="mono" spellcheck="false"
+                placeholder="203.0.113.10&#10;10.0.0.0/8"><%= locals.breakGlassRanges !== undefined ? locals.breakGlassRanges : access.breakGlassRanges.join('\n') %></textarea>
+    </div>
+    <% } %>
+
+    <%#
+      Three facts the switches cannot show, each of which prevents a
+      lockout or explains an absence. They stay on the page.
+    %>
+    <p class="hint">
+      A code needs a mailbox or an SMTP relay to send it. An account that
+      already signs in with an emailed code is not asked for a second one,
+      though it still has to be at an allowed address.
+      <% if (locals.hasBreakGlass) { %><strong>If you fill in the break-glass list and lose those
+      addresses, the account that exists for emergencies is unreachable in
+      one</strong> - <code>FORCE_LOCAL_SIGNIN=true</code> in the
+      environment ignores the list, and is the way back in.<% } %>
+    </p>
+
+    <div class="actions"><button type="submit" class="btn btn--primary">Save</button></div>
+  </form>
+</details>
+
+<details class="mode-panel settings-panel" id="directory">
+  <summary>
+    <span class="mode-panel__title">Who can look people up</span>
+    <span class="small muted">
+      <%
+        var who = [];
+        if (directory.technicians) { who.push('Technicians'); }
+        if (directory.users) { who.push('Requesters'); }
+      %>
+      <%= who.length ? who.join(' and ') + (directory.ownCompanyOnly ? ' - own company only' : '') : 'Administrators only' %>
+    </span>
+  </summary>
+  <form method="post" action="/admin/settings/users/other/directory" class="mode-panel__body">
+    <input type="hidden" name="_csrf" value="<%= locals.csrfToken %>">
+    <div class="label-row">
+      <label class="check">
+        <input type="checkbox" name="technicians" value="on"<%= directory.technicians ? ' checked' : '' %>>
+        <span>Technicians can look people up</span>
+      </label>
+      <%- include('../../partials/info', { text: 'The directory at /people: a searchable list of everybody with an account, and a page each with their department, job title, office and telephone number. An administrator always has it.' }) %>
+    </div>
+    <label class="check">
+      <input type="checkbox" name="users" value="on"<%= directory.users ? ' checked' : '' %>>
+      <span>Requesters can look people up</span>
+    </label>
+    <div class="label-row">
+      <label class="check">
+        <input type="checkbox" name="ownCompanyOnly" value="on"<%= directory.ownCompanyOnly ? ' checked' : '' %>>
+        <span>Only people in their own company</span>
+      </label>
+      <%- include('../../partials/info', { text: "For a service desk that serves several companies: a search then finds only people whose company matches the searcher's. Administrators are not narrowed." }) %>
+    </div>
+    <%# A fact the switches cannot show: what a reader is shown of somebody. %>
+    <p class="hint">
+      A technician sees what that person raised; a requester sees only how to
+      reach them. Nothing on the page can be changed from it.
+    </p>
+    <div class="actions"><button type="submit" class="btn btn--primary">Save</button></div>
+  </form>
+</details>
+
+<details class="mode-panel settings-panel" id="self-edit">
+  <summary>
+    <span class="mode-panel__title">People may change their own details</span>
+    <span class="small muted"><%= selfEdit.length ? selfEdit.map(function (f) { return selfEditLabels[f]; }).join(', ') : 'Off' %></span>
+  </summary>
+  <form method="post" action="/admin/settings/users/other/self-edit" class="mode-panel__body">
+    <input type="hidden" name="_csrf" value="<%= locals.csrfToken %>">
+    <div class="label-row">
+      <span class="field-label">On their profile, people may change</span>
+      <%- include('../../partials/info', { text: 'Group rules and the display name format read these, so a change can move somebody into or out of a group. For an account a directory keeps up to date, its next update may replace what they typed.' }) %>
+    </div>
+    <div class="check-list">
+      <% Object.keys(selfEditLabels).forEach(function (f) { %>
+        <label class="check"><input type="checkbox" name="fields" value="<%= f %>"<%= selfEdit.indexOf(f) !== -1 ? ' checked' : '' %>><span><%= selfEditLabels[f] %></span></label>
+      <% }); %>
+    </div>
+    <div class="actions"><button type="submit" class="btn btn--primary">Save</button></div>
+  </form>
+</details>
+
+<%# Sign-in codes: on or off for every password account, except members of
+    one user group. The break-glass account has its own switch on its tab. %>
+<details class="mode-panel settings-panel" id="sign-in-codes"<%= (locals.flashMessages || []).some(function (m) { return m.where === 'sign-in-codes'; }) ? ' open' : '' %>>
+  <summary>
+    <span class="mode-panel__title">Sign in with a code sent by email</span>
+    <span class="small muted"><%= codes.enabled ? 'On' + (codes.excludedGroupName ? ' - passwords kept for ' + codes.excludedGroupName : '') : 'Off' %></span>
+  </summary>
+  <form method="post" action="/admin/settings/users/sign-in-codes" class="mode-panel__body">
+    <input type="hidden" name="_csrf" value="<%= locals.csrfToken %>">
+    <% (locals.flashMessages || []).filter(function (m) { return m.where === 'sign-in-codes'; }).forEach(function (m) { %>
+      <div class="flash flash--<%= m.type %>" role="<%= m.type === 'error' ? 'alert' : 'status' %>"><%= m.message %></div>
+    <% }); %>
+    <div class="label-row">
+      <label class="check">
+        <input type="checkbox" name="otpEnabled" value="on"<%= codes.enabled ? ' checked' : '' %>>
+        <span>Local users sign in with a code sent by email</span>
+      </label>
+      <%- include('../../partials/info', { text: 'Local users enter their email address and receive a six-digit code instead of typing a password. Codes expire after 5 minutes and are sent from the default mailbox, or through the default SMTP relay when it is set to send them.' }) %>
+    </div>
+    <div class="field field--narrow">
+      <label for="excludedGroup">Keep passwords for</label>
+      <select id="excludedGroup" name="excludedGroup">
+        <option value="">Nobody</option>
+        <% allUserGroups.forEach(function (g) { %>
+          <option value="<%= g.id %>"<%= codes.excludedGroupId === g.id ? ' selected' : '' %>><%= g.name %></option>
+        <% }); %>
+      </select>
+    </div>
+    <div class="actions"><button type="submit" class="btn btn--primary">Save</button></div>
+  </form>
+</details>
+
+<details class="mode-panel settings-panel" id="password-policy"<%= policyError ? ' open' : '' %>>
+  <summary>
+    <span class="mode-panel__title">Password policy</span>
+    <span class="small muted"><%= policyText %><%= policy.maxAgeDays ? ' Expires after ' + policy.maxAgeDays + ' days.' : '' %></span>
+  </summary>
+  <form method="post" action="/admin/settings/users/other/password-policy" class="mode-panel__body">
+    <input type="hidden" name="_csrf" value="<%= locals.csrfToken %>">
+    <p class="small muted">For password accounts. It applies to every password set from now on - a new account, a reset, a change on a profile, an import - and generated passwords always meet it.</p>
+    <div class="grid-2">
+      <div class="field">
+        <div class="label-row">
+          <label for="minLength">Minimum length</label>
+          <% if (policyFloor > 8) { %><%- include('../../partials/info', { text: 'This deployment never accepts fewer than ' + policyFloor + ' characters, whatever is set here.' }) %><% } %>
+        </div>
+        <input id="minLength" name="minLength" type="number" min="8" max="64" required value="<%= policy.minLength %>" class="input--short">
+      </div>
+      <div class="field">
+        <div class="label-row">
+          <label for="maxAgeDays">Expires after (days)</label>
+          <%- include('../../partials/info', { text: '0: never. Older than this, a password is changed at the next sign-in. Never applied to the break-glass account.' }) %>
+        </div>
+        <input id="maxAgeDays" name="maxAgeDays" type="number" min="0" max="730" required value="<%= policy.maxAgeDays %>" class="input--short">
+      </div>
+    </div>
+    <fieldset class="field">
+      <legend>Must contain</legend>
+      <div class="check-list">
+        <label class="check"><input type="checkbox" name="requireUpper"<%= policy.requireUpper ? ' checked' : '' %>><span>An upper-case letter</span></label>
+        <label class="check"><input type="checkbox" name="requireLower"<%= policy.requireLower ? ' checked' : '' %>><span>A lower-case letter</span></label>
+        <label class="check"><input type="checkbox" name="requireDigit"<%= policy.requireDigit ? ' checked' : '' %>><span>A digit</span></label>
+        <label class="check"><input type="checkbox" name="requireSymbol"<%= policy.requireSymbol ? ' checked' : '' %>><span>A symbol</span></label>
+      </div>
+    </fieldset>
+    <div class="label-row">
+      <label class="check"><input type="checkbox" name="notEmail"<%= policy.notEmail ? ' checked' : '' %>><span>Don't allow common phrases</span></label>
+      <%- include('../../partials/info', { text: 'Refuses a password containing the person\'s email name (before the @), first name, last name, display name or company, or the name of this service desk - words of three letters or more. Obvious words such as "password" are always refused.' }) %>
+    </div>
+    <% if (policyError) { %><p class="field-error" role="alert"><%= policyError %></p><% } %>
+    <div class="actions"><button type="submit" class="btn btn--primary">Save password policy</button></div>
+  </form>
+</details>
+
+<%- include('_layout_end') %>

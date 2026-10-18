@@ -1,0 +1,264 @@
+<%- include('partials/header') %>
+
+<% function ticketRows(list, showAssignee) { %>
+  <div class="table-scroll">
+    <table class="table">
+      <thead>
+        <tr>
+          <th scope="col">Ticket</th>
+          <th scope="col">Status</th>
+          <th scope="col">Priority</th>
+          <th scope="col">Group</th>
+          <% if (showAssignee) { %><th scope="col">Assignee</th><% } %>
+          <th scope="col">Raised</th>
+        </tr>
+      </thead>
+      <tbody>
+        <% list.forEach(function (t) { %>
+          <tr>
+            <td>
+              <a class="link-strong" href="/tickets/<%= t.id %>"><%= t.title %></a>
+              <div class="small muted"><%= t.reference %> &middot; <%= t.requester_name %></div>
+            </td>
+            <td>
+              <span class="pill pill--<%= t.status %>"><%= statusLabels[t.status] %></span>
+              <% if (t.sla) { %><div class="sla-badge sla-badge--<%= t.sla %>">SLA <%= slaStateLabels[t.sla].toLowerCase() %></div><% } %>
+            </td>
+            <td><span class="pill pill--p-<%= t.priority %>"><%= priorityLabels[t.priority] %></span></td>
+            <td class="small"><%= t.group_name || 'Unrouted' %></td>
+            <% if (showAssignee) { %><td class="small"><%= t.assignee_name || 'Unassigned' %></td><% } %>
+            <td class="small" title="<%= formatDateTime(t.created_at) %>"><%= formatRelative(t.created_at) %></td>
+          </tr>
+        <% }); %>
+      </tbody>
+    </table>
+  </div>
+<% } %>
+
+<% if (tab === 'mine') { %>
+<% if (canManage) { %>
+  <nav class="subtabs" aria-label="Dashboard">
+    <a href="/dashboard" class="<%= tab === 'mine' ? 'subtabs__item--current' : '' %>"<%- tab === 'mine' ? ' aria-current="page"' : '' %>>My work</a>
+    <a href="/dashboard/manager" class="<%= tab === 'manager' ? 'subtabs__item--current' : '' %>"<%- tab === 'manager' ? ' aria-current="page"' : '' %>>Manager</a>
+  </nav>
+<% } %>
+<%
+  var typeIcon = { incident: 'alert', service_request: 'inbox', change_request: 'workflow', task: 'check' };
+  function dashTicket(t) { %>
+    <a class="dash-ticket" href="/tickets/<%= t.id %>">
+      <span class="dash-ticket__icon dash-ticket__icon--<%= t.type %>"><%- include('partials/icon', { name: typeIcon[t.type] || 'ticket' }) %></span>
+      <span class="dash-ticket__text"><b><%= t.title %></b><small><%= t.reference %> - <%= t.group_name || 'Unrouted' %></small></span>
+      <span class="dash-ticket__when<%= t.sla ? ' dash-ticket__when--' + t.sla : '' %>">
+        <% if (t.clock) { %><span title="<%= t.sla ? 'SLA ' + slaStateLabels[t.sla].toLowerCase() : 'SLA' %>"><%= t.clock %></span>
+        <% } else { %><span title="<%= formatDateTime(t.updated_at) %>">Updated <%= formatRelative(t.updated_at) %></span><% } %>
+      </span>
+      <span class="pill pill--<%= t.status %>"><%= statusLabels[t.status] %></span>
+    </a>
+<% }
+  function activityLine(a) {
+    var tone = 'info', icon = 'sparkles', head = a.reference + ' raised', sub = (a.actorName || 'Somebody');
+    var href = a.ticketId ? '/tickets/' + a.ticketId : null, when = true;
+    if (a.kind === 'joined') { tone = 'info'; icon = 'userPlus'; head = a.actorName + ' joined ' + a.title; sub = a.newValue === 'rule' ? 'By a group rule' : 'Added to the group'; }
+    else if (a.kind === 'automation') {
+      icon = 'zap'; tone = a.newValue === 'failure' ? 'warn' : 'auto';
+      head = a.newValue === 'failure' ? 'Automation failed' : a.newValue === 'stopped' ? 'Automation stopped' : 'Automation ran';
+      sub = '"' + a.title + '"' + (a.reference ? ' on ' + a.reference : '');
+    }
+    else if (a.kind === 'sla') {
+      tone = a.newValue === 'breached' ? 'bad' : 'warn'; icon = a.newValue === 'breached' ? 'alert' : 'clock'; when = false;
+      head = (a.field === 'response' ? 'Response' : 'Resolution') + ' target ' + (a.newValue === 'breached' ? 'breached' : 'at risk');
+      sub = a.reference + ' - ' + a.title;
+    }
+    else if (a.kind === 'comment') { icon = 'message'; head = (a.actorName || 'Somebody') + ' replied'; sub = a.reference; }
+    else if (a.kind === 'internal_note') { icon = 'lock'; head = 'Internal note'; sub = a.reference + ' - ' + (a.actorName || ''); }
+    else if (a.kind === 'field_changed') {
+      sub = a.actorName || 'An automation';
+      if (a.field === 'status') {
+        head = a.reference + ' ' + (statusLabels[a.newValue] || a.newValue || 'updated').toLowerCase();
+        if (a.newValue === 'resolved' || a.newValue === 'closed') { tone = 'ok'; icon = 'checkCircle'; }
+        else if (a.newValue === 'pending') { tone = 'warn'; icon = 'alert'; }
+        else icon = 'ticket';
+      } else if (a.field === 'assignee_id' || a.field === 'assignee') { icon = 'userPlus'; head = a.reference + ' assigned'; }
+      else if (a.field === 'priority') { tone = a.newValue === 'urgent' || a.newValue === 'high' ? 'warn' : 'info'; icon = 'alert'; head = a.reference + ' priority ' + (priorityLabels[a.newValue] || a.newValue || '').toLowerCase(); }
+      else { icon = 'wrench'; head = a.reference + ' updated'; }
+    } %>
+    <% if (href) { %><a class="dash-activity dash-activity--<%= tone %>" href="<%= href %>"><% } else { %><div class="dash-activity dash-activity--<%= tone %>"><% } %>
+      <span class="dash-activity__icon"><%- include('partials/icon', { name: icon }) %></span>
+      <span><b><%= head %></b><small><%= sub %><% if (when) { %> - <span title="<%= formatDateTime(a.at) %>"><%= formatRelative(a.at) %></span><% } %></small></span>
+    <% if (href) { %></a><% } else { %></div><% } %>
+<% } %>
+
+  <div class="dash-hello">
+    <div>
+      <h1><%= greeting %>, <%= firstName %></h1>
+      <p class="muted"><%= work.counts.assigned === 0 ? 'Nothing is waiting for you.' : work.counts.assigned + ' ticket' + (work.counts.assigned === 1 ? '' : 's') + ' need' + (work.counts.assigned === 1 ? 's' : '') + ' you' + (work.counts.attention ? ', ' + work.counts.attention + ' urgently.' : ' today.') %></p>
+    </div>
+    <div class="dash-hello__actions">
+      <a class="btn" href="/tickets?scope=assigned">My work</a>
+      <a class="btn btn--primary" href="/tickets/new">+ New ticket</a>
+    </div>
+  </div>
+
+  <%
+    var d = work.desk;
+    var change = d.openChange === 0 ? 'no change' : (d.openChange > 0 ? '+' : '') + d.openChange + ' in 24 h';
+    var raisedDiff = d.raised - d.raisedBefore;
+    var scopeWord = d.everything ? 'the whole service desk' : work.groups.length ? 'your groups and your own tickets' : 'your own tickets';
+  %>
+  <div class="dash-stats">
+    <a class="dash-stat dash-stat--a" href="/tickets" title="Open, in progress or on hold - <%= scopeWord %>"><small>Open tickets</small><b><%= d.open %> <span><%= change %></span></b></a>
+    <div class="dash-stat dash-stat--b" title="Raised in the last 24 hours, against the 24 hours before - <%= scopeWord %>"><small>Raised today</small><b><%= d.raised %> <span><%= raisedDiff === 0 ? 'same as yesterday' : (raisedDiff > 0 ? '+' : '') + raisedDiff %></span></b></div>
+    <a class="dash-stat dash-stat--c" href="/reports" title="Response and resolution targets met, tickets raised in the last 30 days - the same figure as Reports"><small>SLA met</small><b><%= d.slaRate === null ? '-' : d.slaRate + '%' %> <span><%= d.slaEnabled ? '30 days' : 'SLA off' %></span></b></a>
+    <div class="dash-stat dash-stat--d" title="Yours and unassigned in your groups, a target at risk or breached"><small>At risk</small><b><%= work.counts.attention %> <span><%= work.counts.attention ? 'act now' : 'all on track' %></span></b></div>
+  </div>
+
+  <div class="dash-cols">
+    <section class="dash-panel">
+      <div class="dash-panel__head"><h2>Assigned to me</h2><small class="muted">Most urgent first</small></div>
+      <% if (work.mine.length === 0) { %>
+        <p class="dash-empty">Nothing open is assigned to you.</p>
+      <% } else { work.mine.slice(0, 10).forEach(dashTicket); %>
+        <% if (work.mine.length > 10) { %><a class="dash-more" href="/tickets">All <%= work.mine.length %> of yours</a><% } %>
+      <% } %>
+    </section>
+
+    <section class="dash-panel" id="activity">
+      <%#
+        The pen chooses what this feed carries - tickets, service-level
+        clocks, people joining a group, automation runs (administrators
+        only). Asked for 16 Oct 2026: "someone might not need to know
+        automation ran".
+      %>
+      <div class="dash-panel__head">
+        <h2>Activity</h2>
+        <% if (locals.activityKinds && activityKinds.length > 1) { %>
+          <a class="btn btn--quiet btn--small btn--icon" href="#choose-activity" title="Choose what this shows">
+            <%- include('partials/icon', { name: 'pencil' }) %>
+            <span class="visually-hidden">Choose what this shows</span>
+          </a>
+        <% } %>
+      </div>
+      <% if (work.activity.length === 0) { %>
+        <p class="dash-empty">Nothing has happened on your tickets yet.</p>
+      <% } else { work.activity.forEach(activityLine); } %>
+    </section>
+
+    <% if (locals.activityKinds && activityKinds.length > 1) { %>
+      <div class="dialog" id="choose-activity">
+        <a class="dialog__backdrop" href="#activity" aria-label="Close"></a>
+        <div class="dialog__panel" role="dialog" aria-modal="true" aria-labelledby="choose-activity-title">
+          <div class="dialog__head">
+            <h2 id="choose-activity-title">What this shows</h2>
+            <a class="dialog__close" href="#activity" aria-label="Close">&times;</a>
+          </div>
+          <form method="post" action="/dashboard/activity" class="stack">
+            <input type="hidden" name="_csrf" value="<%= locals.csrfToken %>">
+            <% activityKinds.forEach(function (kind) { %>
+              <label class="check">
+                <input type="checkbox" name="kinds" value="<%= kind.key %>"<%= activityChosen.indexOf(kind.key) >= 0 ? ' checked' : '' %>>
+                <span>
+                  <%= kind.label %>
+                  <% if (kind.hint) { %><span class="small muted"> - <%= kind.hint %></span><% } %>
+                </span>
+              </label>
+            <% }); %>
+            <div class="dialog__actions">
+              <button type="submit" class="btn btn--primary">Save</button>
+              <a class="btn btn--quiet" href="#activity">Cancel</a>
+            </div>
+          </form>
+        </div>
+      </div>
+    <% } %>
+  </div>
+
+  <section class="dash-panel">
+    <div class="dash-panel__head"><h2>Unassigned in my groups</h2><small class="muted">Waiting to be picked up</small></div>
+    <% if (work.unassigned.length === 0) { %>
+      <p class="dash-empty"><%= work.groups.length ? 'Nothing is waiting for somebody to pick it up.' : 'You are not in a technician group.' %></p>
+    <% } else { work.unassigned.slice(0, 10).forEach(dashTicket); } %>
+  </section>
+
+  <% if (work.groups.length > 0) { %>
+    <div class="dash-groups">
+      <% work.groups.forEach(function (g) { %>
+        <div class="dash-group"><span class="dash-group__icon"><%- include('partials/icon', { name: 'users' }) %></span><span><b><%= g.name %></b><small><%= g.open %> open - <%= g.unassigned %> unassigned</small></span></div>
+      <% }); %>
+    </div>
+  <% } %>
+
+<% } else { %>
+<div class="page-head">
+  <h1>Dashboard</h1>
+</div>
+<% if (canManage) { %>
+  <nav class="subtabs" aria-label="Dashboard">
+    <a href="/dashboard" class="<%= tab === 'mine' ? 'subtabs__item--current' : '' %>"<%- tab === 'mine' ? ' aria-current="page"' : '' %>>My work</a>
+    <a href="/dashboard/manager" class="<%= tab === 'manager' ? 'subtabs__item--current' : '' %>"<%- tab === 'manager' ? ' aria-current="page"' : '' %>>Manager</a>
+  </nav>
+<% } %>
+  <%#
+    A manager of several groups picks which - as many as they like. A GET
+    form, so no script is needed and the address can be kept; with
+    select-search the list box becomes the same dropdown as everywhere else,
+    ticking each choice.
+  %>
+  <form method="get" action="/dashboard/manager" class="toolbar work-filter">
+    <label for="group" class="field-label">Group</label>
+    <select id="group" name="group" multiple size="1" data-multi data-search>
+      <option value="all" data-all<%= manager.selected.length === 0 ? ' selected' : '' %>>All my groups (<%= manager.groups.length %>)</option>
+      <% manager.groups.forEach(function (g) { %>
+        <option value="<%= g.id %>"<%= manager.selected.indexOf(g.id) >= 0 ? ' selected' : '' %>><%= g.name %></option>
+      <% }); %>
+    </select>
+    <button type="submit" class="btn">Show</button>
+  </form>
+
+  <div class="dashboard-stats work-stats">
+    <div class="dashboard-stat"><span class="dashboard-stat__value"><%= manager.counts.open %></span><span class="dashboard-stat__label">Open</span></div>
+    <div class="dashboard-stat"><span class="dashboard-stat__value"><%= manager.counts.unassigned %></span><span class="dashboard-stat__label">Unassigned</span></div>
+    <div class="dashboard-stat"><span class="dashboard-stat__value"><%= manager.counts.onHold %></span><span class="dashboard-stat__label">On hold</span></div>
+    <div class="dashboard-stat<%= manager.counts.attention ? ' dashboard-stat--alert' : '' %>"><span class="dashboard-stat__value"><%= manager.counts.attention %></span><span class="dashboard-stat__label">At risk or breached</span></div>
+    <div class="dashboard-stat"><span class="dashboard-stat__value"><%= manager.counts.raisedWeek %></span><span class="dashboard-stat__label">Raised, 7 days</span></div>
+    <div class="dashboard-stat"><span class="dashboard-stat__value"><%= manager.counts.resolvedWeek %></span><span class="dashboard-stat__label">Resolved, 7 days</span></div>
+    <div class="dashboard-stat"><span class="dashboard-stat__value"><%= manager.typicalResolution %></span><span class="dashboard-stat__label">Typical resolution, 30 days</span></div>
+  </div>
+
+  <section class="card stack">
+    <h2 class="section-title">Workload</h2>
+    <% if (manager.workload.length === 0) { %>
+      <p class="small muted">Nobody is in these groups yet.</p>
+    <% } else { %>
+      <div class="table-scroll">
+        <table class="table">
+          <thead><tr><th scope="col">Technician</th><th scope="col">Open</th><th scope="col">On hold</th><th scope="col">At risk or breached</th><th scope="col">Resolved, 7 days</th></tr></thead>
+          <tbody>
+            <% manager.workload.forEach(function (w) { %>
+              <tr<%- w.name === 'Unassigned' ? ' class="work-row--unassigned"' : '' %>>
+                <td><%= w.name %></td><td><%= w.open %></td><td><%= w.onHold %></td>
+                <td><%= w.attention %><% if (w.attention) { %> <span class="sla-badge sla-badge--breached">SLA</span><% } %></td>
+                <td><%= w.resolvedWeek %></td>
+              </tr>
+            <% }); %>
+          </tbody>
+        </table>
+      </div>
+    <% } %>
+  </section>
+
+  <section class="card stack">
+    <h2 class="section-title">At risk or breached</h2>
+    <% if (manager.attention.length === 0) { %>
+      <p class="small muted">Nothing is at risk.</p>
+    <% } else { ticketRows(manager.attention, true); } %>
+  </section>
+
+  <section class="card stack">
+    <h2 class="section-title">Waiting longest</h2>
+    <% if (manager.oldest.length === 0) { %>
+      <p class="small muted">Nothing is open.</p>
+    <% } else { ticketRows(manager.oldest, true); } %>
+  </section>
+<% } %>
+
+<%- include('partials/footer') %>

@@ -1,0 +1,17 @@
+<nav class="subtabs" aria-label="Templates">
+  <a href="/admin/settings/templates"
+     class="<%= locals.tab === 'templates' ? 'subtabs__item--current' : '' %>"
+     <%- locals.tab === 'templates' ? 'aria-current="page"' : '' %>>Templates</a>
+  <a href="/admin/settings/templates/categories"
+     class="<%= locals.tab === 'categories' ? 'subtabs__item--current' : '' %>"
+     <%- locals.tab === 'categories' ? 'aria-current="page"' : '' %>>Categories</a>
+  <a href="/admin/settings/templates/catalogue"
+     class="<%= locals.tab === 'catalogue' ? 'subtabs__item--current' : '' %>"
+     <%- locals.tab === 'catalogue' ? 'aria-current="page"' : '' %>>Service catalogue</a>
+  <a href="/admin/settings/templates/custom-fields"
+     class="<%= locals.tab === 'custom-fields' ? 'subtabs__item--current' : '' %>"
+     <%- locals.tab === 'custom-fields' ? 'aria-current="page"' : '' %>>Custom fields</a>
+  <a href="/admin/settings/templates/other"
+     class="<%= locals.tab === 'other' ? 'subtabs__item--current' : '' %>"
+     <%- locals.tab === 'other' ? 'aria-current="page"' : '' %>>Other settings</a>
+</nav>

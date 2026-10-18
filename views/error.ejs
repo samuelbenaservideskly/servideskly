@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<%#
+  Every error (404, 403, 409, 500...). Drawn as the sign-in pages are - the
+  service desk's mark on a card, on the page colour - so it is plainly the
+  same site, in its own colours and the reader's light or dark mode
+  (themeAttribute, like partials/header.ejs). Asked for 18 Oct 2026; it was
+  a large number on a bare page.
+-%>
+<html lang="en"<%- locals.themeAttribute || '' %>>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="referrer" content="no-referrer">
+  <meta name="robots" content="noindex, nofollow">
+  <title><%= locals.title || 'Error' %><%= locals.appName ? ' - ' + locals.appName : '' %></title>
+  <%# The six licensed fonts, served from /assets/fonts. See
+      public/fonts/NOTICES.md and ALLOWED_FONTS in services/branding.ts. %>
+  <%# Inter's latin file, fetched with the page so it is ready before the
+      text is drawn (fonts.css uses font-display: optional). %>
+  <link rel="preload" href="/assets/fonts/inter/UcC73FwrK3iLTeHuS_nVMrMxCp50SjIa1ZL7.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="stylesheet" href="/assets/css/fonts.css?v=<%= locals.assetVersion %>">
+  <link rel="stylesheet" href="/assets/css/app.css?v=<%= locals.assetVersion %>">
+  <link rel="stylesheet" href="/branding/theme.css">
+  <link rel="icon" href="/branding/favicon">
+</head>
+<body class="error-page">
+<main class="signin">
+  <div class="card signin-card error-card">
+    <%- include('partials/signin-mark') %>
+    <p class="error-card__code"><span class="pill pill--muted">Error <%= locals.status || 500 %></span></p>
+    <h1><%= locals.title || 'Something went wrong' %></h1>
+    <p class="lede error-card__message"><%= locals.message || 'An unexpected error occurred.' %></p>
+
+    <% if (locals.reference) { %>
+      <p class="small muted">Reference: <code><%= locals.reference %></code></p>
+    <% } %>
+
+    <div class="error-card__actions">
+      <% if (locals.status === 401) { %>
+        <a class="btn btn--primary btn--block" href="/login">Sign in</a>
+      <% } else { %>
+        <%# /home: the reader's own start page - the queue, a portal's home, or sign-in. %>
+        <a class="btn btn--primary btn--block" href="/home">Return</a>
+      <% } %>
+    </div>
+
+    <% if (locals.stack) { %>
+      <details class="debug">
+        <summary>Stack trace (development only)</summary>
+        <pre><%= locals.stack %></pre>
+      </details>
+    <% } %>
+  </div>
+</main>
+</body>
+</html>

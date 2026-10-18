@@ -1,0 +1,186 @@
+<%- include('_layout') %>
+
+<%- include('_mail-tabs') %>
+<%- include('_mail-advanced-tabs', { sub: 'rules' }) %>
+
+<div class="toolbar">
+  <a class="btn btn--primary" href="#new-rule"><span aria-hidden="true">+</span> New rule</a>
+  <%- include('../../partials/info', { text: 'For mail that is not a reply to a ticket: a reply (by its headers, or a reference such as [INC-000123] in the subject) is always added to its ticket first, and a message already seen is never read twice. Rules are tried from the top; the first that matches raises the ticket from its template.' }) %>
+</div>
+
+<% if (rules.length === 0) { %>
+  <div class="card">
+    <p><strong>No rules yet.</strong> Mail that is not a reply raises a plain ticket.</p>
+    <p class="small muted">Start with <a href="#new-rule">New rule</a>, for example: subject contains INC, raised from your incident template.</p>
+  </div>
+<% } else { %>
+  <div class="table-scroll">
+    <table class="table">
+      <thead>
+        <tr>
+          <th scope="col">Rule</th>
+          <th scope="col">When</th>
+          <th scope="col">Raises</th>
+          <th scope="col">Same request again</th>
+          <th scope="col">Status</th>
+          <th scope="col"><span class="visually-hidden">Actions</span></th>
+        </tr>
+      </thead>
+      <tbody>
+        <% rules.forEach(function (r, i) { %>
+          <tr id="row-<%= r.id %>">
+            <td><%= r.name %></td>
+            <td class="small"><%= fieldLabels[r.field] %> <%= operatorLabels[r.operator] %> <strong class="mono">"<%= r.value %>"</strong></td>
+            <td class="small"><%= templateNames[r.template_id] || 'a removed template' %></td>
+            <td class="small"><%= r.dedupe_hours > 0 ? 'joined within ' + r.dedupe_hours + ' h' : 'always a new ticket' %></td>
+            <td><span class="pill pill--<%= r.is_enabled ? 'ok' : 'muted' %>"><%= r.is_enabled ? 'On' : 'Off' %></span></td>
+            <td class="row-actions">
+              <form method="post" action="/admin/settings/mail/advanced/rules/<%= r.id %>/move" class="inline-form">
+                <input type="hidden" name="_csrf" value="<%= locals.csrfToken %>">
+                <button type="submit" name="direction" value="up" class="icon-btn" title="Try earlier"<%= i === 0 ? ' disabled' : '' %>>&#9650;<span class="visually-hidden">Move <%= r.name %> up</span></button>
+                <button type="submit" name="direction" value="down" class="icon-btn" title="Try later"<%= i === rules.length - 1 ? ' disabled' : '' %>>&#9660;<span class="visually-hidden">Move <%= r.name %> down</span></button>
+              </form>
+              <a class="btn btn--quiet btn--small" href="#rule-<%= r.id %>">Edit</a>
+              <form method="post" action="/admin/settings/mail/advanced/rules/<%= r.id %>/delete" class="inline-form">
+                <input type="hidden" name="_csrf" value="<%= locals.csrfToken %>">
+                <%- include('../../partials/bin-button', { label: 'Remove ' + r.name }) %>
+              </form>
+            </td>
+          </tr>
+        <% }); %>
+      </tbody>
+    </table>
+  </div>
+<% } %>
+
+<form method="get" action="/admin/settings/mail/advanced/rules" class="card stack" id="try">
+  <div class="label-row">
+    <h2 class="section-title">Try a message</h2>
+    <%- include('../../partials/info', { text: 'Shows which rule a message like this would meet, without sending or raising anything.' }) %>
+  </div>
+  <div class="grid-2">
+    <div class="field">
+      <label for="trySubject">Subject</label>
+      <input id="trySubject" name="trySubject" type="text" maxlength="300" value="<%= tried.subject %>" placeholder="INC: printer on the third floor">
+    </div>
+    <div class="field">
+      <label for="tryFrom">From</label>
+      <input id="tryFrom" name="tryFrom" type="email" maxlength="200" value="<%= tried.from %>" placeholder="someone@example.com">
+    </div>
+  </div>
+  <div class="actions">
+    <button type="submit" class="btn">Try</button>
+    <% if (tried.asked) { %>
+      <span class="pill pill--<%= tried.rule ? 'ok' : 'muted' %>" role="status">
+        <%= tried.rule ? 'Rule "' + tried.rule + '" - raised from ' + tried.template : 'No rule matches - a plain ticket' %>
+      </span>
+    <% } %>
+  </div>
+</form>
+
+<%
+  var dialogs = [{ id: 'new-rule', title: 'New rule', action: '/admin/settings/mail/advanced/rules', button: 'Create rule', r: null, closeTo: '#top' }]
+    .concat(rules.map(function (r) {
+      return { id: 'rule-' + r.id, title: 'Edit ' + r.name, action: '/admin/settings/mail/advanced/rules/' + r.id, button: 'Save rule', r: r, closeTo: '#row-' + r.id };
+    }));
+%>
+<% dialogs.forEach(function (d) {
+     var reopened = openDialog === d.id;
+     var v = function (k, stored, fallback) { return reopened ? (values[k] !== undefined ? values[k] : fallback) : (d.r ? stored : fallback); };
+%>
+  <div class="dialog<%= reopened ? ' dialog--open' : '' %>" id="<%= d.id %>">
+    <a class="dialog__backdrop" href="<%= d.closeTo %>" aria-label="Close"></a>
+    <div class="dialog__panel" role="dialog" aria-modal="true" aria-labelledby="<%= d.id %>-title">
+      <div class="dialog__head">
+        <h2 id="<%= d.id %>-title"><%= d.title %></h2>
+        <a class="dialog__close" href="<%= d.closeTo %>" aria-label="Close">&times;</a>
+      </div>
+      <form method="post" action="<%= d.action %>" class="stack">
+        <input type="hidden" name="_csrf" value="<%= locals.csrfToken %>">
+        <% if (reopened && errors.form) { %><p class="field-error" role="alert"><%= errors.form %></p><% } %>
+
+        <div class="field">
+          <label for="<%= d.id %>-name">Name <span class="required">*</span></label>
+          <input id="<%= d.id %>-name" name="name" type="text" required maxlength="80" value="<%= v('name', d.r && d.r.name, '') %>" placeholder="Incidents by email">
+          <% if (reopened && errors.name) { %><p class="field-error" role="alert"><%= errors.name %></p><% } %>
+        </div>
+
+        <fieldset class="field">
+          <legend>When</legend>
+          <div class="grid-2">
+            <select name="field" aria-label="What to look at">
+              <% fields.forEach(function (f) { %><option value="<%= f.key %>"<%= v('field', d.r && d.r.field, 'subject') === f.key ? ' selected' : '' %>><%= f.label %></option><% }); %>
+            </select>
+            <select name="operator" aria-label="Comparison">
+              <% operators.forEach(function (o) { %><option value="<%= o.key %>"<%= v('operator', d.r && d.r.operator, 'contains') === o.key ? ' selected' : '' %>><%= o.label %></option><% }); %>
+            </select>
+          </div>
+          <div class="label-row">
+            <input name="value" type="text" required maxlength="200" aria-label="What to look for"
+                   value="<%= v('value', d.r && d.r.value, '') %>" placeholder="print; printer; printing">
+            <%- include('../../partials/info', { text: 'A semicolon separates alternatives - print; printer; printing - and any one of them meets the rule. Not for "matches the expression", where a semicolon is an ordinary character and the expression says or with a vertical bar.' }) %>
+          </div>
+          <% if (reopened && errors.value) { %><p class="field-error" role="alert"><%= errors.value %></p><% } %>
+        </fieldset>
+
+        <%
+          // The chosen one first (a new rule: the default), then the rest;
+          // five on show, the others one click away.
+          var chosen = v('templateId', d.r && d.r.template_id, templates.length ? templates[0].id : '');
+          var ordered = templates.filter(function (t) { return t.id === chosen; })
+            .concat(templates.filter(function (t) { return t.id !== chosen; }));
+          var option = function (t) { %>
+            <label class="pick-option">
+              <input type="radio" name="templateId" value="<%= t.id %>" required<%= t.id === chosen ? ' checked' : '' %>>
+              <span class="pick-option__name"><%= t.name %></span>
+              <span class="small muted"><%= typeLabels[t.type] || t.type %><%= t.is_default ? ' - default' : '' %></span>
+            </label>
+        <% }; %>
+        <fieldset class="field">
+          <legend>Raise the ticket from <span class="required">*</span></legend>
+          <% if (templates.length === 0) { %>
+            <p class="hint">No template is offered yet. Add one under Tickets.</p>
+          <% } else { %>
+            <%#
+              One list, five rows tall, with a search box above it -
+              always, whatever the length (data-search; asked for twice on
+              16 Oct 2026). A service desk with three templates today has
+              thirty next year, and the box is where somebody looks for the
+              one they want. It was five rows with the rest behind a fold,
+              which says "there are more" and not "here is the one you
+              want". Without the script it is the same list, scrolled.
+            %>
+            <div class="pick-list pick-list--five" data-search>
+              <% ordered.forEach(option); %>
+            </div>
+            <% if (ordered.length > 5) { %>
+              <p class="hint"><%= ordered.length %> templates. Scroll, or search above.</p>
+            <% } %>
+          <% } %>
+          <% if (reopened && errors.templateId) { %><p class="field-error" role="alert"><%= errors.templateId %></p><% } %>
+        </fieldset>
+
+        <div class="field">
+          <div class="label-row">
+            <label for="<%= d.id %>-dedupe">Check for the same request first, within (hours)</label>
+            <%- include('../../partials/info', { text: 'A mail from the same sender with the same subject, while the ticket this rule raised for it is still open, is added to that ticket instead of raising another. 0 turns this off. Replies are always added to their ticket, whatever this says.' }) %>
+          </div>
+          <input id="<%= d.id %>-dedupe" name="dedupeHours" type="number" min="0" max="720" value="<%= v('dedupeHours', d.r && d.r.dedupe_hours, 24) %>">
+          <% if (reopened && errors.dedupeHours) { %><p class="field-error" role="alert"><%= errors.dedupeHours %></p><% } %>
+        </div>
+
+        <label class="check">
+          <input type="checkbox" name="isEnabled" value="on"<%= (reopened ? values.isEnabled === 'on' : (d.r ? d.r.is_enabled : true)) ? ' checked' : '' %>>
+          On
+        </label>
+
+        <div class="dialog__actions">
+          <button type="submit" class="btn btn--primary"><%= d.button %></button>
+          <a class="btn btn--quiet" href="<%= d.closeTo %>">Cancel</a>
+        </div>
+      </form>
+    </div>
+  </div>
+<% }); %>
+
+<%- include('_layout_end') %>

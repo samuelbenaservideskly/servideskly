@@ -1,0 +1,19 @@
+<%#
+  "Pin to sidebar" for the page as it is: its address with its filters, a
+  default name (renamed under My dashboards), an icon. Staff only; shows
+  "Pinned" when the same address already is.
+%>
+<% if (locals.currentUser && locals.currentUser.role !== 'user') { %>
+  <% var here = locals.currentUrl || ''; var already = (locals.sidebarPins || []).some(function (p) { return p.href === here; }); %>
+  <% if (already) { %>
+    <span class="btn btn--quiet pin-state" aria-disabled="true"><%- include('icon', { name: 'pin' }) %> Pinned</span>
+  <% } else { %>
+    <form method="post" action="/boards/pins" class="inline-form">
+      <input type="hidden" name="_csrf" value="<%= locals.csrfToken %>">
+      <input type="hidden" name="href" value="<%= here %>">
+      <input type="hidden" name="label" value="<%= label %>">
+      <input type="hidden" name="icon" value="<%= icon %>">
+      <button type="submit" class="btn"><%- include('icon', { name: 'pin' }) %> Pin to sidebar</button>
+    </form>
+  <% } %>
+<% } %>

@@ -1,0 +1,173 @@
+<%- include('_layout') %>
+
+<%- include(tabsPartial, { tab: tabKey }) %>
+
+<div class="toolbar">
+  <a class="btn btn--primary" href="#new-portal">
+    <span aria-hidden="true">+</span> New <%= noun %>
+  </a>
+</div>
+
+<%#
+  The standard portal is the code, not a row: listed first so the way back to
+  it is always on screen, with nothing to edit, copy or remove.
+%>
+<%
+  var rows = [{ id: 'standard', name: 'Standard', builtIn: true, is_active: defaultId === 'standard', updated_at: null }]
+    .concat(portals.map(function (p) {
+      return { id: p.id, name: p.name, builtIn: false, is_active: p.is_active, updated_at: p.updated_at, row: p };
+    }));
+%>
+
+<div class="table-scroll">
+  <table class="table">
+    <thead>
+      <tr>
+        <th scope="col">Name</th>
+        <th scope="col">
+          <span class="th-label">
+            Shown to
+            <% if (withGroups) { %>
+              <%- include('../../partials/info', { text: 'Requesters in an assigned group see that portal; all others see the default. A requester in several assigned groups sees the portal of the group that comes first alphabetically.' }) %>
+            <% } %>
+          </span>
+        </th>
+        <th scope="col">Last changed</th>
+        <th scope="col">Actions</th>
+      </tr>
+    </thead>
+    <tbody>
+      <% rows.forEach(function (row) { %>
+        <% var groups = groupsByPortal[row.id] || []; %>
+        <tr>
+          <td>
+            <% if (row.builtIn) { %>
+              <span class="link-strong"><%= row.name %></span>
+              <span class="pill pill--muted">Built in</span>
+            <% } else { %>
+              <a class="link-strong" href="<%= base %>/<%= row.id %>"><%= row.name %></a>
+            <% } %>
+          </td>
+          <td>
+            <% if (row.is_active) { %>
+              <span class="pill pill--ok">&#9733; Default</span>
+            <% } %>
+            <% if (groups.length > 0) { %>
+              <div class="small"><%= groups.join(', ') %></div>
+            <% } %>
+            <% if (!row.is_active && groups.length === 0) { %>
+              <span class="pill pill--muted">Not in use</span>
+            <% } %>
+          </td>
+          <td class="small muted"><%= row.updated_at ? formatRelative(row.updated_at) : ' - ' %></td>
+          <td class="row-actions">
+            <% if (!row.builtIn) { %>
+              <a class="btn btn--quiet btn--small" href="<%= base %>/<%= row.id %>">Edit</a>
+            <% } %>
+            <form method="post" action="<%= base %>/<%= row.id %>/preview" class="inline">
+              <input type="hidden" name="_csrf" value="<%= locals.csrfToken %>">
+              <button type="submit" class="btn btn--quiet btn--small">Preview</button>
+            </form>
+            <% if (withGroups) { %>
+              <a class="btn btn--quiet btn--small" href="#groups-<%= row.id %>">Assign to groups</a>
+            <% } %>
+            <%# The built-in one too: a copy of it is a portal in the current
+                design, which is where most people want to start. %>
+            <form method="post" action="<%= base %>/<%= row.id %>/duplicate" class="inline">
+              <input type="hidden" name="_csrf" value="<%= locals.csrfToken %>">
+              <button type="submit" class="btn btn--quiet btn--small"<%= row.builtIn ? ' title="Start a portal from the built-in design"' : '' %>>Duplicate</button>
+            </form>
+            <% if (!row.is_active) { %>
+              <form method="post" action="<%= base %>/<%= row.id %>/default" class="inline">
+                <input type="hidden" name="_csrf" value="<%= locals.csrfToken %>">
+                <button type="submit" class="btn btn--quiet btn--small">Set default</button>
+              </form>
+            <% } %>
+            <form method="post" action="<%= base %>/<%= row.id %>/delete" class="inline">
+              <input type="hidden" name="_csrf" value="<%= locals.csrfToken %>">
+              <%- include('../../partials/bin-button', {
+                    label: 'Remove ' + row.name,
+                    refused: protectedReason(row.id, row.row) || '',
+                  }) %>
+            </form>
+          </td>
+        </tr>
+      <% }); %>
+    </tbody>
+  </table>
+</div>
+
+<%# One dialog per portal, each a :target anchor - no script to open them. %>
+<% if (withGroups) rows.forEach(function (row) { %>
+  <div class="dialog" id="groups-<%= row.id %>">
+    <a class="dialog__backdrop" href="#top" aria-label="Close"></a>
+    <div class="dialog__panel" role="dialog" aria-modal="true" aria-labelledby="groups-<%= row.id %>-title">
+      <div class="dialog__head">
+        <h2 id="groups-<%= row.id %>-title">Assign "<%= row.name %>" to groups</h2>
+        <a class="dialog__close" href="#top" aria-label="Close">&times;</a>
+      </div>
+
+      <% if (userGroups.length === 0) { %>
+        <p>No user groups yet.</p>
+        <div class="dialog__actions">
+          <a class="btn btn--primary" href="/admin/settings/groups/users">Create a user group</a>
+          <a class="btn btn--quiet" href="#top">Cancel</a>
+        </div>
+      <% } else { %>
+        <form method="post" action="<%= base %>/<%= row.id %>/groups" class="stack">
+          <input type="hidden" name="_csrf" value="<%= locals.csrfToken %>">
+          <fieldset class="stack">
+            <legend class="visually-hidden">User groups</legend>
+            <% userGroups.forEach(function (group) { %>
+              <% var owner = portalOfGroup[group.id]; %>
+              <label class="check">
+                <input type="checkbox" name="groups" value="<%= group.id %>"<%= owner && owner.id === row.id ? ' checked' : '' %>>
+                <%= group.name %>
+                <% if (owner && owner.id !== row.id) { %>
+                  <span class="small muted">(now <%= owner.name %> - ticking moves it)</span>
+                <% } %>
+              </label>
+            <% }); %>
+          </fieldset>
+          <div class="dialog__actions">
+            <button type="submit" class="btn btn--primary">Save groups</button>
+            <a class="btn btn--quiet" href="#top">Cancel</a>
+          </div>
+        </form>
+      <% } %>
+    </div>
+  </div>
+<% }); %>
+
+<%# The dialog is a :target anchor; openDialog reopens it after a refusal. %>
+<div class="dialog<%= openDialog === 'new-portal' ? ' dialog--open' : '' %>" id="new-portal">
+  <a class="dialog__backdrop" href="#top" aria-label="Close"></a>
+  <div class="dialog__panel" role="dialog" aria-modal="true" aria-labelledby="new-portal-title">
+    <div class="dialog__head">
+      <h2 id="new-portal-title">New <%= noun %></h2>
+      <a class="dialog__close" href="#top" aria-label="Close">&times;</a>
+    </div>
+
+    <form method="post" action="<%= base %>" class="stack">
+      <input type="hidden" name="_csrf" value="<%= locals.csrfToken %>">
+      <% if (errors.form) { %>
+        <p class="field-error" role="alert"><%= errors.form %></p>
+      <% } %>
+      <div class="field">
+        <label for="portal-name">Name</label>
+        <input id="portal-name" name="name" type="text" maxlength="80" required
+               placeholder="<%= kind === 'approval' ? 'For example: Branded approval' : 'For example: Service portal 2026' %>"
+               value="<%= values.name || '' %>">
+        <% if (errors.name) { %>
+          <p class="field-error" role="alert"><%= errors.name %></p>
+        <% } %>
+      </div>
+      <div class="dialog__actions">
+        <button type="submit" class="btn btn--primary">Create <%= noun %></button>
+        <a class="btn btn--quiet" href="#top">Cancel</a>
+      </div>
+    </form>
+  </div>
+</div>
+
+<%- include('_layout_end') %>

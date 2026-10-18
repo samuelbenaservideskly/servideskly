@@ -1,0 +1,8 @@
+<nav class="subtabs subtabs--nested" aria-label="Mail advanced settings">
+  <a href="/admin/settings/mail/advanced/signatures"
+     class="<%= locals.sub === 'signatures' ? 'subtabs__item--current' : '' %>"
+     <%- locals.sub === 'signatures' ? 'aria-current="page"' : '' %>>Signature stripping</a>
+  <a href="/admin/settings/mail/advanced/rules"
+     class="<%= locals.sub === 'rules' ? 'subtabs__item--current' : '' %>"
+     <%- locals.sub === 'rules' ? 'aria-current="page"' : '' %>>Mail automation</a>
+</nav>

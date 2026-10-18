@@ -1,0 +1,81 @@
+<%- include('_layout') %>
+
+<form method="get" action="/admin/settings/audit" class="filters">
+  <span class="filters__field">
+    <label for="action">Action</label>
+    <select id="action" name="action">
+      <option value="">Any action</option>
+      <% actionGroups.forEach(function (group) { %>
+        <optgroup label="<%= group.label %>">
+          <% if (group.prefix) { %>
+            <option value="<%= group.prefix %>"<%= filters.action === group.prefix ? ' selected' : '' %>>All <%= group.label.toLowerCase() %></option>
+          <% } %>
+          <% group.actions.forEach(function (a) { %>
+            <option value="<%= a.value %>"<%= filters.action === a.value ? ' selected' : '' %>><%= a.label %></option>
+          <% }); %>
+        </optgroup>
+      <% }); %>
+    </select>
+  </span>
+
+  <span class="filters__field">
+    <label for="outcome">Outcome</label>
+    <select id="outcome" name="outcome">
+      <option value="any"<%= filters.outcome === 'any' ? ' selected' : '' %>>Any</option>
+      <option value="success"<%= filters.outcome === 'success' ? ' selected' : '' %>>Success</option>
+      <option value="failure"<%= filters.outcome === 'failure' ? ' selected' : '' %>>Failure</option>
+    </select>
+  </span>
+
+  <button type="submit" class="btn">Filter</button>
+  <a class="btn btn--quiet" href="/admin/settings/audit">Reset</a>
+</form>
+
+<% if (entries.length === 0) { %>
+  <p class="muted">No audit entries match this filter.</p>
+<% } else { %>
+  <div class="table-scroll">
+    <table class="table table--dense">
+      <thead>
+        <tr>
+          <th scope="col">When</th>
+          <th scope="col">Actor</th>
+          <th scope="col">Action</th>
+          <th scope="col">Outcome</th>
+          <th scope="col">Target</th>
+          <th scope="col">Client IP</th>
+          <th scope="col">Detail</th>
+        </tr>
+      </thead>
+      <tbody>
+        <% entries.forEach(function (entry) { %>
+          <tr>
+            <td class="small mono"><%= formatDateTime(entry.created_at) %></td>
+            <td class="small"><%= entry.actor_email || 'anonymous' %></td>
+            <td class="small mono"><%= entry.action %></td>
+            <td>
+              <span class="pill pill--<%= entry.outcome === 'success' ? 'resolved' : 'urgent' %>"><%= entry.outcome %></span>
+            </td>
+            <td class="small"><%= entry.target_type ? entry.target_type + ' ' + (entry.target_id || '') : '' %></td>
+            <td class="small mono"><%= entry.ip || '' %></td>
+            <td class="small detail-cell"><%= formatDetail(entry.detail) %></td>
+          </tr>
+        <% }); %>
+      </tbody>
+    </table>
+  </div>
+
+  <% if (pageCount > 1) { %>
+    <nav class="pagination" aria-label="Pagination">
+      <% if (page > 1) { %>
+        <a class="btn btn--quiet" href="/admin/settings/audit<%= queryString({ action: filters.action, outcome: filters.outcome, page: page - 1 }) %>">Previous</a>
+      <% } %>
+      <span class="muted">Page <%= page %> of <%= pageCount %></span>
+      <% if (page < pageCount) { %>
+        <a class="btn btn--quiet" href="/admin/settings/audit<%= queryString({ action: filters.action, outcome: filters.outcome, page: page + 1 }) %>">Next</a>
+      <% } %>
+    </nav>
+  <% } %>
+<% } %>
+
+<%- include('_layout_end') %>

@@ -1,0 +1,182 @@
+<%- include('../partials/header') %>
+<%
+  var tones = ['a', 'b', 'c', 'd', 'e', 'f'];
+  var typeIcon = { incident: 'alert', service_request: 'inbox', change_request: 'workflow', task: 'check' };
+%>
+
+<div class="dash-hello">
+  <div>
+    <p class="crumbs small"><a href="/boards">My dashboards</a></p>
+    <h1><%= board.name %></h1>
+  </div>
+  <div class="dash-hello__actions">
+    <% if (!pinned) { %>
+      <form method="post" action="/boards/<%= board.id %>/pin" class="inline-form">
+        <input type="hidden" name="_csrf" value="<%= locals.csrfToken %>">
+        <button type="submit" class="btn"><%- include('../partials/icon', { name: 'pin' }) %> Pin to sidebar</button>
+      </form>
+    <% } %>
+    <form method="post" action="/boards/<%= board.id %>/share" class="inline-form">
+      <input type="hidden" name="_csrf" value="<%= locals.csrfToken %>">
+      <button type="submit" class="btn"<%- share ? ' title="Makes a new link; the current one stops working"' : '' %>><%- include('../partials/icon', { name: 'userPlus' }) %> Share</button>
+    </form>
+    <% if (editing) { %>
+      <a class="btn" href="#rename-board">Rename</a>
+      <a class="btn btn--primary" href="/boards/<%= board.id %>">Done</a>
+    <% } else { %>
+      <a class="btn btn--primary" href="/boards/<%= board.id %>?edit=1"><%- include('../partials/icon', { name: 'pencil' }) %> Edit</a>
+    <% } %>
+  </div>
+</div>
+
+<% if (share && !shareLink) { %>
+  <div class="board-shared">
+    <span><%- include('../partials/icon', { name: 'userPlus' }) %> Shared by link until <%= formatDate(share.expires_at) %>. Whoever imports it gets their own copy, showing what they may see.</span>
+    <form method="post" action="/boards/<%= board.id %>/share/stop" class="inline-form">
+      <input type="hidden" name="_csrf" value="<%= locals.csrfToken %>">
+      <button type="submit" class="btn btn--quiet btn--small">Stop sharing</button>
+    </form>
+  </div>
+<% } %>
+
+<% if (shareLink) { %>
+  <div class="dialog<%= openDialog === 'share' ? ' dialog--open' : '' %>" id="share">
+    <a class="dialog__backdrop" href="#top" aria-label="Close"></a>
+    <div class="dialog__panel" role="dialog" aria-modal="true">
+      <div class="dialog__head"><h2>Share "<%= board.name %>"</h2><a class="dialog__close" href="#top" aria-label="Close">&times;</a></div>
+      <div class="stack">
+        <p class="small">Send this link to a colleague. Opening it lets them add <b>their own copy</b>: the same widgets and filters, showing what <b>they</b> may see - none of your data travels with it.</p>
+        <label class="field-label" for="share-link">Link</label>
+        <input id="share-link" class="mono share-link" type="text" readonly value="<%= shareLink %>">
+        <p class="small muted">Shown once - copy it now. It works for signed-in technicians and administrators, until <%= formatDate(share ? share.expires_at : new Date()) %>. Sharing again makes a new link and stops this one.</p>
+        <div class="dialog__actions">
+          <form method="post" action="/boards/<%= board.id %>/share/stop" class="inline-form">
+            <input type="hidden" name="_csrf" value="<%= locals.csrfToken %>">
+            <button type="submit" class="btn btn--quiet">Stop sharing</button>
+          </form>
+          <a class="btn btn--primary" href="#top">Done</a>
+        </div>
+      </div>
+    </div>
+  </div>
+<% } %>
+
+<% if (editing) { %>
+  <div class="board-toolbar">
+    <a class="btn btn--primary" href="#add-widget">+ Add a widget</a>
+    <form method="post" action="/boards/<%= board.id %>/delete" class="inline-form">
+      <input type="hidden" name="_csrf" value="<%= locals.csrfToken %>">
+      <button type="submit" class="btn btn--danger btn--small">Remove this dashboard</button>
+    </form>
+  </div>
+<% } %>
+
+<div class="board-grid" id="widgets">
+  <% if (views.length === 0) { %>
+    <p class="dash-empty board-grid__empty">This dashboard is empty. <a href="/boards/<%= board.id %>?edit=1#add-widget">Add a widget</a>.</p>
+  <% } %>
+  <% views.forEach(function (item, i) { var w = item.widget, v = item.view; %>
+    <section class="board-widget board-widget--<%= w.width %> board-widget--<%= w.kind %>" id="w-<%= w.id %>">
+      <div class="dash-panel__head">
+        <h2><%= item.title %></h2>
+        <% if (editing) { %>
+          <span class="board-widget__tools">
+            <form method="post" action="/boards/<%= board.id %>/widgets/<%= w.id %>/move" class="inline-form">
+              <input type="hidden" name="_csrf" value="<%= locals.csrfToken %>">
+              <button type="submit" name="direction" value="up" class="btn btn--quiet btn--small" title="Earlier"<%= i === 0 ? ' disabled' : '' %>>&#9650;</button>
+              <button type="submit" name="direction" value="down" class="btn btn--quiet btn--small" title="Later"<%= i === views.length - 1 ? ' disabled' : '' %>>&#9660;</button>
+            </form>
+            <a class="btn btn--quiet btn--small" href="#edit-<%= w.id %>" title="Settings"><%- include('../partials/icon', { name: 'settings' }) %><span class="visually-hidden">Settings</span></a>
+            <form method="post" action="/boards/<%= board.id %>/widgets/<%= w.id %>/delete" class="inline-form">
+              <input type="hidden" name="_csrf" value="<%= locals.csrfToken %>">
+              <%- include('../partials/bin-button', { label: 'Remove ' + item.title }) %>
+            </form>
+          </span>
+        <% } else if (v.href && v.kind !== 'figure' && v.kind !== 'report') { %>
+          <%#
+            A figure and a report are one big link already - their whole body
+            opens the same address, so a second "Open" in the header said the
+            same thing twice (reported). The list and the rest send each row
+            somewhere of its own, so theirs is the only way to the filtered
+            page, and it is a button like the controls it sits beside.
+          -%>
+          <a class="btn btn--quiet btn--small" href="<%= v.href %>">Open</a>
+        <% } %>
+      </div>
+
+      <% if (v.kind === 'figure') { %>
+        <a class="board-figure dash-stat dash-stat--<%= tones[i % tones.length] %>" href="<%= v.href %>"><b><%= v.value %></b><small>ticket<%= v.value === 1 ? '' : 's' %></small></a>
+      <% } else if (v.kind === 'report') { %>
+        <a class="board-figure dash-stat dash-stat--<%= tones[i % tones.length] %>" href="<%= v.href %>"><b><%= v.value %></b><small><%= v.note %></small></a>
+      <% } else if (v.kind === 'list') { %>
+        <% if (v.items.length === 0) { %>
+          <p class="dash-empty">Nothing matches.</p>
+        <% } else { v.items.forEach(function (t) { %>
+          <a class="dash-ticket" href="/tickets/<%= t.id %>">
+            <span class="dash-ticket__icon dash-ticket__icon--<%= t.type %>"><%- include('../partials/icon', { name: typeIcon[t.type] || 'ticket' }) %></span>
+            <span class="dash-ticket__text"><b><%= t.title %></b><small><%= t.reference %> - <%= t.requester_name %></small></span>
+            <span class="dash-ticket__when"><%= formatRelative(t.updated_at) %></span>
+            <span class="pill pill--<%= t.status %>"><%= statusLabels[t.status] %></span>
+          </a>
+        <% }); } %>
+        <% if (v.total > v.items.length) { %><a class="dash-more" href="<%= v.href %>">All <%= v.total %></a><% } %>
+      <% } else if (v.kind === 'chart') { %>
+        <%
+          var maxDay = Math.max(1, ...v.daily.map(function (d) { return Math.max(d.raised, d.resolved); }));
+          var W = 600, H = 150, n = v.daily.length, slot = W / Math.max(1, n), bar = Math.max(1.5, Math.min(12, slot / 2 - 1.5));
+          var y = function (val) { return H - 6 - Math.round((val / maxDay) * (H - 14)); };
+        %>
+        <svg class="report-chart" viewBox="0 0 <%= W %> <%= H %>" role="img" aria-label="Raised and resolved each day">
+          <line class="report-chart__axis" x1="0" x2="<%= W %>" y1="<%= H - 6 %>" y2="<%= H - 6 %>"></line>
+          <% v.daily.forEach(function (d, j) { var x = j * slot + slot / 2; %>
+            <rect class="report-chart__raised" x="<%= (x - bar - 1).toFixed(1) %>" y="<%= y(d.raised) %>" width="<%= bar.toFixed(1) %>" height="<%= H - 6 - y(d.raised) %>" rx="2"><title><%= d.day %>: <%= d.raised %> raised</title></rect>
+            <rect class="report-chart__resolved" x="<%= (x + 1).toFixed(1) %>" y="<%= y(d.resolved) %>" width="<%= bar.toFixed(1) %>" height="<%= H - 6 - y(d.resolved) %>" rx="2"><title><%= d.day %>: <%= d.resolved %> resolved</title></rect>
+          <% }); %>
+        </svg>
+      <% } else if (v.kind === 'dashboard') { %>
+        <%#
+          The dashboard's own drawing, from services/dashboards.ts - the
+          same markup a requester is shown, read with this board owner's
+          permissions. Unescaped for the same reason the portal includes it
+          unescaped: it is the dashboard's HTML, and every value inside it
+          was escaped where it was interpolated.
+        %>
+        <div class="widget-dashboard"><%- v.html %></div>
+      <% } else if (v.kind === 'activity') { %>
+        <% if (v.items.length === 0) { %>
+          <p class="dash-empty">Nothing has happened on your tickets yet.</p>
+        <% } else { v.items.forEach(function (a) { %>
+          <a class="dash-activity dash-activity--info" href="/tickets/<%= a.ticketId %>">
+            <span class="dash-activity__icon"><%- include('../partials/icon', { name: a.kind === 'comment' ? 'message' : a.kind === 'created' ? 'sparkles' : 'ticket' }) %></span>
+            <span><b><%= a.reference %> - <%= a.title %></b><small><%= a.actorName || 'Somebody' %> - <%= formatRelative(a.at) %></small></span>
+          </a>
+        <% }); } %>
+      <% } else { %>
+        <p class="dash-empty"><%= v.message %></p>
+      <% } %>
+    </section>
+  <% }); %>
+</div>
+
+<% if (editing) { %>
+  <%- include('_widget-form', { w: null }) %>
+  <% views.forEach(function (item) { %><%- include('_widget-form', { w: item.widget }) %><% }); %>
+
+  <div class="dialog<%= openDialog === 'rename-board' ? ' dialog--open' : '' %>" id="rename-board">
+    <a class="dialog__backdrop" href="#top" aria-label="Close"></a>
+    <div class="dialog__panel" role="dialog" aria-modal="true">
+      <div class="dialog__head"><h2>Rename</h2><a class="dialog__close" href="#top" aria-label="Close">&times;</a></div>
+      <form method="post" action="/boards/<%= board.id %>/rename" class="stack">
+        <input type="hidden" name="_csrf" value="<%= locals.csrfToken %>">
+        <div class="field">
+          <label for="board-rename">Name</label>
+          <input id="board-rename" name="name" type="text" maxlength="60" required value="<%= board.name %>">
+          <% if (openDialog === 'rename-board' && error) { %><p class="field-error" role="alert"><%= error %></p><% } %>
+        </div>
+        <div class="dialog__actions"><button type="submit" class="btn btn--primary">Rename</button><a class="btn btn--quiet" href="#top">Cancel</a></div>
+      </form>
+    </div>
+  </div>
+<% } %>
+
+<%- include('../partials/footer') %>

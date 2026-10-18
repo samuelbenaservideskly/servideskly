@@ -1,0 +1,17 @@
+<%#
+  The mark at the top of a sign-in card: the service desk's logo when one is
+  uploaded, the plain shape when not.
+
+  One partial because there are eight of these pages - the address, the
+  password, the code, Forgot password, the reset, Create an account, its
+  confirmation and Choose a password - and only the first showed the logo.
+  Somebody who had just seen their own branding then watched it vanish on
+  the next step, which reads as a different site asking for the password:
+  reported 16 Oct 2026.
+-%>
+<% if (locals.brandingLogo) { %>
+  <img class="signin-logo" src="/branding/logo?v=<%= locals.brandingVersion %>"
+       alt="<%= locals.appName %>">
+<% } else { %>
+  <span class="signin-mark" aria-hidden="true"></span>
+<% } %>

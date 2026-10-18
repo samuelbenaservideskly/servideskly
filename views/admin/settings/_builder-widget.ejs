@@ -1,0 +1,103 @@
+<%# One field on the builder's canvas. `field`, `isFirst` and `isLast` are
+    passed in; everything else is the edit page's own locals. %>
+<li class="widget widget--<%= field.mode %> widget--<%= field.width %>" id="row-<%= field.key %>"
+    data-key="<%= field.key %>">
+  <span class="widget__grip" aria-hidden="true">⠿</span>
+
+  <div class="widget__preview">
+    <span class="widget__label">
+      <%= field.shown %><% if (field.mode === 'mandatory') { %> <span class="required">*</span><% } %>
+    </span>
+
+    <%
+      var spec = fieldDefaults[field.key];
+      var set = spec ? defaultFor(field.key) : '';
+      var shownDefault = '';
+      if (spec && set) {
+        if (field.key === 'priority') shownDefault = priorityLabels[set];
+        else if (fieldDefaults[field.key].level) shownDefault = templateCategoryTrail[field.key] || '';
+        else shownDefault = set;
+      }
+    %>
+    <% if (spec) { %>
+      <span class="widget__default">
+        <%= spec.label %>:
+        <% if (shownDefault) { %>
+          <strong><%= shownDefault.length > 60 ? shownDefault.slice(0, 60) + '…' : shownDefault %></strong>
+        <% } else { %>
+          <span class="muted">not set</span>
+        <% } %>
+        <a href="#field-<%= field.key %>">Change</a>
+      </span>
+    <% } %>
+
+    <%# A picture of the real control: nothing here has a name. %>
+<%#
+      A catalogue level shows **its own** name, not the stored
+      path: all three read one category_id, so printing the path
+      on each made Category, Sub category and Item identical.
+    %>
+    <% var levelName = spec && spec.level ? (templateCategoryTrail[field.key] || '') : ''; %>
+
+    <% if (field.key === 'requester') { %>
+      <div class="requester-card requester-card--preview">
+        <strong>The person raising it</strong>
+        <% (field.details || ['email', 'phone']).forEach(function (d) { %><span class="small muted"><%= requesterDetailOptions.filter(function (x) { return x.key === d; })[0].label %></span><% }); %>
+      </div>
+    <% } else if (field.mode === 'view_only') { %>
+      <p class="locked-value"><%
+        if (field.key === 'title') { %><%= template.title || template.name %><%
+        } else if (field.key === 'priority') { %><%= priorityLabels[template.priority] %><%
+        } else if (field.key === 'description') { %><%= template.body || 'Nothing to add.' %><%
+        } else if (spec && spec.level) { %><%= levelName || 'Not classified' %><%
+        } else { %><%= field.value || 'Set when this form is filled in.' %><% }
+      %></p>
+    <% } else if (field.key === 'priority') { %>
+      <select disabled>
+        <% priorities.forEach(function (priority) { %>
+          <option<%= template.priority === priority ? ' selected' : '' %>><%= priorityLabels[priority] %></option>
+        <% }); %>
+      </select>
+    <% } else if (spec && spec.level) { %>
+      <%# All three levels, each showing what it is set to. %>
+      <select disabled><option><%= levelName || 'Chosen by the requester' %></option></select>
+    <% } else if (field.key === 'description') { %>
+      <textarea rows="2" disabled placeholder="<%= field.ghost %>"></textarea>
+    <% } else if (field.key === 'attachments') { %>
+      <p class="preview-note">A file picker.</p>
+    <% } else { %>
+      <%# A picture of the control a requester will get, ghost text included. %>
+      <% if (field.fieldType === 'textarea') { %>
+        <textarea rows="2" disabled placeholder="<%= field.ghost %>"></textarea>
+      <% } else if (field.fieldType === 'select') { %>
+        <select disabled><option><%= (field.options || []).length ? field.options.join(' / ') : 'No options yet' %></option></select>
+      <% } else if (field.fieldType === 'multiselect') { %>
+        <p class="preview-note">Tick any of: <%= (field.options || []).join(', ') || 'no options yet' %></p>
+      <% } else if (field.fieldType === 'date') { %>
+        <input type="date" disabled>
+      <% } else { %>
+        <input type="text" disabled placeholder="<%= field.ghost %>">
+      <% } %>
+    <% } %>
+  </div>
+
+  <span class="widget__tools">
+    <button type="submit" form="up-<%= field.key %>" class="icon-btn"
+            title="Move up"<%= isFirst ? ' disabled' : '' %>>&#9650;<span class="visually-hidden">Move <%= field.shown %> up</span></button>
+    <button type="submit" form="down-<%= field.key %>" class="icon-btn"
+            title="Move down"<%= isLast ? ' disabled' : '' %>>&#9660;<span class="visually-hidden">Move <%= field.shown %> down</span></button>
+
+    <a class="icon-btn" href="#field-<%= field.key %>" title="Configure <%= field.shown %>">
+      <%- include('../../partials/icon-gear', { size: 13 }) %>
+      <span class="visually-hidden">Configure <%= field.shown %></span>
+    </a>
+
+    <button type="submit" form="remove-<%= field.key %>" class="icon-btn icon-btn--danger"
+            title="Take <%= field.shown %> off the form">
+      <svg viewBox="0 0 16 16" width="13" height="13" fill="currentColor" aria-hidden="true">
+        <path d="M6.5 1a.5.5 0 0 0-.5.5V2H3.5a.5.5 0 0 0 0 1H4v9.5A1.5 1.5 0 0 0 5.5 14h5a1.5 1.5 0 0 0 1.5-1.5V3h.5a.5.5 0 0 0 0-1H10v-.5a.5.5 0 0 0-.5-.5h-3ZM5 3h6v9.5a.5.5 0 0 1-.5.5h-5a.5.5 0 0 1-.5-.5V3Zm1.5 1.5a.5.5 0 0 1 .5.5v6a.5.5 0 0 1-1 0V5a.5.5 0 0 1 .5-.5Zm3 0a.5.5 0 0 1 .5.5v6a.5.5 0 0 1-1 0V5a.5.5 0 0 1 .5-.5Z"/>
+      </svg>
+      <span class="visually-hidden">Take <%= field.shown %> off the form</span>
+    </button>
+  </span>
+</li>

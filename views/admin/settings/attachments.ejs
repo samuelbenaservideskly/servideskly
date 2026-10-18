@@ -1,0 +1,48 @@
+<%- include('_layout') %>
+
+<%- include('_customization-tabs', { tab: 'attachments' }) %>
+
+<form method="post" action="/admin/settings/customization/attachments" class="card stack">
+  <input type="hidden" name="_csrf" value="<%= locals.csrfToken %>">
+  <h2 class="section-title">Limits</h2>
+
+  <label class="check">
+    <input type="checkbox" name="enabled" value="on"<%= doc.attachments.enabled ? ' checked' : '' %>>
+    Allow files to be attached to tickets
+  </label>
+
+  <div class="field">
+    <label for="maxMegabytes">Maximum size per file (MB)</label>
+    <input id="maxMegabytes" name="maxMegabytes" type="number" min="0.1" max="100" step="0.1"
+           value="<%= attachmentMaxMegabytes %>">
+  </div>
+
+  <div class="field">
+    <label for="maxPerTicket">Maximum files per ticket</label>
+    <input id="maxPerTicket" name="maxPerTicket" type="number" min="1" max="200"
+           value="<%= doc.attachments.maxPerTicket %>">
+  </div>
+
+  <div class="actions">
+    <button type="submit" class="btn btn--primary">Save attachment settings</button>
+  </div>
+</form>
+
+<div class="card card--info">
+  <h2 class="section-title">What is accepted</h2>
+  <p class="small">
+    The accepted formats are fixed in code rather than configurable, because
+    each one has to be verifiable from its own leading bytes:
+  </p>
+  <p class="mono small">
+    .png .jpg .jpeg .gif .webp .pdf .docx .xlsx .pptx .zip .txt .log .csv
+  </p>
+  <p class="small muted">
+    Every upload must match both its extension and its content. HTML or SVG
+    renamed to <code>.png</code> is refused, and so is a real image renamed to
+    something a browser would treat as active content. Files are stored outside
+    the web root under random names and are always served as downloads.
+  </p>
+</div>
+
+<%- include('_layout_end') %>

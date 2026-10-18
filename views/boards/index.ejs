@@ -1,0 +1,108 @@
+<%- include('../partials/header') %>
+
+<div class="dash-hello">
+  <div>
+    <h1>My dashboards</h1>
+    <p class="muted">Your own dashboards and the pins in your sidebar. Nobody else sees them.</p>
+  </div>
+  <div class="dash-hello__actions">
+    <a class="btn" href="#import">Import</a>
+    <a class="btn btn--primary" href="#new-board">+ New dashboard</a>
+  </div>
+</div>
+
+<section class="dash-panel" id="dashboards">
+  <div class="dash-panel__head"><h2>Dashboards</h2></div>
+  <% if (boards.length === 0) { %>
+    <p class="dash-empty">No dashboards yet. Press <a href="#new-board">New dashboard</a>, then add widgets: counts, ticket lists, report figures, charts.</p>
+  <% } else { %>
+    <div class="board-cards">
+      <% boards.forEach(function (b) { %>
+        <a class="board-card" href="/boards/<%= b.id %>">
+          <span class="dash-group__icon"><%- include('../partials/icon', { name: 'layout' }) %></span>
+          <span><b><%= b.name %></b><small><%= b.widgets.length %> widget<%= b.widgets.length === 1 ? '' : 's' %></small></span>
+        </a>
+      <% }); %>
+    </div>
+  <% } %>
+</section>
+
+<section class="dash-panel" id="pins">
+  <div class="dash-panel__head"><h2>Pinned in the sidebar</h2><small class="muted">Pin a ticket list or a report from its own page</small></div>
+  <% if (pins.length === 0) { %>
+    <p class="dash-empty">Nothing pinned. Open the ticket list or a report with the filters you want, and press <b>Pin to sidebar</b>.</p>
+  <% } else { %>
+    <% pins.forEach(function (p, i) { %>
+      <div class="pin-row">
+        <span class="dash-group__icon"><%- include('../partials/icon', { name: p.icon }) %></span>
+        <form method="post" action="/boards/pins/<%= p.id %>" class="pin-row__form">
+          <input type="hidden" name="_csrf" value="<%= locals.csrfToken %>">
+          <label class="visually-hidden" for="pin-<%= p.id %>">Name</label>
+          <input id="pin-<%= p.id %>" name="label" type="text" maxlength="40" value="<%= p.label %>">
+          <label class="visually-hidden" for="pin-icon-<%= p.id %>">Icon</label>
+          <select id="pin-icon-<%= p.id %>" name="icon" data-no-search>
+            <% pinIcons.forEach(function (icon) { %><option value="<%= icon %>"<%= p.icon === icon ? ' selected' : '' %>><%= icon %></option><% }); %>
+          </select>
+          <button type="submit" class="btn btn--small">Save</button>
+        </form>
+        <span class="pin-row__link">
+          <a class="small muted pin-row__href" href="<%= p.href %>"><%= p.href %></a>
+          <%- include('../partials/copy-button', { text: p.href, label: 'Copy the address of ' + p.label }) %>
+        </span>
+        <span class="pin-row__tools">
+          <form method="post" action="/boards/pins/<%= p.id %>/move" class="inline-form">
+            <input type="hidden" name="_csrf" value="<%= locals.csrfToken %>">
+            <button type="submit" name="direction" value="up" class="btn btn--quiet btn--small" title="Up"<%= i === 0 ? ' disabled' : '' %>>&#9650;</button>
+            <button type="submit" name="direction" value="down" class="btn btn--quiet btn--small" title="Down"<%= i === pins.length - 1 ? ' disabled' : '' %>>&#9660;</button>
+          </form>
+          <form method="post" action="/boards/pins/<%= p.id %>/delete" class="inline-form">
+            <input type="hidden" name="_csrf" value="<%= locals.csrfToken %>">
+            <%- include('../partials/bin-button', { label: 'Unpin ' + p.label }) %>
+          </form>
+        </span>
+      </div>
+    <% }); %>
+  <% } %>
+</section>
+
+<div class="dialog" id="import">
+  <a class="dialog__backdrop" href="#top" aria-label="Close"></a>
+  <div class="dialog__panel" role="dialog" aria-modal="true">
+    <div class="dialog__head"><h2>Import a dashboard</h2><a class="dialog__close" href="#top" aria-label="Close">&times;</a></div>
+    <form method="post" action="/boards/import" class="stack">
+      <input type="hidden" name="_csrf" value="<%= locals.csrfToken %>">
+      <div class="field">
+        <label for="import-link">Link from a colleague</label>
+        <input id="import-link" name="link" type="text" maxlength="400" required class="mono" placeholder="https://.../boards/import/...">
+      </div>
+      <div class="dialog__actions">
+        <button type="submit" class="btn btn--primary">Show me</button>
+        <a class="btn btn--quiet" href="#top">Cancel</a>
+      </div>
+    </form>
+  </div>
+</div>
+
+<div class="dialog<%= openDialog === 'new-board' ? ' dialog--open' : '' %>" id="new-board">
+  <a class="dialog__backdrop" href="#top" aria-label="Close"></a>
+  <div class="dialog__panel" role="dialog" aria-modal="true">
+    <div class="dialog__head"><h2>New dashboard</h2><a class="dialog__close" href="#top" aria-label="Close">&times;</a></div>
+    <form method="post" action="/boards" class="stack">
+      <input type="hidden" name="_csrf" value="<%= locals.csrfToken %>">
+      <div class="field">
+        <label for="board-name">Name</label>
+        <input id="board-name" name="name" type="text" maxlength="60" required placeholder="e.g. Network on call">
+        <% if (errors.name) { %><p class="field-error" role="alert"><%= errors.name %></p><% } %>
+      </div>
+      <div class="dialog__actions">
+        <button type="submit" class="btn btn--primary">Create dashboard</button>
+        <a class="btn btn--quiet" href="#top">Cancel</a>
+      </div>
+    </form>
+  </div>
+</div>
+
+<%# The one script this page loads: the copy buttons above. See copy.js. %>
+<script src="/assets/js/copy.js?v=<%= locals.assetVersion %>" defer></script>
+
+<%- include('../partials/footer') %>

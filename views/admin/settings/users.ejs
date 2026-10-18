@@ -1,0 +1,330 @@
+<%- include('_layout') %>
+
+<%- include('_user-tabs', { tab: kind }) %>
+
+<%# Identity providers, separated by provider: each one configured or with accounts here, placed by the account's issuer. %>
+<% if (kind === 'directory' && providerTabs.length > 0) { %>
+  <nav class="subtabs subtabs--secondary" aria-label="Identity provider">
+    <a href="<%= listUrl %>"
+       class="<%= !filters.idp ? 'subtabs__item--current' : '' %>"
+       <%- !filters.idp ? 'aria-current="page"' : '' %>>All</a>
+    <% providerTabs.forEach(function (p) { %>
+      <a href="<%= listUrl %>?idp=<%= p.key %>"
+         class="<%= filters.idp === p.key ? 'subtabs__item--current' : '' %>"
+         <%- filters.idp === p.key ? 'aria-current="page"' : '' %>><%= p.name %> <span class="muted">(<%= p.count %>)</span></a>
+    <% }); %>
+  </nav>
+<% } %>
+
+<p class="small muted">
+  <strong>Roles are set here and nowhere else.</strong> Groups and roles from your
+  identity provider are ignored; everyone arrives as a user until promoted.
+</p>
+
+<% if (kind === 'local') { %>
+  <%# On or off for every password account at once. Its messages land here,
+      beside the switch, not at the top of the page. %>
+  <form method="post" action="/admin/settings/users/local-signin" class="card local-signin-card" id="local-signin">
+    <input type="hidden" name="_csrf" value="<%= locals.csrfToken %>">
+    <% (locals.flashMessages || []).filter(function (m) { return m.where === 'local-signin'; }).forEach(function (m) { %>
+      <div class="flash flash--<%= m.type %>" role="<%= m.type === 'error' ? 'alert' : 'status' %>"><%= m.message %></div>
+    <% }); %>
+    <div class="local-signin-card__row">
+      <div>
+        <strong>Sign-in with local accounts</strong>
+        <span class="pill pill--<%= localSignIn.enabled ? 'ok' : 'muted' %>"><%= localSignIn.enabled ? 'Enabled' : 'Disabled' %></span>
+        <% if (!localSignIn.enabled) { %>
+          <p class="hint">The sign-in page offers single sign-on only. The accounts below are kept.</p>
+        <% } else if (localSignIn.forced) { %>
+          <p class="hint">Kept on by <code>FORCE_LOCAL_SIGNIN</code> in the environment.</p>
+        <% } %>
+      </div>
+      <% if (!localSignIn.forced) { %>
+        <% if (localSignIn.enabled) { %>
+          <button type="submit" class="btn btn--danger btn--small">Disable sign-in with local accounts</button>
+        <% } else { %>
+          <input type="hidden" name="enabled" value="on">
+          <button type="submit" class="btn btn--small">Enable sign-in with local accounts</button>
+        <% } %>
+      <% } %>
+    </div>
+  </form>
+
+
+  <% if (imported) { %>
+    <div class="card" role="status">
+      <h2 class="section-title">Imported <%= imported.length %> account<%= imported.length === 1 ? '' : 's' %></h2>
+      <% if (imported.some(function (a) { return a.generatedPassword; })) { %>
+        <p class="small"><strong>Copy the generated passwords now - they are not shown again.</strong> Everyone is asked to choose their own at first sign-in.</p>
+      <% } %>
+      <% if (imported.length > 0) { %>
+        <div class="table-scroll">
+          <table class="table">
+            <thead>
+              <tr><th scope="col">Email</th><th scope="col">Name</th><th scope="col">Role</th><th scope="col">Temporary password</th></tr>
+            </thead>
+            <tbody>
+              <% imported.forEach(function (a) { %>
+                <tr>
+                  <td class="small"><a href="/admin/settings/users/<%= a.userId %>"><%= a.email %></a></td>
+                  <td><%= a.displayName %></td>
+                  <td><span class="badge badge--<%= a.role %>"><%= roleLabel(a.role) %></span></td>
+                  <td class="small">
+                    <% if (a.generatedPassword) { %><span class="copyable"><%= a.generatedPassword %></span><% } else { %><span class="muted">from the file</span><% } %>
+                    <% if (a.mailed) { %><span class="pill pill--ok">Emailed</span><% } %>
+                  </td>
+                </tr>
+              <% }); %>
+            </tbody>
+          </table>
+        </div>
+      <% } %>
+      <% if (skipped.length > 0) { %>
+        <p class="small muted">Already had an account, left as it is: <%= skipped.join(', ') %></p>
+      <% } %>
+    </div>
+  <% } %>
+
+  <div class="toolbar">
+    <a class="btn btn--primary" href="#new-account">
+      <span aria-hidden="true">+</span> New account
+    </a>
+    <a class="btn" href="#import-users">Import from CSV</a>
+  </div>
+<% } %>
+
+<form method="get" action="<%= listUrl %>" class="filters">
+  <% if (filters.idp) { %><input type="hidden" name="idp" value="<%= filters.idp %>"><% } %>
+  <span class="filters__field">
+    <label for="q">Search</label>
+    <input id="q" name="q" type="search" maxlength="200" value="<%= filters.q || '' %>" placeholder="Name or email">
+  </span>
+
+  <span class="filters__field">
+    <label for="f-role">Role</label>
+    <select id="f-role" name="role">
+      <option value="">Any role</option>
+      <% ['user', 'agent', 'admin'].forEach(function (r) { %>
+        <option value="<%= r %>"<%= filters.role === r ? ' selected' : '' %>><%= roleLabel(r) %></option>
+      <% }); %>
+    </select>
+  </span>
+
+  <span class="filters__field">
+    <label for="f-tg">Technician group</label>
+    <select id="f-tg" name="tg">
+      <option value="">Any</option>
+      <% technicianGroups.forEach(function (g) { %>
+        <option value="<%= g.id %>"<%= filters.tg === g.id ? ' selected' : '' %>><%= g.name %></option>
+      <% }); %>
+    </select>
+  </span>
+
+  <span class="filters__field">
+    <label for="f-ug">User group</label>
+    <select id="f-ug" name="ug">
+      <option value="">Any</option>
+      <% allUserGroups.forEach(function (g) { %>
+        <option value="<%= g.id %>"<%= filters.ug === g.id ? ' selected' : '' %>><%= g.name %></option>
+      <% }); %>
+    </select>
+  </span>
+
+  <button type="submit" class="btn">Filter</button>
+  <% if (filtering) { %><a class="btn btn--quiet" href="<%= listUrl %><%= filters.idp ? '?idp=' + filters.idp : '' %>">Reset</a><% } %>
+  <span class="muted small"><%= total %> account(s)</span>
+</form>
+
+<div class="table-scroll">
+  <table class="table">
+    <thead>
+      <tr>
+        <th scope="col">Name</th>
+        <th scope="col">Role</th>
+        <th scope="col">Technician groups</th>
+        <th scope="col">User groups</th>
+        <th scope="col">Status</th>
+        <th scope="col">Source</th>
+        <th scope="col">Last sign-in</th>
+      </tr>
+    </thead>
+    <tbody>
+      <% users.forEach(function (user) { %>
+        <tr>
+          <td>
+            <a class="link-strong" href="/admin/settings/users/<%= user.id %>"><%= user.display_name %></a>
+            <% if (user.isProtected) { %>
+              <span class="pill pill--muted">break-glass</span>
+            <% } %>
+            <div class="small muted"><%= user.email %></div>
+          </td>
+          <td><span class="badge badge--<%= user.role %>"><%= roleLabel(user.role) %></span></td>
+          <td class="small">
+            <% if (user.groups.length === 0) { %>
+              <span class="muted"> - </span>
+            <% } else { %>
+              <%- include('_group-names', { names: user.groups.map(function (g) { return g.name; }) }) %>
+            <% } %>
+          </td>
+          <td class="small">
+            <% if (user.userGroups.length === 0) { %>
+              <span class="muted"> - </span>
+            <% } else { %>
+              <%- include('_group-names', { names: user.userGroups.map(function (g) { return g.name; }) }) %>
+            <% } %>
+          </td>
+          <td>
+            <span class="pill pill--<%= user.status === 'active' ? 'ok' : 'warn' %>"><%= stateLabel(user.status) %></span>
+          </td>
+          <td class="small">
+            <% if (user.isLocal) { %>Password<% } else { %><%= providerNameOf(user.issuer) %><div class="muted"><%= sourceLabel(user.source) %></div><% } %>
+          </td>
+          <td class="small" title="<%= formatDateTime(user.last_login_at) %>"><%= formatRelative(user.last_login_at) %></td>
+        </tr>
+      <% }); %>
+    </tbody>
+  </table>
+</div>
+
+<% if (pageCount > 1) { %>
+  <nav class="pagination" aria-label="Pages">
+    <% for (var p = 1; p <= pageCount; p++) { %>
+      <a href="<%= listUrl %>?page=<%= p %><%= filterQuery ? '&' + filterQuery : '' %>"
+         class="pagination__item<%= p === filters.page ? ' pagination__item--current' : '' %>"><%= p %></a>
+    <% } %>
+  </nav>
+<% } %>
+
+<%# A :target dialog, reopened by openDialog when a submission is refused. %>
+<div class="dialog<%= openDialog === 'new-account' ? ' dialog--open' : '' %>" id="new-account">
+  <a class="dialog__backdrop" href="#top" aria-label="Close"></a>
+  <div class="dialog__panel" role="dialog" aria-modal="true" aria-labelledby="new-account-title">
+    <div class="dialog__head">
+      <h2 id="new-account-title">New account</h2>
+      <a class="dialog__close" href="#top" aria-label="Close">&times;</a>
+    </div>
+
+
+<form method="post" action="/admin/settings/users" class="stack">
+  <input type="hidden" name="_csrf" value="<%= locals.csrfToken %>">
+
+  <% if (errors.form) { %>
+    <p class="field-error" role="alert"><%= errors.form %></p>
+  <% } %>
+
+  <div class="field">
+    <div class="label-row">
+      <label for="email">Email</label>
+      <%- include('../../partials/info', { text: 'The email address is used to sign in.' }) %>
+    </div>
+    <input id="email" name="email" type="email" required maxlength="200" autocomplete="off"
+           value="<%= values.email || '' %>">
+    <% if (errors.email) { %><p class="field-error" role="alert"><%= errors.email %></p><% } %>
+  </div>
+
+  <div class="grid-2">
+    <div class="field">
+      <label for="newFirstName">First name</label>
+      <input id="newFirstName" name="firstName" type="text" maxlength="100" value="<%= values.firstName || '' %>">
+    </div>
+    <div class="field">
+      <label for="newLastName">Last name</label>
+      <input id="newLastName" name="lastName" type="text" maxlength="100" value="<%= values.lastName || '' %>">
+    </div>
+  </div>
+
+  <div class="field">
+    <label for="displayName">Display name</label>
+    <input id="displayName" name="displayName" type="text" maxlength="120"
+           value="<%= values.displayName || '' %>" placeholder="Leave empty to use the first and last name">
+    <% if (errors.displayName) { %><p class="field-error" role="alert"><%= errors.displayName %></p><% } %>
+  </div>
+
+  <div class="field">
+    <label for="newCompany">Company</label>
+    <input id="newCompany" name="company" type="text" maxlength="120" value="<%= values.company || '' %>">
+  </div>
+
+  <div class="field">
+    <label for="newRole">Role</label>
+    <select id="newRole" name="role">
+      <option value="user"<%= values.role === 'user' || !values.role ? ' selected' : '' %>>User</option>
+      <option value="agent"<%= values.role === 'agent' ? ' selected' : '' %>>Agent (technician)</option>
+      <% if (!locals.adminsInPortal) { %><option value="admin"<%= values.role === 'admin' ? ' selected' : '' %>>Administrator</option><% } %>
+    </select>
+  </div>
+
+  <div class="field">
+    <div class="label-row">
+      <label for="password">Password</label>
+      <span class="info" tabindex="0"><span class="info__mark" aria-hidden="true">i</span><span class="info__bubble" role="note"><%= passwordPolicy %> The user must change it at first sign-in. Suggestion: <code><%= suggestion %></code></span></span>
+    </div>
+    <%- include('../../partials/password-input', { id: 'password', name: 'password', value: values.password || '', required: true }) %>
+    <% if (errors.password) { %><p class="field-error" role="alert"><%= errors.password %></p><% } %>
+  </div>
+
+  <div class="dialog__actions">
+    <button type="submit" class="btn btn--primary">Create account</button>
+    <a class="btn btn--quiet" href="#top">Cancel</a>
+  </div>
+</form>
+  </div>
+</div>
+
+<%# Import: download the template, fill it in, upload it. Nothing is created
+    unless every row is right, so a refusal lists every line to fix. %>
+<div class="dialog<%= openDialog === 'import-users' ? ' dialog--open' : '' %>" id="import-users">
+  <a class="dialog__backdrop" href="#top" aria-label="Close"></a>
+  <div class="dialog__panel" role="dialog" aria-modal="true" aria-labelledby="import-users-title">
+    <div class="dialog__head">
+      <h2 id="import-users-title">Import local users</h2>
+      <a class="dialog__close" href="#top" aria-label="Close">&times;</a>
+    </div>
+
+    <form method="post" action="/admin/settings/users/import" enctype="multipart/form-data" class="stack">
+      <input type="hidden" name="_csrf" value="<%= locals.csrfToken %>">
+
+      <% if (importProblems.length > 0) { %>
+        <div class="flash flash--error" role="alert">
+          <strong>Nobody was imported.</strong>
+          <ul class="tight-list">
+            <% importProblems.forEach(function (problem) { %><li><%= problem %></li><% }); %>
+          </ul>
+        </div>
+      <% } %>
+
+      <p class="small">
+        <a href="/admin/settings/users/import/template.csv" download>Download the CSV template</a>
+        - columns <code>email</code>, <code>display_name</code>, <code>role</code> (user, agent or admin) and
+        <code>password</code>. Leave a password blank to have one generated.
+      </p>
+
+      <div class="field">
+        <label for="import-file">CSV file</label>
+        <input id="import-file" name="file" type="file" accept=".csv,text/csv" required>
+        <p class="hint">Up to <%= maxImportRows %> accounts and 1 MB. Comma or semicolon separated. Existing addresses are skipped.</p>
+      </div>
+
+      <div class="label-row">
+        <label class="check">
+          <input type="checkbox" name="mailPassword" value="on"<%= locals.canMailPasswords ? '' : ' disabled' %>>
+          <span>Email each person their temporary password</span>
+        </label>
+        <%- include('../../partials/info', { text: 'Only a password generated here, never one typed into the sheet. Everybody imported has to choose their own password the first time they sign in, whether or not this is ticked.' }) %>
+      </div>
+      <% if (!locals.canMailPasswords) { %>
+        <%# A fact the control cannot show: there is nothing to send it with. %>
+        <p class="hint">Set up a mailbox or an SMTP relay under Settings - Mail to send these.</p>
+      <% } %>
+
+      <div class="dialog__actions">
+        <button type="submit" class="btn btn--primary">Import users</button>
+        <a class="btn btn--quiet" href="#top">Cancel</a>
+      </div>
+    </form>
+  </div>
+</div>
+
+<%# The eye beside a password box. See password-reveal.js. %>
+<script src="/assets/js/password-reveal.js?v=<%= locals.assetVersion %>" defer></script>
+<%- include('_layout_end') %>

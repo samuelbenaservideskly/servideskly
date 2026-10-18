@@ -1,0 +1,88 @@
+<%- include('_layout') %>
+
+<%- include('_advanced-tabs', { tab: 'javascript' }) %>
+
+<section class="card stack">
+  <div class="label-row">
+    <h2 class="card__title">JavaScript in requester portals</h2>
+    <% if (scripts.enabled) { %>
+      <span class="pill pill--warn">Allowed</span>
+    <% } else { %>
+      <span class="pill pill--muted">Off</span>
+    <% } %>
+  </div>
+
+  <% if (scripts.enabled) { %>
+    <p>Custom requester portals may run their own script, written in the portal's JavaScript tab. Scripts never run on the sign-in page, the approval page or in Settings.</p>
+    <form method="post" action="/admin/settings/advanced/javascript/disable" class="actions">
+      <input type="hidden" name="_csrf" value="<%= locals.csrfToken %>">
+      <button type="submit" class="btn btn--danger">Turn off JavaScript</button>
+    </form>
+  <% } else { %>
+    <p>Portals are limited to HTML and CSS.</p>
+    <div class="actions">
+      <a class="btn btn--primary" href="#enable-js">Allow JavaScript</a>
+    </div>
+  <% } %>
+</section>
+
+<form method="post" action="/admin/settings/advanced/javascript/origins" class="card stack">
+  <input type="hidden" name="_csrf" value="<%= locals.csrfToken %>">
+
+  <div class="field">
+    <div class="label-row">
+      <label for="origins">Allowed origins</label>
+      <%- include('../../partials/info', { text: 'External https origins a portal script may load further scripts from and send requests to, one per line. Everything else stays blocked by the page policy.' }) %>
+    </div>
+    <textarea id="origins" name="origins" rows="4" spellcheck="false"
+              placeholder="https://cdn.example.com"><%= originsText %></textarea>
+    <% if (errors.origins) { %><p class="field-error" role="alert"><%= errors.origins %></p><% } %>
+  </div>
+
+  <div class="actions">
+    <button type="submit" class="btn">Save origins</button>
+  </div>
+</form>
+
+<%# The warning. A :target dialog, reopened by openDialog when the
+    acknowledgement was left unticked. %>
+<div class="dialog<%= openDialog === 'enable-js' ? ' dialog--open' : '' %>" id="enable-js">
+  <a class="dialog__backdrop" href="#top" aria-label="Close"></a>
+  <div class="dialog__panel" role="alertdialog" aria-modal="true" aria-labelledby="enable-js-title">
+    <div class="dialog__head">
+      <h2 id="enable-js-title">Allow JavaScript in portals?</h2>
+      <a class="dialog__close" href="#top" aria-label="Close">&times;</a>
+    </div>
+
+    <form method="post" action="/admin/settings/advanced/javascript/enable" class="stack">
+      <input type="hidden" name="_csrf" value="<%= locals.csrfToken %>">
+
+      <% if (errors.form) { %>
+        <p class="field-error" role="alert"><%= errors.form %></p>
+      <% } %>
+
+      <p><strong>A portal script runs as the requester who is signed in.</strong>
+        It can read everything shown on the page, submit forms in their name and send what it reads
+        to any origin on the allowed list.</p>
+      <ul>
+        <li>Add only code you have written or reviewed yourself.</li>
+        <li>Keep the list of allowed origins as short as possible.</li>
+        <li>Scripts run on custom requester portals only, never on the sign-in page, the approval page or in Settings.</li>
+        <li>Turning this off stops every portal script at once. The code is kept.</li>
+      </ul>
+
+      <label class="check">
+        <input type="checkbox" name="understood" value="on" required>
+        I understand the risks of running custom scripts
+      </label>
+      <% if (errors.understood) { %><p class="field-error" role="alert"><%= errors.understood %></p><% } %>
+
+      <div class="dialog__actions">
+        <button type="submit" class="btn btn--danger">Allow JavaScript</button>
+        <a class="btn btn--quiet" href="#top">Cancel</a>
+      </div>
+    </form>
+  </div>
+</div>
+
+<%- include('_layout_end') %>

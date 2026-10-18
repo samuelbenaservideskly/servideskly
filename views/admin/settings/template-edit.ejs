@@ -1,0 +1,763 @@
+<%- include('_layout') %>
+
+<%#
+  One page, one form.
+
+  The template's own details - what it is called and what kind of ticket it
+  raises - sit in a short strip at the top. Everything about the *form* lives
+  in the builder below: the title, category, priority and opening text used to
+  appear here as settings **and** there as fields, which was the same thing
+  said twice with nothing to connect the two. The value a field falls back to
+  is now set in that field's gear, where it reads as part of what the field
+  does.
+%>
+
+<form method="post" action="/admin/settings/templates<%= template.id ? '/' + template.id : '' %>"
+      class="card stack">
+  <input type="hidden" name="_csrf" value="<%= locals.csrfToken %>">
+
+  <% if (errors.form) { %>
+    <p class="field-error" role="alert"><%= errors.form %></p>
+  <% } %>
+
+  <div class="grid-2">
+    <div class="field">
+      <label for="name">Name <span class="required">*</span></label>
+      <input id="name" name="name" type="text" required maxlength="80" value="<%= template.name %>">
+      <p class="hint">Shown in the list requesters choose from.</p>
+      <% if (errors.name) { %><p class="field-error" role="alert"><%= errors.name %></p><% } %>
+    </div>
+
+    <div class="field">
+      <label for="summary">Summary</label>
+      <input id="summary" name="summary" type="text" maxlength="200" value="<%= template.summary %>">
+      <p class="hint">One line under the name.</p>
+    </div>
+
+    <div class="field">
+      <label for="type">Request type</label>
+      <select id="type" name="type">
+        <% types.forEach(function (option) { %>
+          <% if (option !== 'task') { %>
+            <option value="<%= option %>"<%= template.type === option ? ' selected' : '' %>><%= typeLabels[option] %></option>
+          <% } %>
+        <% }); %>
+      </select>
+    </div>
+
+    <div class="field">
+      <label for="groupId">Technician group</label>
+      <select id="groupId" name="groupId">
+        <option value="">Nobody in particular</option>
+        <% groups.forEach(function (group) { %>
+          <option value="<%= group.id %>"<%= template.group_id === group.id ? ' selected' : '' %>><%= group.name %></option>
+        <% }); %>
+      </select>
+      <p class="hint">
+        <% if (groups.length === 0) { %>
+          <a href="/admin/settings/groups">Create a group</a> to route this automatically.
+        <% } else { %>
+          The team this lands with, untriaged.
+        <% } %>
+      </p>
+    </div>
+
+  </div>
+
+  <div class="field field--switch">
+    <label class="check">
+      <input type="checkbox" name="isActive" value="1"<%= template.is_active ? ' checked' : '' %>>
+      <strong>Offer this to requesters</strong>
+    </label>
+    <p class="hint">Clear to retire it without touching the tickets already raised.</p>
+  </div>
+
+  <div class="actions">
+    <button type="submit" class="btn btn--primary">Save</button>
+    <a class="btn btn--quiet" href="/admin/settings/templates">Cancel</a>
+  </div>
+</form>
+
+<% if (!template.id) { %>
+  <div class="card card--info">
+    <p class="small">
+      <strong>Save this, then build its form.</strong> The builder edits a stored
+      list of fields, so it appears once the template exists - with an
+      empty form, ready for you to put fields on it.
+    </p>
+  </div>
+<% } else { %>
+
+  <% if (!usable) { %>
+    <div class="card card--warn">
+      <p class="small">
+        <strong>Not offered to requesters yet.</strong> Every ticket needs a
+        title, so add <strong>Title</strong> to the form. Until then this is
+        hidden from the list rather than offered and then failing.
+      </p>
+    </div>
+  <% } %>
+
+  <div class="builder" id="the-form">
+    <div class="builder__main card">
+      <div class="builder__head">
+        <div>
+          <h2 class="section-title">The form</h2>
+        </div>
+
+        <% if (isDefault) { %>
+          <span class="pill pill--ok" title="New ticket opens with this template">&#9733; Default</span>
+        <% } %>
+      </div>
+
+      <form method="post" action="/admin/settings/templates/<%= template.id %>/fields/order"
+            class="canvas" id="canvas" data-builder>
+        <input type="hidden" name="_csrf" value="<%= locals.csrfToken %>">
+        <input type="hidden" name="order" value="" data-builder-order>
+
+        <%
+          // Every key on the form in order, sections included, for the arrows.
+          var order = [];
+          builderSections.forEach(function (sec) {
+            if (sec.key) order.push(sec.key);
+            sec.fields.forEach(function (f) { order.push(f.key); });
+          });
+          var untitled = 0;
+        %>
+        <div class="canvas__list<%= order.length === 0 ? ' canvas__list--empty' : '' %>"
+             data-builder-list>
+          <% builderSections.forEach(function (section) { %>
+            <section class="canvas-section<%= section.key ? '' : ' canvas-section--lead' %>">
+              <% if (section.key) { %>
+                <% var title = section.title || ('Untitled section ' + (++untitled)); %>
+                <div class="canvas-section__head" id="row-<%= section.key %>" data-key="<%= section.key %>" data-section>
+                  <span class="widget__grip" aria-hidden="true">⠿</span>
+                  <h3 class="canvas-section__title<%= section.title ? '' : ' canvas-section__title--untitled' %>"><%= title %></h3>
+                  <% if (section.labels === 'beside') { %><span class="pill pill--muted">Labels beside</span><% } %>
+                  <% if (section.collapse !== 'none') { %><span class="pill pill--muted"><%= section.collapse === 'closed' ? 'Starts folded' : 'Foldable' %></span><% } %>
+                  <% if (section.showWhen && section.showWhen.length > 0) { %>
+                    <span class="pill pill--warn" title="<%= section.showWhen.map(function (w) { var c = conditionChoices.filter(function (x) { return x.key === w.field; })[0]; return (c ? c.label : 'a removed field') + ' is ' + w.value; }).join(' or ') %>">Shown only for some answers</span>
+                  <% } %>
+                  <span class="widget__tools">
+                    <button type="submit" form="up-<%= section.key %>" class="icon-btn" title="Move section up"<%= order.indexOf(section.key) === 0 ? ' disabled' : '' %>>&#9650;<span class="visually-hidden">Move <%= title %> up</span></button>
+                    <button type="submit" form="down-<%= section.key %>" class="icon-btn" title="Move section down">&#9660;<span class="visually-hidden">Move <%= title %> down</span></button>
+                    <a class="icon-btn" href="#section-<%= section.key %>" title="Rename <%= title %>">
+                      <%- include('../../partials/icon-gear', { size: 13 }) %>
+                      <span class="visually-hidden">Rename <%= title %></span>
+                    </a>
+                    <button type="submit" form="remove-<%= section.key %>" class="icon-btn icon-btn--danger" title="Remove the section; its fields join the one above">
+                      <svg viewBox="0 0 16 16" width="13" height="13" fill="currentColor" aria-hidden="true">
+                        <path d="M6.5 1a.5.5 0 0 0-.5.5V2H3.5a.5.5 0 0 0 0 1H4v9.5A1.5 1.5 0 0 0 5.5 14h5a1.5 1.5 0 0 0 1.5-1.5V3h.5a.5.5 0 0 0 0-1H10v-.5a.5.5 0 0 0-.5-.5h-3ZM5 3h6v9.5a.5.5 0 0 1-.5.5h-5a.5.5 0 0 1-.5-.5V3Zm1.5 1.5a.5.5 0 0 1 .5.5v6a.5.5 0 0 1-1 0V5a.5.5 0 0 1 .5-.5Zm3 0a.5.5 0 0 1 .5.5v6a.5.5 0 0 1-1 0V5a.5.5 0 0 1 .5-.5Z"/>
+                      </svg>
+                      <span class="visually-hidden">Remove section <%= title %></span>
+                    </button>
+                  </span>
+                </div>
+              <% } %>
+              <ol class="canvas-section__grid">
+                <% section.fields.forEach(function (field) { %>
+                  <%- include('_builder-widget', { field: field, isFirst: order.indexOf(field.key) === 0, isLast: order.indexOf(field.key) === order.length - 1 }) %>
+                <% }); %>
+                <% if (section.key && section.fields.length === 0) { %>
+                  <li class="canvas-section__empty" data-section-drop="<%= section.key %>">Drop your field here, or move one in with the arrows.</li>
+                <% } %>
+              </ol>
+            </section>
+          <% }); %>
+
+          <div class="canvas__drop" data-builder-drop>
+            <% if (order.length === 0) { %>
+              This form is empty. Drop a field here, or press <strong>Add</strong>
+              in the palette.
+            <% } else { %>
+              Drop your field here
+            <% } %>
+          </div>
+        </div>
+      </form>
+
+      <%# ------------------------------------------------------- who may use it %>
+      <div class="builder__tasks" id="audience">
+        <h2 class="section-title">Who may use this</h2>
+
+        <% if (userGroups.length === 0) { %>
+          <p class="small muted">
+            No <a href="/admin/settings/groups/users">user groups</a> exist yet,
+            so this form is offered to everybody.
+          </p>
+        <% } else { %>
+          <form method="post" action="/admin/settings/templates/<%= template.id %>/audience"
+                class="stack">
+            <input type="hidden" name="_csrf" value="<%= locals.csrfToken %>">
+
+            <% if (isDefault) { %>
+              <p class="small muted">
+                This is the default template, so it is the form every ticket
+                starts from and cannot be restricted. Anyone outside the chosen
+                groups would have no form at all.
+              </p>
+            <% } else { %>
+              <p class="small muted">
+                Tick none to offer it to everybody. Tick some and only their
+                members see it in the picker.
+              </p>
+
+              <fieldset class="fieldset">
+                <legend>User groups</legend>
+                <% userGroups.forEach(function (group) { %>
+                  <label class="checkbox checkbox--block">
+                    <input type="checkbox" name="groups" value="<%= group.id %>"
+                           <%= audience.indexOf(group.id) !== -1 ? 'checked' : '' %>>
+                    <%= group.name %>
+                    <% if (group.description) { %>
+                      <span class="muted small"><%= group.description %></span>
+                    <% } %>
+                  </label>
+                <% }); %>
+              </fieldset>
+
+              <div class="actions">
+                <button type="submit" class="btn btn--primary">Save audience</button>
+              </div>
+            <% } %>
+          </form>
+        <% } %>
+      </div>
+
+      <%# --------------------------------------------- tasks, on the same page %>
+      <div class="builder__tasks" id="tasks">
+        <div class="builder__head">
+          <div>
+            <h2 class="section-title">Tasks raised with it</h2>
+          </div>
+          <a class="btn btn--small" href="#add-task">Add a task</a>
+        </div>
+
+        <% if (tasks.length === 0) { %>
+          <p class="small muted">None yet.</p>
+        <% } else { %>
+          <ul class="task-list">
+            <% tasks.forEach(function (task) { %>
+              <li class="task-list__item">
+                <span>
+                  <strong><%= task.name %></strong>
+                  <% if (task.task_mandatory) { %><span class="pill pill--warn">Mandatory</span><% } %>
+                  <span class="pill pill--muted"><%= priorityLabels[task.priority] %></span>
+                  <% var g = task.group_id ? groups.filter(function (x) { return x.id === task.group_id; })[0] : null; %>
+                  <span class="muted small">&rarr; <%= g ? g.name : 'unrouted' %></span>
+                  <% if (task.summary) { %><div class="small muted"><%= task.summary %></div><% } %>
+                </span>
+                <form method="post" class="inline"
+                      action="/admin/settings/templates/<%= template.id %>/tasks/<%= task.id %>/mandatory">
+                  <input type="hidden" name="_csrf" value="<%= locals.csrfToken %>">
+                  <% if (!task.task_mandatory) { %><input type="hidden" name="mandatory" value="on"><% } %>
+                  <button type="submit" class="btn btn--quiet btn--small"><%= task.task_mandatory ? 'Make optional' : 'Make mandatory' %></button>
+                </form>
+                <form method="post" class="inline"
+                      action="/admin/settings/templates/<%= template.id %>/tasks/<%= task.id %>/delete">
+                  <input type="hidden" name="_csrf" value="<%= locals.csrfToken %>">
+                  <button type="submit" class="icon-btn icon-btn--danger" title="Remove <%= task.name %>">
+                    <svg viewBox="0 0 16 16" width="13" height="13" fill="currentColor" aria-hidden="true">
+                      <path d="M6.5 1a.5.5 0 0 0-.5.5V2H3.5a.5.5 0 0 0 0 1H4v9.5A1.5 1.5 0 0 0 5.5 14h5a1.5 1.5 0 0 0 1.5-1.5V3h.5a.5.5 0 0 0 0-1H10v-.5a.5.5 0 0 0-.5-.5h-3ZM5 3h6v9.5a.5.5 0 0 1-.5.5h-5a.5.5 0 0 1-.5-.5V3Zm1.5 1.5a.5.5 0 0 1 .5.5v6a.5.5 0 0 1-1 0V5a.5.5 0 0 1 .5-.5Zm3 0a.5.5 0 0 1 .5.5v6a.5.5 0 0 1-1 0V5a.5.5 0 0 1 .5-.5Z"/>
+                    </svg>
+                    <span class="visually-hidden">Remove <%= task.name %></span>
+                  </button>
+                </form>
+              </li>
+            <% }); %>
+          </ul>
+
+          <form method="post" action="/admin/settings/templates/<%= template.id %>/task-rules" class="stack task-rules">
+            <input type="hidden" name="_csrf" value="<%= locals.csrfToken %>">
+            <label class="check">
+              <input type="checkbox" name="closeWhenTasksDone" value="on"<%= template.close_when_tasks_done ? ' checked' : '' %>>
+              Close the ticket automatically when all mandatory tasks are resolved
+            </label>
+            <label class="check">
+              <input type="checkbox" name="requireTasksDone" value="on"<%= template.require_tasks_done ? ' checked' : '' %>>
+              Allow the ticket to be resolved or closed only when all tasks are resolved
+            </label>
+            <div class="label-row">
+              <button type="submit" class="btn btn--small">Save task rules</button>
+              <%- include('../../partials/info', { text: 'A cancelled task counts as done. The rules are copied onto each ticket when it is raised, so changing them here does not affect tickets already open. Automatic closing waits for any approval the ticket needs.' }) %>
+            </div>
+          </form>
+        <% } %>
+      </div>
+    </div>
+
+    <%# ------------------------------------------------------------ palette %>
+    <aside class="builder__palette card" aria-label="Available fields">
+      <h2 class="section-title">Available fields</h2>
+      <p class="small muted">
+        A field left here is not asked for - this template's value is used.
+      </p>
+
+      <% if (palette.builtins.length === 0 && palette.questions.length === 0) { %>
+        <p class="small muted">Everything is on the form.</p>
+      <% } %>
+
+      <% if (palette.builtins.length > 0) { %>
+        <h3 class="palette__heading">Ticket fields</h3>
+        <ul class="palette__list">
+          <% palette.builtins.forEach(function (field) { %>
+            <li class="palette-chip" id="row-<%= field.key %>" data-palette-key="<%= field.key %>">
+              <span class="palette-chip__grip" aria-hidden="true">⠿</span>
+              <span class="palette-chip__label"><%= field.shown %></span>
+              <% if (fieldDefaults[field.key]) { %>
+                <a class="palette-chip__set" href="#field-<%= field.key %>">Set</a>
+              <% } %>
+              <button type="submit" form="place-<%= field.key %>" class="btn btn--small">Add</button>
+            </li>
+          <% }); %>
+        </ul>
+      <% } %>
+
+      <% if (palette.questions.length > 0) { %>
+        <h3 class="palette__heading">Custom fields off the form</h3>
+        <ul class="palette__list">
+          <% palette.questions.forEach(function (field) { %>
+            <li class="palette-chip" id="row-<%= field.key %>" data-palette-key="<%= field.key %>">
+              <span class="palette-chip__grip" aria-hidden="true">⠿</span>
+              <span class="palette-chip__label"><%= field.shown %></span>
+              <button type="submit" form="place-<%= field.key %>" class="btn btn--small">Add</button>
+              <button type="submit" form="destroy-<%= field.key %>" class="icon-btn icon-btn--danger"
+                      title="Delete <%= field.shown %> for good">&times;<span class="visually-hidden">Delete <%= field.shown %></span></button>
+            </li>
+          <% }); %>
+        </ul>
+      <% } %>
+
+      <% if (library.length > 0) { %>
+        <h3 class="palette__heading">From the library</h3>
+        <ul class="palette__list">
+          <% library.forEach(function (f) { %>
+            <li class="palette-chip">
+              <span class="palette-chip__label"><%= f.label %></span>
+              <form method="post" action="/admin/settings/templates/<%= template.id %>/fields/library" class="inline-form">
+                <input type="hidden" name="_csrf" value="<%= locals.csrfToken %>">
+                <input type="hidden" name="libraryId" value="<%= f.id %>">
+                <button type="submit" class="btn btn--small">Add</button>
+              </form>
+            </li>
+          <% }); %>
+        </ul>
+      <% } %>
+
+      <h3 class="palette__heading">New</h3>
+      <%# Two buttons that do the same sort of thing: one column, one width,
+          a + on each (reported 16 Oct 2026 - they were two sizes, loose in
+          the card). %>
+      <div class="palette__new">
+        <a class="btn btn--small" href="#add-question"><span aria-hidden="true">+</span> <%= t('Add a custom field') %></a>
+        <a class="btn btn--small" href="#add-section"><span aria-hidden="true">+</span> <%= t('Add a section') %></a>
+      </div>
+    </aside>
+  </div>
+
+  <%#
+    Every button above drives one of these. They are out here because a form
+    cannot contain another, and form="..." is what connects them.
+  %>
+  <% layout.concat(builderSections.filter(function (x) { return x.key; }).map(function (x) { return { key: x.key }; })).forEach(function (field) { %>
+    <% ['up', 'down'].forEach(function (direction) { %>
+      <form method="post" id="<%= direction %>-<%= field.key %>" class="visually-hidden"
+            action="/admin/settings/templates/<%= template.id %>/fields/order">
+        <input type="hidden" name="_csrf" value="<%= locals.csrfToken %>">
+        <input type="hidden" name="key" value="<%= field.key %>">
+        <input type="hidden" name="direction" value="<%= direction %>">
+      </form>
+    <% }); %>
+    <form method="post" id="remove-<%= field.key %>" class="visually-hidden"
+          action="/admin/settings/templates/<%= template.id %>/fields/<%= field.key %>/remove">
+      <input type="hidden" name="_csrf" value="<%= locals.csrfToken %>">
+    </form>
+  <% }); %>
+
+  <% palette.builtins.concat(palette.questions).forEach(function (field) { %>
+    <form method="post" id="place-<%= field.key %>" class="visually-hidden"
+          action="/admin/settings/templates/<%= template.id %>/fields/<%= field.key %>/place">
+      <input type="hidden" name="_csrf" value="<%= locals.csrfToken %>">
+      <input type="hidden" name="index" value="" data-place-index>
+    </form>
+  <% }); %>
+
+  <% palette.questions.concat(layout.filter(function (f) { return f.kind === 'question'; })).forEach(function (field) { %>
+    <form method="post" id="destroy-<%= field.key %>" class="visually-hidden"
+          action="/admin/settings/templates/<%= template.id %>/fields/<%= field.key %>/delete">
+      <input type="hidden" name="_csrf" value="<%= locals.csrfToken %>">
+    </form>
+  <% }); %>
+
+  <%# ------------------------------------------------------ the gear dialogs %>
+  <% layout.concat(palette.builtins).forEach(function (field) { %>
+    <div class="dialog<%= openDialog === 'field-' + field.key ? ' dialog--open' : '' %>"
+         id="field-<%= field.key %>">
+      <%# Closing goes back to the field (#row-<key>), not to "#", which is the
+          top of the page - after a long scroll that lost your place. %>
+      <a class="dialog__backdrop" href="#row-<%= field.key %>" aria-label="Close"></a>
+      <div class="dialog__panel" role="dialog" aria-modal="true">
+        <div class="dialog__head">
+          <h2><%= field.shown %></h2>
+          <a class="dialog__close" href="#row-<%= field.key %>" aria-label="Close">&times;</a>
+        </div>
+
+        <form method="post" class="stack"
+              action="/admin/settings/templates/<%= template.id %>/fields/<%= field.key %>/configure">
+          <input type="hidden" name="_csrf" value="<%= locals.csrfToken %>">
+
+          <% if (openDialog === 'field-' + field.key && errors.form) { %>
+            <p class="field-error" role="alert"><%= errors.form %></p>
+          <% } %>
+
+          <% if (field.kind === 'question') { %>
+            <div class="field">
+              <label for="label-<%= field.key %>">Label <span class="required">*</span></label>
+              <input id="label-<%= field.key %>" name="label" type="text" required maxlength="120"
+                     value="<%= field.label %>">
+              <% if (openDialog === 'field-' + field.key && errors.label) { %>
+                <p class="field-error" role="alert"><%= errors.label %></p>
+              <% } %>
+            </div>
+            <% if (field.kind === 'question') { %>
+        <div class="field">
+          <label for="type-<%= field.key %>-type">Type</label>
+          <select id="type-<%= field.key %>-type" name="fieldType">
+            <% customFieldTypes.forEach(function (t) { %><option value="<%= t.key %>"<%= (field.fieldType || 'text') === t.key ? ' selected' : '' %>><%= t.label %></option><% }); %>
+          </select>
+        </div>
+        <div class="field">
+          <div class="label-row">
+            <label for="type-<%= field.key %>-options">Options</label>
+            <%- include('../../partials/info', { text: 'For a choice: one option per line, at least two. Ignored for the other types.' }) %>
+          </div>
+          <textarea id="type-<%= field.key %>-options" name="options" rows="4" maxlength="3200" placeholder="Prague&#10;Brno&#10;Ostrava"><%= (field.options || []).join('\n') %></textarea>
+          <% if (errors.options && openDialog === 'field-' + field.key) { %><p class="field-error" role="alert"><%= errors.options %></p><% } %>
+        </div>
+            <% } %>
+          <% } %>
+
+          <% if (field.key === 'requester') { %>
+            <fieldset class="field">
+              <legend>Show beside the name</legend>
+              <% requesterDetailOptions.forEach(function (d) { %>
+                <label class="check">
+                  <input type="checkbox" name="details" value="<%= d.key %>"<%= (field.details || ['email', 'phone']).indexOf(d.key) >= 0 ? ' checked' : '' %>>
+                  <%= d.label %>
+                </label>
+              <% }); %>
+            </fieldset>
+          <% } %>
+
+          <%# The value this field falls back to, set where the field is. %>
+          <% var spec = fieldDefaults[field.key]; %>
+          <% if (spec) { %>
+            <% var current = defaultFor(field.key); %>
+            <div class="field">
+              <label for="default-<%= field.key %>"><%= spec.label %></label>
+              <% if (spec.control === 'text') { %>
+                <input id="default-<%= field.key %>" name="fieldDefault" type="text"
+                       maxlength="200" value="<%= current %>">
+              <% } else if (spec.control === 'textarea') { %>
+                <textarea id="default-<%= field.key %>" name="fieldDefault" rows="4"
+                          maxlength="8000"><%= current %></textarea>
+              <% } else if (spec.control === 'priority') { %>
+                <select id="default-<%= field.key %>" name="fieldDefault">
+                  <% priorities.forEach(function (priority) { %>
+                    <option value="<%= priority %>"<%= current === priority ? ' selected' : '' %>><%= priorityLabels[priority] %></option>
+                  <% }); %>
+                </select>
+              <% } else { %>
+                <%
+                  // Only this level's nodes. The whole flattened tree was
+                  // offered before, so choosing a category for the Item
+                  // field produced a refusal rather than a disabled option.
+                  var atLevel = categoryOptions.filter(function (node) {
+                    return node.level === spec.level;
+                  });
+                %>
+                <select id="default-<%= field.key %>" name="fieldDefault">
+                  <option value="">Not classified</option>
+                  <% atLevel.forEach(function (node) { %>
+                    <option value="<%= node.id %>"<%= current === node.id ? ' selected' : '' %>><%= node.path %></option>
+                  <% }); %>
+                </select>
+                <% if (categoryOptions.length > 0 && atLevel.length === 0) { %>
+                  <p class="hint">
+                    Nothing exists at this level of the catalogue yet.
+                    <a href="/admin/settings/templates/categories">Add some.</a>
+                  </p>
+                <% } %>
+                <% if (categoryOptions.length === 0) { %>
+                  <p class="hint">
+                    No categories yet.
+                    <a href="/admin/settings/templates/categories">Create some.</a>
+                  </p>
+                <% } %>
+              <% } %>
+              <p class="hint"><%= spec.hint %></p>
+            </div>
+          <% } %>
+
+          <% if (field.typed) { %>
+            <div class="field">
+              <label for="ghost-<%= field.key %>">Hint inside the box</label>
+              <input id="ghost-<%= field.key %>" name="placeholder" type="text" maxlength="200"
+                     value="<%= field.placeholder %>"
+                     placeholder="<%= field.ghost %>">
+              <p class="hint">
+                The grey text a requester sees in the empty box, which
+                disappears as they type. Leave it blank for the standard one.
+              </p>
+            </div>
+          <% } %>
+
+          <fieldset class="fieldset">
+            <legend>Width</legend>
+            <label class="choice">
+              <input type="radio" name="width" value="half"<%= field.width === 'half' ? ' checked' : '' %>>
+              <span><strong>Half a row</strong> <span class="small muted">Sits beside another field.</span></span>
+            </label>
+            <label class="choice">
+              <input type="radio" name="width" value="full"<%= field.width === 'full' ? ' checked' : '' %>>
+              <span><strong>Whole row</strong> <span class="small muted">For long text and attachments.</span></span>
+            </label>
+          </fieldset>
+
+          <fieldset class="fieldset">
+            <legend>How it behaves</legend>
+            <% field.modes.forEach(function (mode) { %>
+              <label class="choice">
+                <input type="radio" name="mode" value="<%= mode %>"<%= field.mode === mode ? ' checked' : '' %>>
+                <span>
+                  <strong><%= modeLabels[mode] %></strong>
+                  <span class="small muted"><%= modeHints[mode] %></span>
+                </span>
+              </label>
+            <% }); %>
+            <% if (openDialog === 'field-' + field.key && errors.mode) { %>
+              <p class="field-error" role="alert"><%= errors.mode %></p>
+            <% } %>
+            <% if (!field.placed) { %>
+              <p class="hint muted">
+                This field is not on the form, so the mode only matters once it is.
+              </p>
+            <% } %>
+          </fieldset>
+
+          <% if (field.kind === 'question') { %>
+            <div class="field">
+              <label for="value-<%= field.key %>">Text shown when view only</label>
+              <textarea id="value-<%= field.key %>" name="value" rows="3" maxlength="2000"><%= field.value %></textarea>
+            </div>
+          <% } %>
+
+          <div class="dialog__actions">
+            <button type="submit" class="btn btn--primary">Save</button>
+            <a class="btn btn--quiet" href="#row-<%= field.key %>">Cancel</a>
+            <% if (field.placed) { %>
+              <button type="submit" form="remove-<%= field.key %>" class="btn btn--small">
+                Take off the form
+              </button>
+            <% } %>
+            <% if (field.kind === 'question') { %>
+              <button type="submit" form="destroy-<%= field.key %>" class="btn btn--danger btn--small">
+                Delete
+              </button>
+            <% } %>
+          </div>
+        </form>
+      </div>
+    </div>
+  <% }); %>
+
+  <% [{ key: '', title: '', labels: 'above', collapse: 'none', showWhen: [], fields: [] }].concat(builderSections.filter(function (x) { return x.key; })).forEach(function (sec) { %>
+    <% var dialogId = sec.key ? 'section-' + sec.key : 'add-section'; %>
+    <% var back = sec.key ? '#row-' + sec.key : '#the-form'; %>
+    <div class="dialog" id="<%= dialogId %>">
+      <a class="dialog__backdrop" href="<%= back %>" aria-label="Close"></a>
+      <div class="dialog__panel" role="dialog" aria-modal="true" aria-labelledby="<%= dialogId %>-title">
+        <div class="dialog__head">
+          <h2 id="<%= dialogId %>-title"><%= sec.key ? 'Section' : 'Add a section' %></h2>
+          <a class="dialog__close" href="<%= back %>" aria-label="Close">&times;</a>
+        </div>
+        <form method="post" class="stack"
+              action="/admin/settings/templates/<%= template.id %>/sections<%= sec.key ? '/' + sec.key : '' %>">
+          <input type="hidden" name="_csrf" value="<%= locals.csrfToken %>">
+          <div class="field">
+            <label for="<%= dialogId %>-name">Title</label>
+            <input id="<%= dialogId %>-name" name="title" type="text" maxlength="80"
+                   value="<%= sec.title %>" placeholder="e.g. Requester details">
+          </div>
+          <% if (sec.key) { %>
+            <fieldset class="fieldset">
+              <legend>Labels</legend>
+              <label class="choice"><input type="radio" name="labels" value="above"<%= sec.labels !== 'beside' ? ' checked' : '' %>> <span><strong>Above each field</strong></span></label>
+              <label class="choice"><input type="radio" name="labels" value="beside"<%= sec.labels === 'beside' ? ' checked' : '' %>> <span><strong>Beside each field</strong> <span class="small muted">On a wide screen; above on a phone.</span></span></label>
+            </fieldset>
+            <fieldset class="fieldset">
+              <legend class="label-row">Folding <span class="small muted">- not while it has a mandatory field</span></legend>
+              <label class="choice"><input type="radio" name="collapse" value="none"<%= sec.collapse === 'none' ? ' checked' : '' %>> <span><strong>Always open</strong></span></label>
+              <label class="choice"><input type="radio" name="collapse" value="open"<%= sec.collapse === 'open' ? ' checked' : '' %>> <span><strong>Can be folded, starts open</strong></span></label>
+              <label class="choice"><input type="radio" name="collapse" value="closed"<%= sec.collapse === 'closed' ? ' checked' : '' %>> <span><strong>Can be folded, starts folded</strong> </span></label>
+            </fieldset>
+            <fieldset class="fieldset">
+              <legend class="label-row">Show only when
+                <%- include('../../partials/info', { text: 'Tick the answers that show this section; any one of them is enough. Tick none to show it always. Only answers picked from a list can be used: a choice or several-choices field, or Priority, from another section.' }) %>
+              </legend>
+              <input type="hidden" name="showWhenPresent" value="1">
+              <% var own = sec.fields.map(function (f) { return f.key; }); %>
+              <% var usable = conditionChoices.filter(function (c) { return own.indexOf(c.key) === -1; }); %>
+              <% if (usable.length === 0) { %>
+                <p class="small muted">Add a choice field, or Priority, to another section first.</p>
+              <% } %>
+              <% usable.forEach(function (c) { %>
+                <div class="condition-group">
+                  <span class="small"><strong><%= c.label %></strong> is</span>
+                  <% c.options.forEach(function (o) { %>
+                    <% var ticked = (sec.showWhen || []).some(function (w) { return w.field === c.key && w.value === o.value; }); %>
+                    <label class="check"><input type="checkbox" name="showWhen" value="<%= c.key %>|<%= o.value %>"<%= ticked ? ' checked' : '' %>> <%= o.label %></label>
+                  <% }); %>
+                </div>
+              <% }); %>
+            </fieldset>
+          <% } %>
+          <div class="dialog__actions">
+            <button type="submit" class="btn btn--primary"><%= sec.key ? 'Save section' : 'Add section' %></button>
+            <a class="btn btn--quiet" href="<%= back %>">Cancel</a>
+          </div>
+        </form>
+      </div>
+    </div>
+  <% }); %>
+
+  <div class="dialog<%= openDialog === 'add-question' ? ' dialog--open' : '' %>" id="add-question">
+    <a class="dialog__backdrop" href="#the-form" aria-label="Close"></a>
+    <div class="dialog__panel" role="dialog" aria-modal="true" aria-labelledby="add-question-title">
+      <div class="dialog__head">
+        <h2 id="add-question-title">Add a custom field</h2>
+        <a class="dialog__close" href="#the-form" aria-label="Close">&times;</a>
+      </div>
+
+      <form method="post" action="/admin/settings/templates/<%= template.id %>/fields/add" class="stack">
+        <input type="hidden" name="_csrf" value="<%= locals.csrfToken %>">
+
+        <% if (openDialog === 'add-question' && errors.form) { %>
+          <p class="field-error" role="alert"><%= errors.form %></p>
+        <% } %>
+
+        <div class="field">
+          <label for="newQuestion">Label <span class="required">*</span></label>
+          <input id="newQuestion" name="label" type="text" required maxlength="120"
+                 placeholder="e.g. Which building are you in?">
+        </div>
+        <div class="field">
+          <label for="newQuestion-type">Type</label>
+          <select id="newQuestion-type" name="fieldType">
+            <% customFieldTypes.forEach(function (t) { %><option value="<%= t.key %>"<%= 'text' === t.key ? ' selected' : '' %>><%= t.label %></option><% }); %>
+          </select>
+        </div>
+        <div class="field">
+          <div class="label-row">
+            <label for="newQuestion-options">Options</label>
+            <%- include('../../partials/info', { text: 'For a choice: one option per line, at least two. Ignored for the other types.' }) %>
+          </div>
+          <textarea id="newQuestion-options" name="options" rows="4" maxlength="3200" placeholder="Prague&#10;Brno&#10;Ostrava"><%= '' %></textarea>
+          <% if (errors.options && openDialog === 'add-question') { %><p class="field-error" role="alert"><%= errors.options %></p><% } %>
+        </div>
+        <label class="check">
+          <input type="checkbox" name="saveToLibrary" value="on">
+          Also save to the library, to add to other templates
+        </label>
+        <% if (errors.label && openDialog === 'add-question') { %><p class="field-error" role="alert"><%= errors.label %></p><% } %>
+
+        <div class="dialog__actions">
+          <button type="submit" class="btn btn--primary">Add</button>
+          <a class="btn btn--quiet" href="#the-form">Cancel</a>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <%#
+    Adding a task, the same shape as adding a subcategory: the thing it hangs
+    off is picked in the dialog, so one template can carry any number.
+  %>
+  <div class="dialog<%= openDialog === 'add-task' ? ' dialog--open' : '' %>" id="add-task">
+    <a class="dialog__backdrop" href="#tasks" aria-label="Close"></a>
+    <div class="dialog__panel" role="dialog" aria-modal="true" aria-labelledby="add-task-title">
+      <div class="dialog__head">
+        <h2 id="add-task-title">Add a task</h2>
+        <a class="dialog__close" href="#tasks" aria-label="Close">&times;</a>
+      </div>
+
+      <form method="post" action="/admin/settings/templates/<%= template.id %>/tasks" class="stack">
+        <input type="hidden" name="_csrf" value="<%= locals.csrfToken %>">
+
+        <% if (openDialog === 'add-task' && errors.form) { %>
+          <p class="field-error" role="alert"><%= errors.form %></p>
+        <% } %>
+
+        <div class="field">
+          <label for="taskName">Task <span class="required">*</span></label>
+          <input id="taskName" name="name" type="text" required maxlength="80"
+                 placeholder="e.g. Prepare the laptop">
+          <% if (openDialog === 'add-task' && errors.name) { %>
+            <p class="field-error" role="alert"><%= errors.name %></p>
+          <% } %>
+        </div>
+
+        <div class="field">
+          <label for="taskParent">Raised with <span class="required">*</span></label>
+          <select id="taskParent" name="parentId" required>
+            <% parentChoices.forEach(function (option) { %>
+              <option value="<%= option.id %>"<%= option.id === template.id ? ' selected' : '' %>><%= option.name %></option>
+            <% }); %>
+          </select>
+        </div>
+
+        <label class="check">
+          <input type="checkbox" name="mandatory" value="on">
+          Mandatory
+        </label>
+
+        <div class="field">
+          <label for="taskBody">Instructions</label>
+          <textarea id="taskBody" name="body" rows="3" maxlength="8000"></textarea>
+          <p class="hint">Becomes the description of the task ticket.</p>
+        </div>
+
+        <div class="grid-2">
+          <div class="field">
+            <label for="taskPriority">Priority</label>
+            <select id="taskPriority" name="priority">
+              <% priorities.forEach(function (priority) { %>
+                <option value="<%= priority %>"<%= template.priority === priority ? ' selected' : '' %>><%= priorityLabels[priority] %></option>
+              <% }); %>
+            </select>
+          </div>
+
+          <div class="field">
+            <label for="taskGroup">Technician group</label>
+            <select id="taskGroup" name="groupId">
+              <option value="">Unrouted</option>
+              <% groups.forEach(function (group) { %>
+                <option value="<%= group.id %>"><%= group.name %></option>
+              <% }); %>
+            </select>
+            <p class="hint">A task often belongs to a different team.</p>
+          </div>
+        </div>
+
+        <div class="dialog__actions">
+          <button type="submit" class="btn btn--primary">Add task</button>
+          <a class="btn btn--quiet" href="#tasks">Cancel</a>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script src="/assets/js/form-builder.js?v=<%= locals.assetVersion %>" defer></script>
+<% } %>
+
+<%- include('_layout_end') %>

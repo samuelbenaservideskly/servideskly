@@ -1,0 +1,73 @@
+<%- include('partials/header') %>
+
+<div class="signin">
+  <div class="card signin-card">
+    <%- include("partials/signin-mark") %>
+    <h1><%= locals.appName %></h1>
+    <p class="lede">Sign in to raise and follow up tickets.</p>
+
+    <% if (locals.expired) { %>
+      <div class="flash flash--info" role="status">Your session reached its maximum length. Please sign in again.</div>
+    <% } %>
+    <% if (locals.disabled) { %>
+      <div class="flash flash--error" role="alert">This account has been disabled. Contact the service desk.</div>
+    <% } %>
+    <% if (locals.signedOut) { %>
+      <div class="flash flash--success" role="status">You have been signed out.</div>
+    <% } %>
+
+    <%#
+      Email and password come first: it is the default way in. Microsoft is
+      offered underneath once single sign-on is set up, and is the only way
+      in when local sign-in is switched off under Settings - Users.
+    %>
+    <% if (locals.localAdminAvailable) { %>
+      <%# Email first, then a password or a code - whichever this account
+          signs in with (Settings - Users). %>
+      <form method="post" action="/auth/local/identify" class="stack local-signin">
+        <input type="hidden" name="_csrf" value="<%= locals.csrfToken %>">
+        <input type="hidden" name="returnTo" value="<%= locals.returnTo || '/home' %>">
+
+        <div class="field">
+          <label for="email">Email</label>
+          <input id="email" name="email" type="email" inputmode="email" required maxlength="320"
+                 autocomplete="username" spellcheck="false" value="<%= locals.email || '' %>"
+                 placeholder="name@example.com" autofocus>
+        </div>
+
+        <button type="submit" class="btn btn--primary btn--block">Continue</button>
+      </form>
+      <% if (locals.registrationOffered) { %>
+        <p class="signin-register small">No account yet? <a href="/register">Create an account</a></p>
+      <% } %>
+    <% } %>
+
+    <% if (locals.ssoConfigured) { %>
+      <% if (locals.localAdminAvailable) { %>
+        <p class="signin-divider"><span>or</span></p>
+      <% } %>
+      <%# One button per identity provider that can sign people in. %>
+      <% (locals.providers || []).forEach(function (p, i) { %>
+        <form method="post" action="/auth/login" class="stack signin-provider">
+          <input type="hidden" name="_csrf" value="<%= locals.csrfToken %>">
+          <input type="hidden" name="returnTo" value="<%= locals.returnTo || '/home' %>">
+          <input type="hidden" name="provider" value="<%= p.key %>">
+          <button type="submit" class="btn btn--block<%= !locals.localAdminAvailable && i === 0 ? ' btn--primary' : '' %>">
+            Sign in with <%= p.label %>
+          </button>
+        </form>
+      <% }); %>
+    <% } else if (!locals.localAdminAvailable) { %>
+      <%# Neither way in: say so, and still carry a CSRF token on the page. %>
+      <div class="flash flash--info" role="status">
+        Sign-in is not set up yet. Ask your administrator.
+      </div>
+      <form method="post" action="/auth/login" class="stack">
+        <input type="hidden" name="_csrf" value="<%= locals.csrfToken %>">
+        <input type="hidden" name="returnTo" value="<%= locals.returnTo || '/home' %>">
+      </form>
+    <% } %>
+  </div>
+</div>
+
+<%- include('partials/footer') %>

@@ -1,0 +1,16 @@
+<%#
+  The two kinds of group, side by side.
+
+  A technician group says who *works* a ticket; a user group says who may
+  *read* it. They are one section with two tabs because an administrator
+  thinks of them together, and would otherwise have to remember which of two
+  menu entries held which.
+%>
+<nav class="subtabs" aria-label="Groups">
+  <a href="/admin/settings/groups"
+     class="<%= locals.tab === 'technicians' ? 'subtabs__item--current' : '' %>"
+     <%- locals.tab === 'technicians' ? 'aria-current="page"' : '' %>>Technician groups</a>
+  <a href="/admin/settings/groups/users"
+     class="<%= locals.tab === 'users' ? 'subtabs__item--current' : '' %>"
+     <%- locals.tab === 'users' ? 'aria-current="page"' : '' %>>User groups</a>
+</nav>

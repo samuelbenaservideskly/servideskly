@@ -1,0 +1,268 @@
+<%- include('_layout') %>
+
+<%- include('_customization-tabs', { tab: 'appearance' }) %>
+
+<!-- ======================================================== quick colours -->
+<form method="post" action="/admin/settings/customization/colour" class="card quick-colours">
+  <input type="hidden" name="_csrf" value="<%= locals.csrfToken %>">
+  <div>
+    <h2 class="section-title">Colour</h2>
+    <p class="small muted">One click changes the brand colour everywhere. For any other colour, use the form below.</p>
+  </div>
+  <div class="quick-colours__dots" role="group" aria-label="Brand colour">
+    <% quickColours.forEach(function (c) { var on = colours.brandHex.toLowerCase() === c.hex; %>
+      <button type="submit" name="brandColour" value="<%= c.hex %>" class="quick-colour quick-colour--<%= c.label.toLowerCase().replace(/\s+/g, '-') %>" title="<%= c.label %>"<%- on ? ' aria-pressed="true"' : ' aria-pressed="false"' %>>
+        <span class="visually-hidden"><%= c.label %></span>
+      </button>
+    <% }); %>
+  </div>
+</form>
+
+<!-- ===================================================== name and colours -->
+<%#
+  A card of its own, and an endpoint of its own. The font used to ride on
+  the colour form, so a stored text colour the policy refuses stopped
+  somebody changing the font as well - reported 15 Oct 2026.
+%>
+<form method="post" action="/admin/settings/customization/font" class="card stack">
+  <input type="hidden" name="_csrf" value="<%= locals.csrfToken %>">
+  <h2 class="section-title">Font</h2>
+
+  <p class="small muted">
+    Only fonts this service desk is licensed to use are offered. A custom
+    requester portal sets its own font in its CSS, from the same list.
+  </p>
+
+  <div class="pick-list">
+    <% fonts.forEach(function (f) { var current = (doc.branding.font || 'system') === f.key; %>
+      <label class="pick-option">
+        <input type="radio" name="font" value="<%= f.key %>"<%= current ? ' checked' : '' %>>
+        <span class="pick-option__name font-sample font-sample--<%= f.key %>"><%= f.label %></span>
+        <span class="small muted font-sample font-sample--<%= f.key %>">Just another printer issue, 0123456789</span>
+      </label>
+    <% }); %>
+  </div>
+
+  <div class="actions">
+    <button type="submit" class="btn btn--primary">Save font</button>
+  </div>
+</form>
+
+<form method="post" action="/admin/settings/customization" class="card stack">
+  <input type="hidden" name="_csrf" value="<%= locals.csrfToken %>">
+  <h2 class="section-title">Name and colours</h2>
+
+  <div class="field">
+    <div class="label-row">
+      <label for="appName">Application name</label>
+      <%- include('../../partials/info', { text: 'Displayed in the browser tab and the footer, and in the header when no logo is uploaded.' }) %>
+    </div>
+    <input id="appName" name="appName" type="text" maxlength="60" required
+           value="<%= doc.branding.appName %>">
+  </div>
+
+  <div class="field">
+    <label for="brandColour">Brand colour</label>
+    <div class="colour-row">
+      <input class="colour-swatch" id="brandColour" name="brandColour" type="color"
+             value="<%= colours.brandHex %>" aria-describedby="brand-help">
+      <span class="colour-value mono small">
+        <%= colours.brandHex %> &middot; rgb(<%= colours.brandRgb %>)
+      </span>
+    </div>
+    <p id="brand-help" class="hint">
+      Used for buttons, links and highlights. Pick with the swatch, or paste a
+      value into the box below - <code>#a3182f</code>, <code>a3182f</code>,
+      <code>rgb(163, 24, 47)</code> and <code>163, 24, 47</code> are all accepted.
+    </p>
+    <input class="colour-entry" name="brandColourTyped" type="text" maxlength="40"
+           placeholder="Or type a hex / RGB value to override the swatch"
+           spellcheck="false">
+  </div>
+
+  <div class="field">
+    <label for="inkColour">Text colour</label>
+    <div class="colour-row">
+      <input class="colour-swatch" id="inkColour" name="inkColour" type="color"
+             value="<%= colours.inkHex %>" aria-describedby="ink-help">
+      <span class="colour-value mono small">
+        <%= colours.inkHex %> &middot; rgb(<%= colours.inkRgb %>)
+      </span>
+    </div>
+    <p id="ink-help" class="hint">
+      The near-black used for text in light mode. Dark mode is worked out from the
+      brand colour, or set below under Light and dark mode.
+    </p>
+    <input class="colour-entry" name="inkColourTyped" type="text" maxlength="40"
+           placeholder="Or type a hex / RGB value to override the swatch"
+           spellcheck="false">
+  </div>
+
+  <fieldset class="field">
+    <legend class="label-row">Light and dark mode
+      <%- include('../../partials/info', { text: 'Without colours of their own, both modes are worked out from the brand and text colours above. Text is always kept readable on its card colour, whatever is chosen.' }) %>
+    </legend>
+    <div class="pick-list">
+      <% [['both', 'Both - each person chooses', 'The colour-mode switch is shown; "System default" follows their computer.'],
+          ['light', 'Light only', 'Everybody sees light mode; the switch is hidden.'],
+          ['dark', 'Dark only', 'Everybody sees dark mode; the switch is hidden.']].forEach(function (m) { %>
+        <label class="pick-option">
+          <input type="radio" name="colourModes" value="<%= m[0] %>"<%= colourModes === m[0] ? ' checked' : '' %>>
+          <span class="pick-option__name"><%= m[1] %></span>
+          <span class="small muted"><%= m[2] %></span>
+        </label>
+      <% }); %>
+    </div>
+
+    <% if (colourModes === 'both') { %>
+      <div class="field">
+        <div class="label-row">
+          <label for="defaultMode">What somebody who has chosen nothing sees</label>
+          <%- include('../../partials/info', { text: 'The first thing a new visitor gets. Light, so a service desk looks the same to everybody who opens it for the first time; "Follow their computer" uses the setting their machine is on.' }) %>
+        </div>
+        <select id="defaultMode" name="defaultMode">
+          <option value="light"<%= defaultMode === 'light' ? ' selected' : '' %>>Light</option>
+          <option value="dark"<%= defaultMode === 'dark' ? ' selected' : '' %>>Dark</option>
+          <option value="system"<%= defaultMode === 'system' ? ' selected' : '' %>>Follow their computer</option>
+        </select>
+      </div>
+    <% } %>
+
+    <% [['light', 'Light mode'], ['dark', 'Dark mode']].forEach(function (pair) { var key = pair[0], m = modes[key]; %>
+      <details class="mode-panel mode-panel--<%= key %>"<%= m.own ? ' open' : '' %>>
+        <summary>
+          <%# SVG fill attributes, not style=: the policy allows no inline style. %>
+          <svg class="mode-panel__swatches" viewBox="0 0 52 20" aria-hidden="true">
+            <circle cx="10" cy="10" r="8.5" fill="<%= m.background %>" stroke="currentColor" stroke-opacity="0.2"></circle>
+            <circle cx="26" cy="10" r="8.5" fill="<%= m.surface %>" stroke="currentColor" stroke-opacity="0.2"></circle>
+            <circle cx="42" cy="10" r="8.5" fill="<%= m.text %>" stroke="currentColor" stroke-opacity="0.2"></circle>
+          </svg>
+          <span class="mode-panel__title"><%= pair[1] %></span>
+          <span class="small muted"><%= m.own ? 'Own colours' : 'Worked out' %></span>
+        </summary>
+        <div class="mode-panel__body">
+          <label class="check">
+            <input type="checkbox" name="<%= key %>Own"<%= m.own ? ' checked' : '' %>>
+            <span>Use my own colours for <%= pair[1].toLowerCase() %></span>
+          </label>
+          <div class="mode-panel__colours">
+            <% [['Background', 'background', 'Page background'], ['Surface', 'surface', 'Cards and panels'], ['Text', 'text', 'Text']].forEach(function (c) { %>
+              <label class="mode-colour">
+                <input class="colour-swatch" type="color" name="<%= key + c[0] %>" value="<%= m[c[1]] %>">
+                <span><b><%= c[2] %></b><small class="mono"><%= m[c[1]] %></small></span>
+              </label>
+            <% }); %>
+          </div>
+        </div>
+      </details>
+    <% }); %>
+  </fieldset>
+
+  <div class="actions">
+    <button type="submit" class="btn btn--primary">Save appearance</button>
+  </div>
+</form>
+
+<!-- ================================================================= logo -->
+<div class="card">
+  <h2 class="section-title">Logo</h2>
+
+  <div class="asset-preview">
+    <% if (hasLogo) { %>
+      <img class="asset-preview__logo" src="/branding/logo?v=<%= locals.brandingVersion %>"
+           alt="Current logo">
+      <div class="small muted">
+        <%= doc.branding.logo.originalName %> &middot;
+        <%= Math.max(1, Math.round(doc.branding.logo.byteSize / 1024)) %> KB &middot;
+        uploaded <%= formatRelative(doc.branding.logo.uploadedAt) %>
+      </div>
+    <% } else { %>
+      <p class="muted small">
+        No logo uploaded. The application name is shown top left and on the
+        sign-in page instead.
+      </p>
+    <% } %>
+  </div>
+
+  <form method="post" action="/admin/settings/customization/logo/upload"
+        enctype="multipart/form-data" class="stack">
+    <input type="hidden" name="_csrf" value="<%= locals.csrfToken %>">
+    <div class="field">
+      <label for="logo-file">Upload a logo</label>
+      <input id="logo-file" name="image" type="file" accept="<%= logoExtensions %>" required>
+      <p class="hint">
+        <%= logoExtensions.split(',').join(' ') %>, up to <%= maxBrandingKb %> KB.
+        A wide, transparent SVG or PNG works best. It is shown against a white
+        plate so it stays legible in the dark theme.
+      </p>
+    </div>
+    <div class="actions">
+      <button type="submit" class="btn">Upload logo</button>
+      <% if (hasLogo) { %>
+        <button type="submit" class="btn btn--danger"
+                form="remove-logo">Remove logo</button>
+      <% } %>
+    </div>
+  </form>
+
+  <% if (hasLogo) { %>
+    <form id="remove-logo" method="post" action="/admin/settings/customization/logo/remove">
+      <input type="hidden" name="_csrf" value="<%= locals.csrfToken %>">
+    </form>
+  <% } %>
+</div>
+
+<!-- ============================================================== favicon -->
+<div class="card">
+  <h2 class="section-title">Favicon</h2>
+
+  <div class="asset-preview">
+    <img class="asset-preview__favicon" src="/branding/favicon?v=<%= locals.brandingVersion %>"
+         alt="Current favicon">
+    <div class="small muted">
+      <% if (hasFavicon) { %>
+        <%= doc.branding.favicon.originalName %> &middot;
+        <%= Math.max(1, Math.round(doc.branding.favicon.byteSize / 1024)) %> KB &middot;
+        uploaded <%= formatRelative(doc.branding.favicon.uploadedAt) %>
+      <% } else { %>
+        No favicon uploaded - a plain square in the brand colour is used.
+      <% } %>
+    </div>
+  </div>
+
+  <form method="post" action="/admin/settings/customization/favicon/upload"
+        enctype="multipart/form-data" class="stack">
+    <input type="hidden" name="_csrf" value="<%= locals.csrfToken %>">
+    <div class="field">
+      <label for="favicon-file">Upload a favicon</label>
+      <input id="favicon-file" name="image" type="file" accept="<%= faviconExtensions %>" required>
+      <p class="hint">
+        <%= faviconExtensions.split(',').join(' ') %>, up to <%= maxBrandingKb %> KB.
+        A square image, 32x32 or larger, or an SVG.
+      </p>
+    </div>
+    <div class="actions">
+      <button type="submit" class="btn">Upload favicon</button>
+      <% if (hasFavicon) { %>
+        <button type="submit" class="btn btn--danger" form="remove-favicon">Remove favicon</button>
+      <% } %>
+    </div>
+  </form>
+
+  <% if (hasFavicon) { %>
+    <form id="remove-favicon" method="post" action="/admin/settings/customization/favicon/remove">
+      <input type="hidden" name="_csrf" value="<%= locals.csrfToken %>">
+    </form>
+  <% } %>
+</div>
+
+<div class="card card--info">
+  <p class="small">
+    Uploaded images are stored outside the web root under random filenames, and
+    are checked against their own leading bytes rather than their name. An SVG is
+    additionally screened for scripts and event handlers, and served with a
+    sandbox policy so it cannot execute in this origin.
+  </p>
+</div>
+
+<%- include('_layout_end') %>

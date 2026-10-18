@@ -1,0 +1,23 @@
+<%- include('partials/header') %>
+
+<div class="signin">
+  <div class="card signin-card">
+    <%- include("partials/signin-mark") %>
+    <h1>Confirm your account</h1>
+    <% if (!valid) { %>
+      <p class="lede">This link has expired or was already used. Create the account again to get a new one.</p>
+      <a class="btn btn--primary btn--block" href="/register">Create an account</a>
+      <a class="signin-back" href="/login">Back to sign in</a>
+    <% } else { %>
+      <%# A button, not a link that activates on sight: a mail scanner that
+          follows links must not create accounts by itself. %>
+      <p class="lede">Create the account for <strong><%= email %></strong>?</p>
+      <form method="post" action="/register/confirm/<%= token %>" class="stack">
+        <input type="hidden" name="_csrf" value="<%= locals.csrfToken %>">
+        <button type="submit" class="btn btn--primary btn--block">Create my account</button>
+      </form>
+    <% } %>
+  </div>
+</div>
+
+<%- include('partials/footer') %>

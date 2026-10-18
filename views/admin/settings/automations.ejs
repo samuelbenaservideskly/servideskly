@@ -1,0 +1,122 @@
+<%- include('_layout') %>
+
+<%- include('_advanced-tabs', { tab: 'automation' }) %>
+
+<div class="toolbar">
+  <a class="btn btn--primary" href="#new-automation">
+    <span aria-hidden="true">+</span> New automation
+  </a>
+  <%# What has been running, across all of them: the question somebody asks
+      when a ticket moved and nobody moved it. Asked for 16 Oct 2026. %>
+  <a class="btn" href="/admin/settings/advanced/automation/runs">Last runs</a>
+</div>
+
+<% if (automations.length === 0) { %>
+  <div class="card">
+    <p><strong>No automations yet.</strong></p>
+    <p class="small muted">Start with <a href="#new-automation">New automation</a>.</p>
+  </div>
+<% } else { %>
+  <div class="table-scroll">
+    <table class="table">
+      <thead>
+        <tr>
+          <th scope="col">Name</th>
+          <th scope="col">When</th>
+          <th scope="col">Status</th>
+          <th scope="col">Last run</th>
+          <th scope="col"><span class="visually-hidden">Actions</span></th>
+        </tr>
+      </thead>
+      <tbody>
+        <% automations.forEach(function (a) { %>
+          <tr>
+            <td><a class="link-strong" href="/admin/settings/advanced/automation/<%= a.id %>"><%= a.name %></a></td>
+            <td class="small"><%= a.trigger %></td>
+            <td><span class="pill pill--<%= a.is_enabled ? 'ok' : 'muted' %>"><%= a.is_enabled ? 'On' : 'Off' %></span></td>
+            <td class="small">
+              <% if (a.lastRun) { %>
+                <%= formatRelative(a.lastRun.ran_at) %>
+                <% if (a.lastRun.outcome !== 'success') { %><span class="pill pill--warn"><%= a.lastRun.outcome %></span><% } %>
+              <% } else { %>
+                <span class="muted">never</span>
+              <% } %>
+            </td>
+            <td class="row-actions" id="row-<%= a.id %>">
+              <%- include('../../partials/bin-button', { label: 'Delete ' + a.name, href: '#delete-' + a.id }) %>
+            </td>
+          </tr>
+        <% }); %>
+      </tbody>
+    </table>
+  </div>
+<% } %>
+
+<form method="post" action="/admin/settings/advanced/automation/network" class="card stack local-signin-card" id="network">
+  <input type="hidden" name="_csrf" value="<%= locals.csrfToken %>">
+  <% (locals.flashMessages || []).filter(function (m) { return m.where === 'network'; }).forEach(function (m) { %>
+    <div class="flash flash--<%= m.type %>" role="status"><%= m.message %></div>
+  <% }); %>
+  <div class="label-row">
+    <label class="check">
+      <input type="checkbox" name="allowPrivateNetwork" value="on"<%= allowPrivateNetwork ? ' checked' : '' %>>
+      <strong>Allow HTTP steps to call the private network</strong>
+    </label>
+    <%- include('../../partials/info', { text: 'Off, HTTP steps may call public https addresses only. On, they may also call internal addresses (10.x, 192.168.x, localhost and the like), over plain http too. Leave it off unless an automation needs an internal system.' }) %>
+  </div>
+  <div class="actions"><button type="submit" class="btn btn--small">Save</button></div>
+</form>
+
+<% automations.forEach(function (a) { %>
+  <div class="dialog" id="delete-<%= a.id %>">
+    <a class="dialog__backdrop" href="#row-<%= a.id %>" aria-label="Close"></a>
+    <div class="dialog__panel" role="dialog" aria-modal="true" aria-labelledby="delete-<%= a.id %>-title">
+      <div class="dialog__head">
+        <h2 id="delete-<%= a.id %>-title">Delete <%= a.name %>?</h2>
+        <a class="dialog__close" href="#row-<%= a.id %>" aria-label="Close">&times;</a>
+      </div>
+      <form method="post" action="/admin/settings/advanced/automation/<%= a.id %>/delete" class="stack">
+        <input type="hidden" name="_csrf" value="<%= locals.csrfToken %>">
+        <p>The automation and its run history are removed. Tickets it already changed stay as they are.</p>
+        <div class="dialog__actions">
+          <button type="submit" class="btn btn--danger">Delete automation</button>
+          <a class="btn btn--quiet" href="#row-<%= a.id %>">Cancel</a>
+        </div>
+      </form>
+    </div>
+  </div>
+<% }); %>
+
+<div class="dialog<%= openDialog === 'new-automation' ? ' dialog--open' : '' %>" id="new-automation">
+  <a class="dialog__backdrop" href="#top" aria-label="Close"></a>
+  <div class="dialog__panel" role="dialog" aria-modal="true" aria-labelledby="new-automation-title">
+    <div class="dialog__head">
+      <h2 id="new-automation-title">New automation</h2>
+      <a class="dialog__close" href="#top" aria-label="Close">&times;</a>
+    </div>
+    <form method="post" action="/admin/settings/advanced/automation" class="stack">
+      <input type="hidden" name="_csrf" value="<%= locals.csrfToken %>">
+      <% if (errors.form) { %><p class="field-error" role="alert"><%= errors.form %></p><% } %>
+      <div class="field">
+        <label for="name">Name <span class="required">*</span></label>
+        <input id="name" name="name" type="text" required maxlength="80" value="<%= values.name || '' %>" placeholder="Create a Jira issue for urgent tickets">
+        <% if (errors.name) { %><p class="field-error" role="alert"><%= errors.name %></p><% } %>
+      </div>
+      <div class="field">
+        <label for="trigger">When</label>
+        <select id="trigger" name="trigger">
+          <% triggers.forEach(function (t) { %>
+            <option value="<%= t.key %>"<%= values.trigger === t.key ? ' selected' : '' %>><%= t.label %></option>
+          <% }); %>
+        </select>
+        <% if (errors.trigger) { %><p class="field-error" role="alert"><%= errors.trigger %></p><% } %>
+      </div>
+      <div class="dialog__actions">
+        <button type="submit" class="btn btn--primary">Create automation</button>
+        <a class="btn btn--quiet" href="#top">Cancel</a>
+      </div>
+    </form>
+  </div>
+</div>
+
+<%- include('_layout_end') %>

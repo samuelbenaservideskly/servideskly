@@ -1,0 +1,16 @@
+<div class="integration-head">
+  <%- include('../../partials/back-link', { href: '/admin/settings/integrations', label: 'All integrations' }) %>
+  <h2 class="integration-head__title">
+    <%- include('_entra-logo', { cls: 'entra-logo entra-logo--small' }) %>
+    Microsoft Entra ID
+  </h2>
+</div>
+
+<nav class="subtabs" aria-label="Microsoft Entra ID">
+  <a href="/admin/settings/integrations/entra/authentication"
+     class="<%= locals.tab === 'authentication' ? 'subtabs__item--current' : '' %>"
+     <%- locals.tab === 'authentication' ? 'aria-current="page"' : '' %>>Authentication</a>
+  <a href="/admin/settings/integrations/entra/provisioning"
+     class="<%= locals.tab === 'provisioning' ? 'subtabs__item--current' : '' %>"
+     <%- locals.tab === 'provisioning' ? 'aria-current="page"' : '' %>>Provisioning</a>
+</nav>

@@ -1,0 +1,25 @@
+<%- include('_layout') %>
+
+<%# The places a search found (services/settings-search.ts), best first. %>
+<% if (!q) { %>
+  <p class="muted">Type what you are looking for - a setting, a feature, or another word for it.</p>
+<% } else if (hits.length === 0) { %>
+  <div class="empty-state">
+    <p><strong>Nothing in Settings matches "<%= q %>".</strong></p>
+    <p class="muted small">Try another word for it, or one word fewer.</p>
+  </div>
+<% } else { %>
+  <p class="muted small"><%= hits.length === 1 ? '1 place' : hits.length + ' places' %> for "<%= q %>"</p>
+  <ul class="settings-results">
+    <% hits.forEach(function (hit) { %>
+      <li>
+        <a class="settings-result" href="<%= hit.href %>">
+          <span class="settings-result__trail"><%= t(hit.sectionTitle) %><% if (hit.under) { %><span aria-hidden="true"> / </span><%= hit.under %><% } %></span>
+          <span class="settings-result__title"><%= hit.title %></span>
+        </a>
+      </li>
+    <% }); %>
+  </ul>
+<% } %>
+
+<%- include('_layout_end') %>

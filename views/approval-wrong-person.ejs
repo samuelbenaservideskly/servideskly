@@ -1,0 +1,19 @@
+<%- include('partials/header') %>
+
+<div class="error-page__main error-page__main--inline">
+  <div class="error-page__body">
+    <p class="error-page__code">403</p>
+    <h1 class="error-page__title">Not yours to answer</h1>
+    <p class="error-page__message">
+      <%= reference %> is waiting for <strong><%= approvalEmail %></strong> to answer.
+      You are signed in as <strong><%= signedInAs %></strong>.
+    </p>
+    <p class="error-page__message">Sign out, then open the link from the email again and sign in as <%= approvalEmail %>.</p>
+    <form method="post" action="/auth/logout" class="error-page__actions">
+      <input type="hidden" name="_csrf" value="<%= locals.csrfToken %>">
+      <button type="submit" class="btn btn--primary">Sign out</button>
+    </form>
+  </div>
+</div>
+
+<%- include('partials/footer') %>

@@ -1,0 +1,242 @@
+<%# One field of the raise-a-ticket form. `field` is passed in; the rest are
+    the page's own locals. Drawn inside a section's two-column grid. %>
+<% var locked = field.mode === 'view_only'; %>
+<% var must = field.mode === 'mandatory'; %>
+<%# In a section that may be hidden, nothing is 'required' in the browser:
+    a hidden required control blocks the whole form. The server checks. %>
+<% var req = must && !locals.inConditional; %>
+
+<% if (field.key === 'title') { %>
+  <div class="field">
+    <%# Every ticket needs a title - the server refuses one without - so an
+        editable Title is always mandatory, whatever its mode says, and is
+        marked the way every other mandatory field is. %>
+    <label for="title">Title<% if (!locked) { %> <span class="required">*</span><% } %></label>
+    <% if (locked) { %>
+      <p class="locked-value"><%= template.title || template.name %></p>
+    <% } else { %>
+      <input id="title" name="title" type="text"<%- locals.inConditional ? '' : ' required' %> minlength="3" maxlength="200"
+             value="<%= values.title %>" placeholder="<%= field.ghost %>">
+    <% } %>
+    <% if (errors.title) { %><p class="field-error" role="alert"><%= errors.title %></p><% } %>
+  </div>
+
+<% } else if (field.key === 'category' || field.key === 'subcategory' || field.key === 'item') { %>
+  <%#
+    One of the three catalogue levels, each its own field so each can be
+    made mandatory on its own.
+
+    The two deeper lists are grouped by the branch they sit under, which
+    is how the pairing stays readable without a script to narrow them:
+    "sam" means nothing on its own, "sam" under "Hardware" is obvious.
+  %>
+  <% var flat = field.key === 'category'; %>
+  <% var groups = flat ? [] : levels[field.key]; %>
+  <% var options = flat ? levels.category : []; %>
+  <% var any = flat ? options.length > 0 : groups.length > 0; %>
+  <% var chosen = values[field.input] || ''; %>
+
+  <% if (locked) { %>
+    <div class="field">
+      <label><%= field.shown %></label>
+      <%# This level's own name: all three share one stored node. %>
+      <p class="locked-value"><%= levelTrail[field.key] || 'Not set' %></p>
+    </div>
+  <% } else { %>
+    <div class="field">
+      <label for="<%= field.input %>">
+        <%= field.shown %><% if (must && any) { %> <span class="required">*</span><% } %>
+      </label>
+      <select id="<%= field.input %>" name="<%= field.input %>"
+              <%= req && any ? ' required' : '' %><%= any ? '' : ' disabled' %>>
+        <option value="">Not sure</option>
+        <% if (flat) { %>
+          <% options.forEach(function (node) { %>
+            <option value="<%= node.id %>"<%= chosen === node.id ? ' selected' : '' %>><%= node.name %></option>
+          <% }); %>
+        <% } else { %>
+          <% groups.forEach(function (group) { %>
+            <optgroup label="<%= group.group %>">
+              <% group.options.forEach(function (node) { %>
+                <option value="<%= node.id %>"<%= chosen === node.id ? ' selected' : '' %>><%= node.name %></option>
+              <% }); %>
+            </optgroup>
+          <% }); %>
+        <% } %>
+      </select>
+      <% if (!any) { %>
+        <p class="hint">
+          Nothing has been set up at this level yet, so there is nothing to
+          choose from.
+        </p>
+      <% } %>
+    </div>
+  <% } %>
+
+<% } else if (field.key === 'priority') { %>
+  <div class="field">
+    <label for="priority">Priority</label>
+    <% if (locked) { %>
+      <p class="locked-value"><%= priorityLabels[template.priority] %></p>
+    <% } else { %>
+      <select id="priority" name="priority">
+        <% priorities.forEach(function (priority) { %>
+          <option value="<%= priority %>"<%= values.priority === priority ? ' selected' : '' %>><%= priorityLabels[priority] %></option>
+        <% }); %>
+      </select>
+    <% } %>
+  </div>
+
+<% } else if (field.key === 'description') { %>
+  <div class="field">
+    <label for="description">
+      <%= field.shown %><% if (must) { %> <span class="required">*</span><% } %>
+    </label>
+    <% if (locked) { %>
+      <p class="locked-value"><%= template.body || 'Nothing to add.' %></p>
+    <% } else { %>
+      <textarea id="description" name="description" rows="6"
+                <%= req ? 'required' : '' %> maxlength="20000"
+                placeholder="<%= field.ghost %>"><%= values.description %></textarea>
+    <% } %>
+    <% if (errors.description) { %><p class="field-error" role="alert"><%= errors.description %></p><% } %>
+  </div>
+
+<% } else if (field.key === 'attachments') { %>
+  <% if (attachmentsEnabled) { %>
+    <div class="field">
+      <div class="label-row">
+        <label for="files">
+          Attach files<% if (must) { %> <span class="required">*</span><% } else { %> <span class="hint-inline">(optional)</span><% } %>
+        </label>
+        <%- include('../partials/info', {
+          text: 'Up to ' + attachmentMaxPerTicket + ' files, ' + attachmentMaxLabel +
+            ' each. Accepted: ' + attachmentAccept.split(',').join(' ') + '.',
+        }) %>
+      </div>
+      <input id="files" name="files" type="file" multiple<%= req ? ' required' : '' %>
+             accept="<%= attachmentAccept %>"<%= must ? ' aria-describedby="files-help"' : '' %>>
+      <% if (must) { %>
+        <p id="files-help" class="hint">At least one file is needed.</p>
+      <% } %>
+      <% if (errors.files) { %><p class="field-error" role="alert"><%= errors.files %></p><% } %>
+    </div>
+  <% } %>
+
+<% } else if (field.key === 'approval') { %>
+  <div class="field">
+    <div class="label-row">
+      <label for="approval">
+        Send for approval<% if (must) { %> <span class="required">*</span><% } else { %> <span class="hint-inline">(optional)</span><% } %>
+      </label>
+      <%- include('../partials/info', { text: 'They are emailed a link to approve or decline. Until they answer, the request cannot be resolved or closed.' }) %>
+    </div>
+    <input id="approval" name="approval" type="email" maxlength="200"
+           <%= req ? 'required' : '' %>
+           placeholder="<%= field.ghost %>"
+           value="<%= answers.approval || '' %>">
+    <% if (errors.approval) { %><p class="field-error" role="alert"><%= errors.approval %></p><% } %>
+  </div>
+
+<% } else if (field.key === 'requester') { %>
+  <%# Who is asking, as the service desk will see it. Nothing is posted. %>
+  <div class="field">
+    <span class="field-label"><%= field.shown %></span>
+    <div class="requester-card">
+      <strong><%= locals.currentUser ? currentUser.display_name : '' %></strong>
+      <% (locals.requesterLines || []).forEach(function (d) { %>
+        <span class="requester-card__line"><span class="muted"><%= d.label %></span> <%= d.value %></span>
+      <% }); %>
+    </div>
+  </div>
+
+<% } else if (field.key === 'group') { %>
+  <%# Which team the ticket goes to. View only shows where it will land -
+      the template's own group, or the one its category names. %>
+  <div class="field">
+    <label for="groupId"><%= field.shown %><% if (must) { %> <span class="required">*</span><% } %></label>
+    <% if (locked) { %>
+      <p class="locked-value"><%= locals.templateGroupName || t('Decided by the service desk') %></p>
+    <% } else if ((locals.groups || []).length === 0) { %>
+      <select id="groupId" disabled><option><%= t('No technician groups have been set up yet') %></option></select>
+    <% } else { %>
+      <select id="groupId" name="groupId"<%- req ? ' required' : '' %>>
+        <option value=""><%= t('Let the service desk decide') %></option>
+        <% groups.forEach(function (g) { %>
+          <option value="<%= g.id %>"<%= values.groupId === g.id ? ' selected' : '' %>><%= g.name %></option>
+        <% }); %>
+      </select>
+    <% } %>
+    <% if (errors.groupId) { %><p class="field-error" role="alert"><%= errors.groupId %></p><% } %>
+  </div>
+
+<% } else if (field.key === 'assignee') { %>
+  <%# Who picks it up. Only active agents and administrators are listed, and
+      the server checks the same thing - a select is a display hint. %>
+  <div class="field">
+    <label for="assigneeId"><%= field.shown %></label>
+    <% if (locked) { %>
+      <p class="locked-value"><%= t('Whoever the team assigns it to') %></p>
+    <% } else if ((locals.assignees || []).length === 0) { %>
+      <select id="assigneeId" disabled><option><%= t('Nobody can be assigned tickets yet') %></option></select>
+    <% } else { %>
+      <select id="assigneeId" name="assigneeId">
+        <option value=""><%= t('Nobody in particular') %></option>
+        <% assignees.forEach(function (person) { %>
+          <option value="<%= person.id %>"<%= values.assigneeId === person.id ? ' selected' : '' %>><%= person.display_name || person.email %></option>
+        <% }); %>
+      </select>
+    <% } %>
+    <% if (errors.assigneeId) { %><p class="field-error" role="alert"><%= errors.assigneeId %></p><% } %>
+  </div>
+
+<% } else if (field.key === 'onbehalf') { %>
+  <div class="field">
+    <label for="onBehalfOf">
+      <%= field.shown %><% if (must) { %> <span class="required">*</span><% } else { %> <span class="hint-inline">(optional)</span><% } %>
+    </label>
+    <input id="onBehalfOf" name="onBehalfOf" type="email" maxlength="200"<%- req ? ' required' : '' %>
+           placeholder="<%= field.ghost %>" value="<%= values.onBehalfOf || '' %>" autocomplete="off">
+    <% if (errors.onBehalfOf) { %><p class="field-error" role="alert"><%= errors.onBehalfOf %></p><% } %>
+  </div>
+
+<% } else { %>
+  <%# A question the template asks. %>
+  <div class="field">
+    <label for="<%= field.input %>">
+      <%= field.shown %><% if (must) { %> <span class="required">*</span><% } else if (!locked) { %> <span class="hint-inline">(optional)</span><% } %>
+    </label>
+    <% var answer = answers[field.input] || ''; var options = field.options || []; %>
+    <% if (locked) { %>
+      <p class="locked-value"><%= field.value || '-' %></p>
+    <% } else if (field.fieldType === 'textarea') { %>
+      <textarea id="<%= field.input %>" name="<%= field.input %>" rows="4" maxlength="2000"<%- req ? ' required' : '' %>
+                placeholder="<%= field.ghost %>"><%= answer %></textarea>
+    <% } else if (field.fieldType === 'select') { %>
+      <select id="<%= field.input %>" name="<%= field.input %>"<%- req ? ' required' : '' %>>
+        <option value="">Choose</option>
+        <% options.forEach(function (o) { %><option value="<%= o %>"<%= answer === o ? ' selected' : '' %>><%= o %></option><% }); %>
+      </select>
+    <% } else if (field.fieldType === 'multiselect') { %>
+      <% var picked = answer ? answer.split(', ') : []; %>
+      <div class="choice-list" id="<%= field.input %>">
+        <% options.forEach(function (o, i) { %>
+          <label class="check">
+            <input type="checkbox" name="<%= field.input %>" value="<%= o %>"<%= picked.indexOf(o) >= 0 ? ' checked' : '' %>>
+            <%= o %>
+          </label>
+        <% }); %>
+      </div>
+    <% } else if (field.fieldType === 'date') { %>
+      <input id="<%= field.input %>" name="<%= field.input %>" type="date"<%- req ? ' required' : '' %> value="<%= answer %>">
+    <% } else if (field.fieldType === 'number') { %>
+      <input id="<%= field.input %>" name="<%= field.input %>" type="text" inputmode="decimal" maxlength="40"<%- req ? ' required' : '' %>
+             placeholder="<%= field.ghost %>" value="<%= answer %>">
+    <% } else { %>
+      <input id="<%= field.input %>" name="<%= field.input %>" type="text" maxlength="2000"
+             <%= req ? 'required' : '' %>
+             placeholder="<%= field.ghost %>"
+             value="<%= answer %>">
+    <% } %>
+  </div>
+<% } %>

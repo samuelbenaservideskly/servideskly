@@ -1,0 +1,28 @@
+<%#
+  The remove control on a table row: a bin, not the word, so a row of
+  actions stays one line. `label` names what goes ("Remove Test"), read by a
+  screen reader and shown on hover. With `refused`, the bin is shown
+  disabled and that sentence says why - the reason stays on the page.
+%>
+<%# `form` (optional) names a form elsewhere on the page, for a bin that
+    sits where a <form> may not - inside a <summary>, say. `formaction`
+    (optional) posts the surrounding form somewhere else - a bin in a
+    dialog's footer beside its Save. %>
+<%# `href` (optional) makes it a link - to a confirmation dialog, say. %>
+<% var refused = locals.refused || ''; %>
+<% if (locals.href && !refused) { %>
+<a class="btn btn--quiet btn--small btn--danger btn--icon" href="<%= href %>" title="<%= label %>">
+  <svg viewBox="0 0 16 16" width="15" height="15" fill="currentColor" aria-hidden="true">
+    <path d="M6.5 1h3a1 1 0 0 1 1 1v1H13a.75.75 0 0 1 0 1.5h-.6l-.68 8.6A1.75 1.75 0 0 1 9.98 14.7H6.02a1.75 1.75 0 0 1-1.74-1.6L3.6 4.5H3A.75.75 0 0 1 3 3h2.5V2a1 1 0 0 1 1-1Zm.5 2h2v-.5H7V3ZM5.1 4.5l.67 8.48c.01.13.12.22.25.22h3.96c.13 0 .24-.1.25-.22l.67-8.48H5.1Zm1.65 1.75c.41 0 .75.34.75.75v4.5a.75.75 0 0 1-1.5 0V7c0-.41.34-.75.75-.75Zm2.5 0c.41 0 .75.34.75.75v4.5a.75.75 0 0 1-1.5 0V7c0-.41.34-.75.75-.75Z"/>
+  </svg>
+  <span class="visually-hidden"><%= label %></span>
+</a>
+<% } else { %>
+<button type="submit" class="btn btn--quiet btn--small btn--danger btn--icon"
+        title="<%= refused || label %>"<%- refused ? ' disabled' : '' %><% if (locals.form) { %> form="<%= form %>"<% } %><% if (locals.formaction) { %> formaction="<%= formaction %>" formnovalidate<% } %>>
+  <svg viewBox="0 0 16 16" width="15" height="15" fill="currentColor" aria-hidden="true">
+    <path d="M6.5 1h3a1 1 0 0 1 1 1v1H13a.75.75 0 0 1 0 1.5h-.6l-.68 8.6A1.75 1.75 0 0 1 9.98 14.7H6.02a1.75 1.75 0 0 1-1.74-1.6L3.6 4.5H3A.75.75 0 0 1 3 3h2.5V2a1 1 0 0 1 1-1Zm.5 2h2v-.5H7V3ZM5.1 4.5l.67 8.48c.01.13.12.22.25.22h3.96c.13 0 .24-.1.25-.22l.67-8.48H5.1Zm1.65 1.75c.41 0 .75.34.75.75v4.5a.75.75 0 0 1-1.5 0V7c0-.41.34-.75.75-.75Zm2.5 0c.41 0 .75.34.75.75v4.5a.75.75 0 0 1-1.5 0V7c0-.41.34-.75.75-.75Z"/>
+  </svg>
+  <span class="visually-hidden"><%= refused ? label + ' - ' + refused : label %></span>
+</button>
+<% } %>

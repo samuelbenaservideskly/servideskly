@@ -1,0 +1,76 @@
+<%- include('_layout') %>
+
+<div class="integration-head">
+  <%- include('../../partials/back-link', { href: '/admin/settings/integrations', label: 'All integrations' }) %>
+  <h2 class="integration-head__title">
+    <%- include('_okta-logo', { cls: 'entra-logo entra-logo--small' }) %>
+    Okta
+    <span class="pill pill--<%= configured ? 'ok' : 'muted' %>"><%= configured ? 'Sign-in on' : 'Not set up' %></span>
+  </h2>
+</div>
+
+<div class="card card--info">
+  <dl class="details small">
+    <dt>Redirect URI</dt>
+    <dd class="mono copyable"><%= redirectUri %></dd>
+    <dt>Sign-out redirect URI</dt>
+    <dd class="mono copyable"><%= signOutRedirectUri %></dd>
+  </dl>
+  <p class="small muted">Register both with the Okta app exactly as shown: the redirect URI under Sign-in redirect URIs, the sign-out one under Sign-out redirect URIs.</p>
+</div>
+
+<form method="post" action="/admin/settings/integrations/okta" class="card stack">
+  <input type="hidden" name="_csrf" value="<%= locals.csrfToken %>">
+  <h2 class="section-title">OpenID Connect</h2>
+
+  <div class="field">
+    <div class="label-row">
+      <label for="domain">Okta domain</label>
+      <%- include('../../partials/info', { text: 'The host name of your Okta organisation, without https://.' }) %>
+    </div>
+    <input id="domain" name="domain" type="text" maxlength="200" spellcheck="false"
+           value="<%= values.domain !== undefined ? values.domain : okta.domain %>" placeholder="example.okta.com">
+  </div>
+
+  <div class="field">
+    <div class="label-row">
+      <label for="authServer">Authorisation server ID</label>
+      <%- include('../../partials/info', { text: 'Usually default. Enter the ID of a custom authorisation server, or leave empty to use the org authorisation server.' }) %>
+    </div>
+    <input id="authServer" name="authServer" type="text" maxlength="64" spellcheck="false"
+           value="<%= values.authServer !== undefined ? values.authServer : okta.authServer %>" placeholder="default">
+  </div>
+
+  <div class="field">
+    <div class="label-row">
+      <label for="clientId">Client ID</label>
+      <%- include('../../partials/info', { text: 'The client ID of the OIDC Web application in the Okta Admin Console.' }) %>
+    </div>
+    <input id="clientId" name="clientId" type="text" maxlength="300" spellcheck="false"
+           value="<%= values.clientId !== undefined ? values.clientId : okta.clientId %>">
+  </div>
+
+    <div class="field">
+      <div class="label-row">
+        <label for="clientSecret">Client secret</label>
+        <%- include('../../partials/info', { text: hasSecret ? 'A client secret is stored, encrypted. Leave this field blank to keep it, or enter a new value to replace it. The value is never displayed after saving.' : 'Stored encrypted. The value is never displayed after saving.' }) %>
+      </div>
+      <input id="clientSecret" name="clientSecret" type="password" maxlength="500" autocomplete="off"
+             placeholder="<%= hasSecret ? 'Stored - leave blank to keep' : '' %>">
+    </div>
+
+  <div class="actions">
+    <button type="submit" class="btn btn--primary">Save Okta settings</button>
+  </div>
+</form>
+
+<% if (hasSecret) { %>
+  <form method="post" action="/admin/settings/integrations/okta/secret/clear" class="card stack">
+    <input type="hidden" name="_csrf" value="<%= locals.csrfToken %>">
+    <h2 class="section-title">Client secret</h2>
+    <p class="small muted">Removing the secret turns sign-in with this provider off.</p>
+    <div class="actions"><button type="submit" class="btn btn--danger">Remove client secret</button></div>
+  </form>
+<% } %>
+
+<%- include('_layout_end') %>

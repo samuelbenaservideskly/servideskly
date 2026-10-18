@@ -1,0 +1,14 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Dashboard preview</title>
+  <link rel="stylesheet" href="/assets/css/app.css?v=<%= locals.assetVersion %>">
+</head>
+<body class="dashboard-preview__body">
+  <%# Drawn by services/dashboards.ts: every value in it is escaped; a
+      custom design's own HTML is the administrator's, as written. %>
+  <%- markup %>
+</body>
+</html>

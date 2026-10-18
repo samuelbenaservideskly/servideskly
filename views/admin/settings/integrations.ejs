@@ -1,0 +1,45 @@
+<%- include('_layout') %>
+
+<div class="integration-grid">
+  <a class="integration-tile" href="/admin/settings/integrations/entra/authentication">
+    <%- include('_entra-logo') %>
+    <span class="integration-tile__name">Microsoft Entra ID</span>
+    <span class="integration-tile__state">
+      <span class="pill pill--<%= entra.signIn ? 'ok' : 'muted' %>">
+        Sign-in <%= entra.signIn ? 'on' : 'not set up' %>
+      </span>
+    </span>
+  </a>
+
+  <a class="integration-tile" href="/admin/settings/integrations/google">
+    <%- include('_google-logo', { cls: 'entra-logo' }) %>
+    <span class="integration-tile__name">Google Identity</span>
+    <span class="integration-tile__state">
+      <span class="pill pill--<%= google.signIn ? 'ok' : 'muted' %>">
+        Sign-in <%= google.signIn ? 'on' : 'not set up' %>
+      </span>
+    </span>
+  </a>
+
+  <a class="integration-tile" href="/admin/settings/integrations/okta">
+    <%- include('_okta-logo', { cls: 'entra-logo' }) %>
+    <span class="integration-tile__name">Okta</span>
+    <span class="integration-tile__state">
+      <span class="pill pill--<%= okta.signIn ? 'ok' : 'muted' %>">
+        Sign-in <%= okta.signIn ? 'on' : 'not set up' %>
+      </span>
+    </span>
+  </a>
+
+  <a class="integration-tile" href="/admin/settings/integrations/openid">
+    <%- include('_openid-logo', { cls: 'entra-logo' }) %>
+    <span class="integration-tile__name">OpenID Connect<% if (generic.name) { %> <span class="small muted">(<%= generic.name %>)</span><% } %></span>
+    <span class="integration-tile__state">
+      <span class="pill pill--<%= generic.signIn ? 'ok' : 'muted' %>">
+        Sign-in <%= generic.signIn ? 'on' : 'not set up' %>
+      </span>
+    </span>
+  </a>
+</div>
+
+<%- include('_layout_end') %>

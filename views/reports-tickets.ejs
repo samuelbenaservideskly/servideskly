@@ -1,0 +1,72 @@
+<%- include('partials/header') %>
+<%
+  var l = list;
+  var scope = (l.scopeNames.length === 1 ? l.scopeNames[0] : 'All my groups') + (l.unrouted ? ' and unrouted tickets' : '');
+  var company = l.company ? (l.company === noCompany ? 'No company' : l.company) : '';
+%>
+
+<%- include('partials/back-link', { href: backHref, label: 'Back to the report' }) %>
+
+<div class="dash-hello">
+  <div>
+    <h1><%= l.title %> <span class="report-count"><%= l.total %></span></h1>
+    <p class="muted"><%= scope %><%= company ? ' - ' + company : '' %> - <%= formatDate(l.period.from) %> to <%= formatDate(new Date(l.period.to.getTime() - 1)) %><% l.narrowed.forEach(function (n) { %> - <%= n %><% }); %></p>
+  </div>
+</div>
+
+<p class="report-definition small"><b>How this is counted.</b> <%= l.definition %></p>
+<% if (l.capped) { %><p class="small muted">The first <%= cap %> tickets raised in the period were read, as on the report.</p><% } %>
+
+<section class="dash-panel">
+  <% if (l.rows.length === 0) { %>
+    <p class="dash-empty">No tickets. <a href="<%= backHref %>">Back to the report</a>.</p>
+  <% } else { %>
+    <div class="table-scroll">
+      <table class="table">
+        <thead>
+          <tr>
+            <th scope="col">Ticket</th>
+            <th scope="col">Status</th>
+            <th scope="col">Priority</th>
+            <th scope="col">Group</th>
+            <th scope="col">Assignee</th>
+            <th scope="col">Company</th>
+            <th scope="col">Raised</th>
+            <th scope="col">Resolved</th>
+          </tr>
+        </thead>
+        <tbody>
+          <% l.rows.forEach(function (t) { %>
+            <tr>
+              <td>
+                <a class="link-strong" href="/tickets/<%= t.id %>"><%= t.title %></a>
+                <div class="small muted"><%= t.reference %> - <%= typeLabels[t.type] || t.type %> - <%= t.requester %></div>
+                <% if (t.detail) { %><div class="report-why small"><%= t.detail %></div><% } %>
+              </td>
+              <td><span class="pill pill--<%= t.status %>"><%= statusLabels[t.status] %></span></td>
+              <td><span class="pill pill--p-<%= t.priority %>"><%= priorityLabels[t.priority] %></span></td>
+              <td class="small"><%= t.group %></td>
+              <td class="small"><%= t.assignee || 'Unassigned' %></td>
+              <td class="small"><%= t.company || '-' %></td>
+              <td class="small" title="<%= formatDateTime(t.createdAt) %>"><%= formatDate(t.createdAt) %></td>
+              <td class="small"><%= t.resolvedAt ? formatDate(t.resolvedAt) : '-' %></td>
+            </tr>
+          <% }); %>
+        </tbody>
+      </table>
+    </div>
+    <% if (l.pages > 1) { %>
+      <nav class="pagination" aria-label="Pages">
+        <% for (var p = 1; p <= l.pages; p++) { %>
+          <% if (p === 1 || p === l.pages || Math.abs(p - l.page) <= 2) { %>
+            <a href="<%= pageHref(p) %>" class="pagination__item<%= p === l.page ? ' pagination__item--current' : '' %>"<%- p === l.page ? ' aria-current="page"' : '' %>><%= p %></a>
+          <% } else if (Math.abs(p - l.page) === 3) { %>
+            <span class="pagination__gap" aria-hidden="true">...</span>
+          <% } %>
+        <% } %>
+      </nav>
+    <% } %>
+  <% } %>
+</section>
+
+<%- include('partials/footer') %>

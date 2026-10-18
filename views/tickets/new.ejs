@@ -1,0 +1,150 @@
+<%- include('../partials/header') %>
+
+<div class="wrap--narrow">
+  <div class="page-head">
+    <h1>Raise a ticket</h1>
+    <a class="btn btn--quiet" href="/tickets">Cancel</a>
+  </div>
+
+  <% if (locals.catalogue) { %>
+    <%#
+      With the catalogue on, the form was reached by choosing a tile. The
+      picker would be a second way to choose what has just been chosen, so
+      it gives way to the way back.
+    %>
+    <p><%- include("../partials/back-link", { href: "/tickets/new", label: "All services" }) %></p>
+  <% } else if (templates && templates.length > 1) { %>
+    <%#
+      Kind, then form. The kind only narrows the second list, which needs
+      select-search.js; without it that field stays hidden and the form list
+      is grouped by kind instead. Choosing a form opens it (GET ?template=).
+
+      Both ask for the search panel with `data-search`, short lists though
+      they are: this card exists to choose from them, and a service desk with
+      many forms is exactly where the panel earns its place.
+    %>
+    <% var kinds = []; templates.forEach(function (t) { if (kinds.indexOf(t.type) < 0) kinds.push(t.type); }); %>
+    <form method="get" action="/tickets/new" class="card stack template-picker" aria-labelledby="template-heading">
+      <h2 id="template-heading" class="card__title">What kind of request is this?</h2>
+      <div class="template-picker__row">
+        <% if (kinds.length > 1) { %>
+          <div class="field" data-needs-script hidden>
+            <label for="template-kind">Request type</label>
+            <select id="template-kind" data-narrows="template-choice" data-search>
+              <option value="">Any kind</option>
+              <% kinds.forEach(function (k) { %>
+                <option value="<%= k %>"<%= template && template.type === k ? ' selected' : '' %>><%= typeLabels[k] %></option>
+              <% }); %>
+            </select>
+          </div>
+        <% } %>
+        <div class="field">
+          <label for="template-choice">Template</label>
+          <%#
+            No "Choose a form" prompt, though the house style asks for one on
+            a select: a form is always chosen here (the default, if nothing
+            else), so the prompt could never be the answer and only added a
+            dead row to the search panel.
+          %>
+          <select id="template-choice" name="template" data-autosubmit data-search>
+            <% kinds.forEach(function (k) { %>
+              <optgroup label="<%= typeLabels[k] %>">
+                <% templates.filter(function (t) { return t.type === k; }).forEach(function (option) { %>
+                  <%
+                    var hint = (option.summary || '').trim();
+                    if (hint.length > 42) { hint = hint.slice(0, 41).replace(/[\s,.;:-]+$/, '') + '\u2026'; }
+                  %>
+                  <option value="<%= option.id %>" data-kind="<%= k %>"<%= template && template.id === option.id ? ' selected' : '' %>><%= option.name %><%= hint ? ' - ' + hint : '' %></option>
+                <% }); %>
+              </optgroup>
+            <% }); %>
+          </select>
+        </div>
+      </div>
+      <%#
+        Only for a browser with no script: choosing a form already opens it
+        (data-autosubmit), so with the script this button says to press
+        something for what has already happened.
+      %>
+      <div class="actions" data-has-script>
+        <button type="submit" class="btn">Open this form</button>
+      </div>
+    </form>
+  <% } %>
+
+  <% if (locals.sectionsCss) { %>
+    <%# Shows a section once its answer is picked (CSS :has, no script). %>
+    <link rel="stylesheet" href="<%= sectionsCss %>">
+  <% } %>
+  <form method="post" action="/tickets" enctype="multipart/form-data" class="card stack ticket-form">
+    <input type="hidden" name="_csrf" value="<%= locals.csrfToken %>">
+    <% if (template) { %>
+      <input type="hidden" name="templateId" value="<%= template.id %>">
+    <% } %>
+
+    <% if (errors.form) { %>
+      <p class="field-error" role="alert"><%= errors.form %></p>
+    <% } %>
+
+    <%#
+      The fields, in the order the template lays them out.
+
+      One loop rather than a fixed sequence, because a template may reorder
+      them, mark one mandatory, fix one to its own value, or drop one. With no
+      template this is the built-ins in their standard order, which is what
+      the blank form has always been.
+
+      `view only` renders the value and no input, so nothing is submitted for
+      it. The server uses the template's value for those fields regardless of
+      what arrives, so this is presentation; the rule lives there.
+    %>
+    <%#
+      Grouped into the template's sections, each a card laid out in two
+      columns; a field is half a row or the whole of it.
+    %>
+    <% sections.forEach(function (section) { %>
+      <% var foldable = section.collapse !== 'none' && section.title; %>
+      <% var cls = 'form-section' + (section.labels === 'beside' ? ' form-section--beside' : ''); %>
+      <% var conditional = section.showWhen && section.showWhen.length > 0; %>
+      <% if (foldable) { %>
+        <%# A <details> folds without a script; the summary is the title. %>
+        <details class="<%= cls %> form-section--foldable" data-section="<%= section.key %>"<%- section.collapse === 'open' ? ' open' : '' %>>
+          <summary class="form-section__title"><%= section.title %></summary>
+      <% } else { %>
+        <section class="<%= cls %>" data-section="<%= section.key %>"<%- section.title ? '' : ' aria-label="Request details"' %>>
+          <% if (section.title) { %><h2 class="form-section__title"><%= section.title %></h2><% } %>
+      <% } %>
+        <div class="form-section__grid">
+          <% section.fields.forEach(function (field) { %>
+            <div class="form-cell form-cell--<%= field.width %>">
+              <%- include('_field', { field: field, inConditional: conditional }) %>
+            </div>
+          <% }); %>
+        </div>
+      <%- foldable ? '</details>' : '</section>' %>
+    <% }); %>
+
+    <% if (taskPreview && taskPreview.length > 0) { %>
+      <div class="notice">
+        <strong>This also raises <%= taskPreview.length %> task(s):</strong>
+        <%= taskPreview.map(function (t) { return t.name; }).join(", ") %>.
+        They are tracked separately under this ticket.
+      </div>
+    <% } %>
+
+    <%#
+      Said once for the whole form rather than under each box. It used to be
+      repeated on the description and the attachments, which is how a warning
+      stops being read.
+    %>
+    <p class="hint">
+      Do not include passwords or other credentials, in the text or in a file.
+    </p>
+
+    <div class="actions">
+      <button type="submit" class="btn btn--primary">Submit ticket</button>
+    </div>
+  </form>
+</div>
+
+<%- include('../partials/footer') %>

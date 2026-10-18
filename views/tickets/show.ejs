@@ -1,0 +1,540 @@
+<%- include('../partials/header') %>
+
+<div class="page-head">
+  <div>
+    <p class="mono muted">
+      <%= ticket.reference %>
+      <span class="pill pill--muted"><%= typeLabels[ticket.type] %></span>
+    </p>
+    <h1><%= ticket.title %></h1>
+    <% if (ticket.parent_id) { %>
+      <p class="small muted">
+        A task under
+        <a href="/tickets/<%= ticket.parent_id %>"><%= ticket.parent_title %></a>
+      </p>
+    <% } %>
+  </div>
+  <div class="page-head__actions">
+    <%# Assign to me: one click with one group (or none); a popup to pick
+        the group when the technician is in several. %>
+    <% if (locals.isStaff && locals.currentUser && ticket.assignee_id !== currentUser.id && ticket.status !== 'closed' && ticket.status !== 'cancelled') { %>
+      <% if (myGroups.length > 1) { %>
+        <a class="btn btn--primary" href="#assign-me"><%- include('../partials/icon', { name: 'userPlus' }) %> Assign to me</a>
+      <% } else { %>
+        <form method="post" action="/tickets/<%= ticket.id %>/assign-me" class="inline-form">
+          <input type="hidden" name="_csrf" value="<%= locals.csrfToken %>">
+          <button type="submit" class="btn btn--primary" title="<%= myGroups.length === 1 ? 'Assign it to you, in ' + myGroups[0].name : 'Assign it to you' %>"><%- include('../partials/icon', { name: 'userPlus' }) %> Assign to me</button>
+        </form>
+      <% } %>
+    <% } %>
+    <a class="btn btn--quiet" href="/tickets">Back to tickets</a>
+  </div>
+</div>
+
+<% if (locals.isStaff && myGroups.length > 1) { %>
+  <div class="dialog" id="assign-me">
+    <a class="dialog__backdrop" href="#top" aria-label="Close"></a>
+    <div class="dialog__panel" role="dialog" aria-modal="true" aria-labelledby="assign-me-title">
+      <div class="dialog__head"><h2 id="assign-me-title">Assign to me</h2><a class="dialog__close" href="#top" aria-label="Close">&times;</a></div>
+      <form method="post" action="/tickets/<%= ticket.id %>/assign-me" class="stack">
+        <input type="hidden" name="_csrf" value="<%= locals.csrfToken %>">
+        <fieldset class="field">
+          <legend>In which of your groups?</legend>
+          <div class="check-list">
+            <% var preset = myGroups.some(function (g) { return g.id === ticket.group_id; }) ? ticket.group_id : myGroups[0].id; %>
+            <% myGroups.forEach(function (g) { %>
+              <label class="check"><input type="radio" name="groupId" value="<%= g.id %>"<%= g.id === preset ? ' checked' : '' %> required><span><%= g.name %><%= g.id === ticket.group_id ? ' (its group now)' : '' %></span></label>
+            <% }); %>
+          </div>
+        </fieldset>
+        <div class="dialog__actions">
+          <button type="submit" class="btn btn--primary">Assign to me</button>
+          <a class="btn btn--quiet" href="#top">Cancel</a>
+        </div>
+      </form>
+    </div>
+  </div>
+<% } %>
+
+<div class="columns">
+  <div class="col-main">
+    <article class="card">
+      <header class="comment__head">
+        <%# Raised on behalf of somebody: say who wrote it, and for whom. %>
+        <strong><%= locals.raisedByName || ticket.requester_name %></strong>
+        <span class="muted small" title="<%= formatDateTime(ticket.created_at) %>">
+          raised this<% if (locals.raisedByName) { %> for <%= ticket.requester_name %><% } %> <%= formatRelative(ticket.created_at) %>
+        </span>
+      </header>
+      <div class="prose"><%= ticket.description %></div>
+    </article>
+
+    <h2 class="section-title">Conversation</h2>
+
+    <% if (comments.length === 0) { %>
+      <p class="muted">No comments yet.</p>
+    <% } %>
+
+    <% comments.forEach(function (comment) { %>
+      <article class="card comment<%= comment.is_internal ? ' comment--internal' : '' %>">
+        <header class="comment__head">
+          <strong><%= comment.author_name %></strong>
+          <span class="badge badge--<%= comment.author_role %>"><%= roleLabel(comment.author_role) %></span>
+          <% if (comment.is_internal) { %>
+            <span class="badge badge--internal">Internal note</span>
+          <% } %>
+          <span class="muted small" title="<%= formatDateTime(comment.created_at) %>">
+            <%= formatRelative(comment.created_at) %>
+          </span>
+        </header>
+        <div class="prose"><%= comment.body %></div>
+      </article>
+    <% }); %>
+
+    <h2 class="section-title" id="attachments">Attachments</h2>
+
+    <% if (attachments.length === 0) { %>
+      <p class="muted small">No files attached.</p>
+    <% } else { %>
+      <ul class="attachments">
+        <% attachments.forEach(function (file) { %>
+          <li class="attachment<%= file.is_internal ? ' attachment--internal' : '' %>">
+            <%#
+              A type the browser can show opens in a tab of its own, so
+              looking at a screenshot does not mean going to find it in a
+              downloads folder. `?download` is kept beside it for the files
+              somebody actually wants to keep.
+            -%>
+            <a class="attachment__name"
+               href="/tickets/<%= ticket.id %>/attachments/<%= file.id %>"
+               title="<%= file.filename %>"
+               <% if (viewableTypes.indexOf(file.content_type) !== -1) { %>
+                 target="_blank" rel="noopener"
+               <% } %>>
+              <%= shortFileName(file.filename) %>
+            </a>
+            <span class="attachment__meta muted small">
+              <% if (viewableTypes.indexOf(file.content_type) !== -1) { %>
+                <a href="/tickets/<%= ticket.id %>/attachments/<%= file.id %>?download">Download</a>
+                &middot;
+              <% } %>
+              <%= formatBytes(file.byte_size) %>
+              &middot; <%= file.uploader_name %>
+              &middot; <span title="<%= formatDateTime(file.created_at) %>"><%= formatRelative(file.created_at) %></span>
+              <% if (file.is_internal) { %>
+                &middot; <span class="badge badge--internal">Internal</span>
+              <% } %>
+              <% if (file.emailed_at) { %>
+                &middot; <span class="badge badge--sent"
+                               title="Emailed to the requester <%= formatDateTime(file.emailed_at) %>">
+                  Requester informed
+                </span>
+              <% } %>
+            </span>
+            <% if (locals.isStaff || file.uploaded_by === locals.currentUser.id) { %>
+              <form method="post"
+                    action="/tickets/<%= ticket.id %>/attachments/<%= file.id %>/delete"
+                    class="inline-form">
+                <input type="hidden" name="_csrf" value="<%= locals.csrfToken %>">
+                <%- include('../partials/bin-button', { label: 'Remove ' + file.filename }) %>
+              </form>
+            <% } %>
+          </li>
+        <% }); %>
+      </ul>
+    <% } %>
+
+    <% if (attachmentsEnabled) { %>
+      <form method="post"
+            action="/tickets/<%= ticket.id %>/attachments"
+            enctype="multipart/form-data"
+            class="card stack">
+        <input type="hidden" name="_csrf" value="<%= locals.csrfToken %>">
+        <div class="field">
+          <div class="label-row">
+            <label for="files">Attach files</label>
+            <%- include('../partials/info', {
+              text: 'Up to ' + attachmentMaxPerTicket + ' files per ticket, ' + attachmentMaxLabel +
+                ' each. Accepted: ' + attachmentAccept.split(',').join(' ') + '.',
+            }) %>
+          </div>
+          <input id="files" name="files" type="file" multiple
+                 accept="<%= attachmentAccept %>" aria-describedby="files-help">
+          <p id="files-help" class="hint">
+            Do not attach anything containing passwords or other credentials.
+          </p>
+        </div>
+
+        <% if (locals.isStaff) { %>
+          <label class="check">
+            <input type="checkbox" name="internal" value="on">
+            Internal - visible to service desk staff only
+          </label>
+
+          <label class="check">
+            <input type="checkbox" name="inform" value="on">
+            Inform the requester, and email them these files
+          </label>
+
+          <div class="field">
+            <div class="label-row">
+              <label for="attach-comment">Message to send with them</label>
+              <%- include('../partials/info', { text: 'Required when informing the requester. The message is posted to the ticket as a regular comment, so it is recorded. Files are sent as attachments, up to 15 MB per email. Internal files are never sent.' }) %>
+            </div>
+            <textarea id="attach-comment" name="comment" rows="3" maxlength="20000"
+                      placeholder="Here is the corrected document - please try it and let us know."></textarea>
+          </div>
+        <% } %>
+
+        <div class="actions">
+          <button type="submit" class="btn">Upload</button>
+        </div>
+
+        <%# A refusal belongs here, beside the button that caused it. -%>
+        <% (locals.flashMessages || []).filter(function (m) { return m.where === 'attachments'; })
+             .forEach(function (message) { %>
+          <p class="field-error" role="alert"><%= message.message %></p>
+        <% }); %>
+      </form>
+    <% } %>
+
+    <h2 class="section-title">Add a comment</h2>
+
+    <form method="post" action="/tickets/<%= ticket.id %>/comments" class="card stack">
+      <input type="hidden" name="_csrf" value="<%= locals.csrfToken %>">
+      <textarea id="body" name="body" rows="5" required maxlength="20000"></textarea>
+
+      <% if (locals.isStaff) { %>
+        <label class="check">
+          <input type="checkbox" name="internal" value="on">
+          Internal note - visible to service desk staff only
+        </label>
+      <% } %>
+
+      <div class="actions">
+        <button type="submit" class="btn btn--primary">Post comment</button>
+      </div>
+    </form>
+  </div>
+
+  <aside class="col-side">
+    <% if (tasks.length > 0) { %>
+      <div class="card">
+        <h2 class="section-title">Tasks</h2>
+        <% if (ticket.close_when_tasks_done || ticket.require_tasks_done) { %>
+          <p class="small muted">
+            <% if (ticket.close_when_tasks_done) { %>Closes by itself when every mandatory task is resolved.<% } %>
+            <% if (ticket.require_tasks_done) { %>Can be resolved only once every task is resolved or cancelled.<% } %>
+          </p>
+        <% } %>
+        <ul class="task-list">
+          <% tasks.forEach(function (task) { %>
+            <li class="task-list__item">
+              <span>
+                <a class="link-strong" href="/tickets/<%= task.id %>"><%= task.title %></a>
+                <div class="small muted mono"><%= task.reference %></div>
+              </span>
+              <span>
+                <span class="pill pill--<%= task.status %>"><%= statusLabels[task.status] %></span>
+                <% if (task.task_mandatory) { %><span class="pill pill--warn">Mandatory</span><% } %>
+                <% if (task.group_name) { %>
+                  <span class="muted small"><%= task.group_name %></span>
+                <% } %>
+              </span>
+            </li>
+          <% }); %>
+        </ul>
+      </div>
+    <% } %>
+
+    <% if (locals.sla) { %>
+      <%# The two clocks as cards: time to go (or overdue), and when it is due. %>
+      <div class="sla-clocks">
+        <% [['First response', sla.response], ['Resolution', sla.resolution]].forEach(function (pair) {
+             var c = pair[1], left = new Date(c.due).getTime() - Date.now(); %>
+          <div class="sla-clock sla-clock--<%= c.state %>">
+            <small><%= pair[0] %></small>
+            <% if (c.doneAt) { %>
+              <b><%= c.state === 'breached' ? 'Missed' : 'Met' %></b>
+              <span class="sla-clock__sub">Done <%= formatDateTime(c.doneAt) %></span>
+            <% } else if (c.state === 'paused') { %>
+              <b>Paused</b>
+              <span class="sla-clock__sub">While on hold - due <%= formatDateTime(c.due) %></span>
+            <% } else { %>
+              <b><%= formatDuration(left) %> <span><%= left >= 0 ? 'to go' : 'overdue' %></span></b>
+              <span class="sla-clock__sub">Due <%= formatDateTime(c.due) %></span>
+            <% } %>
+          </div>
+        <% }); %>
+      </div>
+    <% } %>
+
+    <div class="card">
+      <h2 class="section-title">Details</h2>
+      <dl class="details">
+        <dt>Status</dt>
+        <dd><span class="pill pill--<%= ticket.status %>"><%= statusLabels[ticket.status] %></span></dd>
+        <dt>Priority</dt>
+        <dd><span class="pill pill--p-<%= ticket.priority %>"><%= priorityLabels[ticket.priority] %></span></dd>
+        <dt>Type</dt>
+        <dd><%= typeLabels[ticket.type] %></dd>
+        <dt>Category</dt>
+        <dd><%= categoryPath || "Not classified" %></dd>
+        <dt>Technician group</dt>
+        <dd>
+          <%= ticket.group_name || "Unrouted" %>
+          <% if (locals.groupManagerNames && groupManagerNames.length) { %>
+            <div class="small muted"><%= groupManagerNames.length === 1 ? 'Manager' : 'Managers' %>: <%= groupManagerNames.join(', ') %></div>
+          <% } %>
+        </dd>
+        <dt>Requester</dt>
+        <dd id="requester">
+          <% if (locals.requesterCard) { %>
+            <a class="person-link" href="#requester-card"><%= ticket.requester_name %></a>
+          <% } else { %>
+            <%= ticket.requester_name %>
+          <% } %>
+          <% (locals.requesterLines || []).forEach(function (d) { %>
+            <div class="small"><span class="muted"><%= d.label %>:</span> <%= d.value %></div>
+          <% }); %>
+        </dd>
+        <% if (locals.raisedByName) { %>
+          <dt>Raised by</dt>
+          <dd><%= raisedByName %> <span class="small muted">on behalf of <%= ticket.requester_name %></span></dd>
+        <% } %>
+        <dt>Assignee</dt>
+        <dd><%= ticket.assignee_name || 'Unassigned' %></dd>
+        <dt>Created</dt>
+        <dd><%= formatDateTime(ticket.created_at) %></dd>
+        <dt>Updated</dt>
+        <dd><%= formatDateTime(ticket.updated_at) %></dd>
+        <% if (ticket.resolved_at) { %>
+          <dt>Resolved</dt>
+          <dd><%= formatDateTime(ticket.resolved_at) %></dd>
+        <% } %>
+      </dl>
+    </div>
+
+    <% if (locals.isStaff) { %>
+      <form method="post" action="/tickets/<%= ticket.id %>/update" class="card stack">
+        <input type="hidden" name="_csrf" value="<%= locals.csrfToken %>">
+        <h2 class="section-title">Triage</h2>
+
+        <label for="status-select">Status</label>
+        <select id="status-select" name="status">
+          <% statuses.forEach(function (status) { %>
+            <option value="<%= status %>"<%= ticket.status === status ? ' selected' : '' %>><%= statusLabels[status] %></option>
+          <% }); %>
+        </select>
+
+        <%#
+          Required only when the status is changing to on hold, which the
+          server decides - a `required` attribute here would block every
+          other change to a ticket that is already on hold.
+        -%>
+        <div class="field status-note status-note--pending">
+          <div class="label-row">
+            <label for="hold-reason">On-hold reason</label>
+            <%- include('../partials/info', { text: 'Required when placing a ticket on hold. It is posted as a comment visible to the requester, so it is clear what the ticket is waiting for.' }) %>
+          </div>
+          <input id="hold-reason" name="holdReason" type="text" maxlength="2000"
+                 placeholder="Waiting for the supplier to confirm a delivery date">
+        </div>
+
+        <%# Shown only while Cancelled is chosen (and the on-hold reason only
+            while On hold is), by CSS - no script on this page. %>
+        <div class="field status-note status-note--cancelled">
+          <div class="label-row">
+            <label for="cancel-note">Cancellation note<% if (locals.requireCancelNote) { %> <span class="required">*</span><% } %></label>
+            <%- include('../partials/info', { text: 'Posted as a comment the requester can see, and sent with the status notification.' }) %>
+          </div>
+          <input id="cancel-note" name="cancelNote" type="text" maxlength="2000"
+                 placeholder="No longer needed - the requester found the file">
+        </div>
+
+        <div class="field status-note status-note--resolved">
+          <div class="label-row">
+            <label for="resolve-note">Resolution note<% if (locals.requireResolveNote) { %> <span class="required">*</span><% } %></label>
+            <%- include('../partials/info', { text: 'Posted as a comment the requester can see, and sent with the resolved notification.' }) %>
+          </div>
+          <input id="resolve-note" name="resolveNote" type="text" maxlength="2000"
+                 placeholder="Replaced the toner; test page printed">
+        </div>
+
+        <% (locals.flashMessages || []).filter(function (m) { return m.where === 'update'; })
+             .forEach(function (message) { %>
+          <p class="field-error" role="alert"><%= message.message %></p>
+        <% }); %>
+
+        <label for="priority-select">Priority</label>
+        <select id="priority-select" name="priority">
+          <% priorities.forEach(function (priority) { %>
+            <option value="<%= priority %>"<%= ticket.priority === priority ? ' selected' : '' %>><%= priorityLabels[priority] %></option>
+          <% }); %>
+        </select>
+
+        <label for="category-select">Category</label>
+        <select id="category-select" name="category">
+          <% categories.forEach(function (category) { %>
+            <option value="<%= category %>"<%= ticket.category === category ? ' selected' : '' %>><%= categoryLabels[category] %></option>
+          <% }); %>
+        </select>
+
+        <label for="assignee-select">Assignee</label>
+        <select id="assignee-select" name="assigneeId">
+          <option value=""<%= ticket.assignee_id ? '' : ' selected' %>>Unassigned</option>
+          <% staff.forEach(function (person) { %>
+            <option value="<%= person.id %>"<%= ticket.assignee_id === person.id ? ' selected' : '' %>>
+              <%= person.display_name %> (<%= roleLabel(person.role) %>)
+            </option>
+          <% }); %>
+        </select>
+
+        <label for="category-node">Category</label>
+        <select id="category-node" name="categoryId">
+          <option value=""<%= ticket.category_id ? '' : ' selected' %>>Not classified</option>
+          <% categoryOptions.forEach(function (node) { %>
+            <option value="<%= node.id %>"<%= ticket.category_id === node.id ? ' selected' : '' %>><%= node.path %></option>
+          <% }); %>
+        </select>
+
+        <label for="group-select">Technician group</label>
+        <select id="group-select" name="groupId">
+          <option value=""<%= ticket.group_id ? '' : ' selected' %>>Unrouted</option>
+          <% groups.forEach(function (group) { %>
+            <option value="<%= group.id %>"<%= ticket.group_id === group.id ? ' selected' : '' %>>
+              <%= group.name %>
+            </option>
+          <% }); %>
+        </select>
+
+        <div class="actions actions--spread">
+          <button type="submit" class="btn btn--primary">Save changes</button>
+          <% if (locals.isAdmin) { %>
+            <a class="btn btn--quiet btn--danger" href="#delete">Delete this ticket</a>
+          <% } %>
+        </div>
+      </form>
+
+      <% if (locals.isAdmin) { %>
+        <%#
+          A :target dialog, like every other create-or-confirm popup here. It
+          is reopened by the server (.dialog--open) when the delete was
+          refused, so the reason that was typed and the message saying what
+          was wrong are not lost.
+        %>
+        <% var deleteRefused = (locals.flashMessages || []).filter(function (m) { return m.where === 'delete'; }); %>
+        <div class="dialog<%= deleteRefused.length ? ' dialog--open' : '' %>" id="delete">
+          <a class="dialog__backdrop" href="#top" aria-label="Close"></a>
+          <div class="dialog__panel" role="dialog" aria-modal="true" aria-labelledby="delete-title">
+            <div class="dialog__head">
+              <h2 id="delete-title">Delete this ticket</h2>
+              <a class="dialog__close" href="#top" aria-label="Close">&times;</a>
+            </div>
+
+            <form method="post" action="/tickets/<%= ticket.id %>/delete" class="stack">
+              <input type="hidden" name="_csrf" value="<%= locals.csrfToken %>">
+              <p class="small">
+                The ticket, its comments and its files are removed for good. The
+                manager of its group is emailed the reason (with no manager, the
+                other administrators are). To take a ticket out of the queue without
+                losing it, set the status to Cancelled instead.
+              </p>
+              <div class="field">
+                <label for="delete-reason">Reason</label>
+                <input id="delete-reason" name="reason" type="text" maxlength="2000" required
+                       placeholder="Raised in error and contains another customer's data">
+              </div>
+              <% deleteRefused.forEach(function (message) { %>
+                <p class="field-error" role="alert"><%= message.message %></p>
+              <% }); %>
+              <div class="dialog__actions">
+                <button type="submit" class="btn btn--danger">Delete this ticket</button>
+                <a class="btn btn--quiet" href="#top">Cancel</a>
+              </div>
+            </form>
+          </div>
+        </div>
+      <% } %>
+
+      <div class="card">
+        <h2 class="section-title">History</h2>
+        <% if (events.length === 0) { %>
+          <p class="muted small">No history yet.</p>
+        <% } %>
+        <ul class="timeline">
+          <% events.forEach(function (event) { %>
+            <li>
+              <span class="muted small"><%= formatDateTime(event.created_at) %></span><br>
+              <strong><%= event.actor_name || 'system' %></strong>
+              <% if (event.kind === 'created') { %>
+                created the ticket
+              <% } else if (event.kind === 'field_changed') { %>
+                changed <%= event.field %> from <code><%= event.old_value %></code> to <code><%= event.new_value %></code>
+              <% } else if (event.kind === 'internal_note') { %>
+                added an internal note
+              <% } else if (event.kind === 'comment') { %>
+                commented
+              <% } else { %>
+                <%= event.kind %>
+              <% } %>
+            </li>
+          <% }); %>
+        </ul>
+      </div>
+    <% } %>
+  </aside>
+</div>
+
+<% if (locals.requesterCard) { const card = requesterCard; %>
+  <div class="dialog" id="requester-card">
+    <a class="dialog__backdrop" href="#requester" aria-label="Close"></a>
+    <div class="dialog__panel" role="dialog" aria-modal="true" aria-labelledby="requester-card-title">
+      <div class="dialog__head">
+        <h2 id="requester-card-title"><%= card.name %></h2>
+        <a class="dialog__close" href="#requester" aria-label="Close">&times;</a>
+      </div>
+      <div class="stack">
+        <dl class="person-card">
+          <% if (card.email) { %>
+            <dt>Email</dt>
+            <dd><a href="mailto:<%= card.email %>"><%= card.email %></a></dd>
+          <% } %>
+          <% card.lines.forEach(function (l) { %>
+            <dt><%= l.label %></dt>
+            <dd>
+              <% if (l.label === 'Phone') { %><a href="tel:<%= l.value.replace(/[^0-9+]/g, '') %>"><%= l.value %></a><% } else { %><%= l.value %><% } %>
+            </dd>
+          <% }); %>
+        </dl>
+        <% if (card.id) { %>
+          <p class="small muted"><%= card.open %> open, <%= card.total %> in all</p>
+          <% if (card.recent.length > 0) { %>
+            <ul class="person-card__tickets">
+              <% card.recent.forEach(function (t) { %>
+                <li>
+                  <a href="/tickets/<%= t.id %>"><%= t.reference %></a>
+                  <span><%= t.title %></span>
+                  <span class="pill pill--<%= t.status %>"><%= statusLabels[t.status] %></span>
+                </li>
+              <% }); %>
+            </ul>
+          <% } %>
+        <% } else { %>
+          <p class="small muted">Sent by email from somebody without an account.</p>
+        <% } %>
+        <div class="dialog__actions">
+          <% if (card.id) { %>
+            <%# The card is a summary; the page has the rest, for every technician
+                and not only an administrator. %>
+            <a class="btn" href="/people/<%= card.id %>">Open their page</a>
+            <a class="btn" href="/tickets?scope=all&amp;status=any&amp;requester=<%= card.id %>">All their tickets</a>
+          <% } %>
+          <a class="btn btn--quiet" href="#requester">Close</a>
+        </div>
+      </div>
+    </div>
+  </div>
+<% } %>
+
+<%- include('../partials/footer') %>

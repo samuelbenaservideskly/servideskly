@@ -1,0 +1,98 @@
+<%- include('_layout') %>
+
+<%- include('_mail-tabs') %>
+<%- include('_mail-advanced-tabs', { sub: 'signatures' }) %>
+
+<div class="card stack">
+  <h2 class="section-title">The quoted conversation</h2>
+  <form method="post" action="/admin/settings/mail/advanced/signatures/quoted" class="stack">
+    <input type="hidden" name="_csrf" value="<%= locals.csrfToken %>">
+    <label class="check">
+      <input type="checkbox" name="trimQuoted" value="on"<%= automation.trimQuoted !== false ? ' checked' : '' %>>
+      <span>Remove the earlier messages quoted below a reply
+        <%- include('../../partials/info', { text: 'Outlook, Outlook on the web, Gmail, Apple Mail and Thunderbird, and the From / Sent block or "On ... wrote:" line in English, Czech, German, French, Spanish and Italian. A reply with nothing above the quote is kept whole.' }) %></span>
+    </label>
+    <div class="actions"><button type="submit" class="btn btn--primary">Save</button></div>
+  </form>
+</div>
+
+<div class="card stack">
+  <h2 class="section-title">Signature stripping</h2>
+
+  <p class="small muted">
+    A reply usually ends in a name, a job title, a telephone number and a legal
+    disclaimer. Add the phrase each of your senders signs off with, and
+    everything from that line down is cut from the comment.
+  </p>
+
+  <% if (automation.signatureCuts.length === 0) { %>
+    <p class="small muted">
+      No phrases yet, so nothing is cut. Add <code>Kind regards</code> or
+      <code>S pozdravem</code> to start.
+    </p>
+  <% } else { %>
+    <table class="table">
+      <thead>
+        <tr>
+          <th scope="col">Phrase or expression</th>
+          <th scope="col"><span class="visually-hidden">Actions</span></th>
+        </tr>
+      </thead>
+      <tbody>
+        <% automation.signatureCuts.forEach(function (phrase) { %>
+          <tr>
+            <td class="mono"><%= phrase %></td>
+            <td class="row-actions">
+              <form method="post" action="/admin/settings/mail/advanced/signatures/phrases/remove"
+                    class="inline-form">
+                <input type="hidden" name="_csrf" value="<%= locals.csrfToken %>">
+                <input type="hidden" name="phrase" value="<%= phrase %>">
+                <%- include('../../partials/bin-button', { label: 'Remove ' + phrase }) %>
+              </form>
+            </td>
+          </tr>
+        <% }); %>
+      </tbody>
+    </table>
+  <% } %>
+
+  <form method="post" action="/admin/settings/mail/advanced/signatures/phrases" class="stack">
+    <input type="hidden" name="_csrf" value="<%= locals.csrfToken %>">
+    <div class="field">
+      <div class="label-row">
+        <label for="phrase">Add a phrase</label>
+        <span class="info" tabindex="0"><span class="info__mark" aria-hidden="true">i</span><span class="info__bubble" role="note">Each pattern is matched against every line of the message, case-insensitively; the first matching line and everything below it are removed. Patterns are regular expressions: a plain phrase such as <code>Kind regards</code> works as written, and <code>^(Regards|Best)</code> matches either at the start of a line. A comment is never reduced to nothing.</span></span>
+      </div>
+      <input id="phrase" name="phrase" type="text" maxlength="200" spellcheck="false"
+             value="<%= locals.phrase || '' %>" placeholder="Kind regards">
+      <% if (errors.phrase) { %>
+        <p class="field-error" role="alert"><%= errors.phrase %></p>
+      <% } %>
+    </div>
+    <div class="actions">
+      <button type="submit" class="btn btn--primary">
+        <span aria-hidden="true">+</span> Add phrase
+      </button>
+    </div>
+  </form>
+</div>
+
+<div class="card stack">
+  <h2 class="section-title">What a reply would keep</h2>
+  <p class="small muted">
+    The same example put through the phrases above, so a new one can be seen
+    working before any real mail meets it.
+  </p>
+  <div class="sample-pair">
+    <div>
+      <p class="label">As it arrives</p>
+      <pre class="sample"><%= sample %></pre>
+    </div>
+    <div>
+      <p class="label">As the comment is stored</p>
+      <pre class="sample"><%= samplePreview %></pre>
+    </div>
+  </div>
+</div>
+
+<%- include('_layout_end') %>

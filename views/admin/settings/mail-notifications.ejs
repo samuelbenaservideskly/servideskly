@@ -1,0 +1,170 @@
+<%- include('_layout') %>
+
+<%- include('_mail-tabs') %>
+
+<%# Built in: tied to an event, sent by the application. Custom: wording only,
+    sent when an automation says so (Settings - Advanced - Automation). %>
+<nav class="subtabs subtabs--secondary" aria-label="Notification kinds">
+  <a href="/admin/settings/mail/notifications"
+     class="<%= kind === 'builtin' ? 'subtabs__item--current' : '' %>"
+     <%- kind === 'builtin' ? 'aria-current="page"' : '' %>>Built in</a>
+  <a href="/admin/settings/mail/notifications?kind=custom"
+     class="<%= kind === 'custom' ? 'subtabs__item--current' : '' %>"
+     <%- kind === 'custom' ? 'aria-current="page"' : '' %>>Custom</a>
+</nav>
+
+<% if ((locals.languages || []).length > 0) { %>
+  <%# A set per language: the same notifications, translated and then owned.
+      A language with no row for an event is sent the English one. %>
+  <nav class="subtabs subtabs--secondary" aria-label="Language">
+    <a href="/admin/settings/mail/notifications<%= kind === 'custom' ? '?kind=custom' : '' %>"
+       class="<%= language ? '' : 'subtabs__item--current' %>"
+       <%- language ? '' : 'aria-current="page"' %>>EN</a>
+    <% languages.forEach(function (l) { %>
+      <a href="/admin/settings/mail/notifications?lang=<%= encodeURIComponent(l.tag) %><%= kind === 'custom' ? '&kind=custom' : '' %>"
+         class="<%= language === l.tag ? 'subtabs__item--current' : '' %>"
+         title="<%= l.name %>"
+         <%- language === l.tag ? 'aria-current="page"' : '' %>><%= l.label %></a>
+    <% }); %>
+  </nav>
+<% } %>
+
+<% if (kind === 'custom') { %>
+  <div class="toolbar">
+    <a class="btn btn--primary" href="#new-notification">
+      <span aria-hidden="true">+</span> New notification
+    </a>
+  </div>
+<% } else { %>
+  <div class="toolbar">
+    <a class="btn btn--quiet" href="#reset-all">Put them all back to the design they ship with</a>
+  </div>
+
+  <%# A confirmation, because it replaces wording somebody may have written. %>
+  <div class="dialog" id="reset-all">
+    <a class="dialog__backdrop" href="#top" aria-label="Close"></a>
+    <div class="dialog__panel" role="dialog" aria-modal="true" aria-labelledby="reset-all-title">
+      <div class="dialog__head">
+        <h2 id="reset-all-title">Put every notification back?</h2>
+        <a class="dialog__close" href="#top" aria-label="Close">&times;</a>
+      </div>
+      <form method="post" action="/admin/settings/mail/notifications/reset-all" class="stack">
+        <input type="hidden" name="_csrf" value="<%= locals.csrfToken %>">
+        <p>
+          Every built-in notification goes back to the subject and body this
+          application ships with - the current design, with the logo sized for
+          a mail client and a button to the request. <strong>Any wording you
+          have written is replaced.</strong>
+        </p>
+        <p class="small muted">
+          Whether each is switched on, and which mailbox sends it, are left alone.
+          A custom notification is not touched.
+        </p>
+        <div class="dialog__actions">
+          <button type="submit" class="btn btn--danger">Put them all back</button>
+          <a class="btn btn--quiet" href="#top">Cancel</a>
+        </div>
+      </form>
+    </div>
+  </div>
+<% } %>
+
+<% if (mailboxes.length === 0 && relays.length === 0) { %>
+  <div class="card card--warn">
+    <p class="small">
+      <strong>Nothing can be sent yet.</strong> Add a
+      <a href="/admin/settings/mail">mailbox</a> or an <a href="/admin/settings/mail/relay">SMTP relay</a> first.
+    </p>
+  </div>
+<% } %>
+
+<%
+  var audienceLabels = {
+    requester: 'The requester',
+    group: 'The technician group',
+    assignee: 'The assigned technician',
+    admins: 'Other administrators',
+    approver: 'The approver',
+    manager: 'The group manager',
+    manager_or_admins: 'The group manager, else other administrators',
+  };
+%>
+
+<div class="table-scroll">
+  <table class="table">
+    <thead>
+      <tr>
+        <th scope="col">Notification</th>
+        <th scope="col">Goes to</th>
+        <th scope="col">Sent from</th>
+        <th scope="col">Status</th>
+      </tr>
+    </thead>
+    <tbody>
+      <% if (notifications.length === 0) { %>
+        <tr><td colspan="4" class="muted small">No custom notifications yet. Press New notification.</td></tr>
+      <% } %>
+      <% notifications.forEach(function (notification) { %>
+        <tr>
+          <td>
+            <a class="link-strong"
+               href="/admin/settings/mail/notifications/<%= notification.id %>">
+              <%= notification.name %>
+            </a>
+            <div class="small muted"><%= notification.description %></div>
+          </td>
+          <td class="small"><%= kind === 'custom' ? 'Chosen by the automation' : audienceLabels[audience[notification.event]] %></td>
+          <td class="small">
+            <%
+              var box = notification.mailbox_id
+                ? mailboxes.filter(function (m) { return m.id === notification.mailbox_id; })[0]
+                : null;
+              var relay = notification.relay_id
+                ? relays.filter(function (r) { return r.id === notification.relay_id; })[0]
+                : null;
+            %>
+            <% if (notification.via_relay) { %>
+              <%= relay ? relay.name : "The ticket's own SMTP relay" %>
+            <% } else if (relaysOnly) { %>
+              The ticket's own SMTP relay
+            <% } else { %>
+              <%= box ? box.address : "The ticket's own mailbox" %>
+            <% } %>
+          </td>
+          <td>
+            <% if (notification.is_enabled) { %>
+              <span class="pill pill--ok">On</span>
+            <% } else { %>
+              <span class="pill pill--muted">Off</span>
+            <% } %>
+          </td>
+        </tr>
+      <% }); %>
+    </tbody>
+  </table>
+</div>
+
+<div class="dialog<%= openDialog === 'new-notification' ? ' dialog--open' : '' %>" id="new-notification">
+  <a class="dialog__backdrop" href="#top" aria-label="Close"></a>
+  <div class="dialog__panel" role="dialog" aria-modal="true" aria-labelledby="new-notification-title">
+    <div class="dialog__head">
+      <h2 id="new-notification-title">New notification</h2>
+      <a class="dialog__close" href="#top" aria-label="Close">&times;</a>
+    </div>
+    <form method="post" action="/admin/settings/mail/notifications" class="stack">
+      <input type="hidden" name="_csrf" value="<%= locals.csrfToken %>">
+      <div class="field">
+        <label for="notification-name">Name</label>
+        <input id="notification-name" name="name" type="text" maxlength="120" required
+               placeholder="For example: Urgent ticket - tell the duty manager" value="<%= values.name || '' %>">
+        <% if (errors.name) { %><p class="field-error" role="alert"><%= errors.name %></p><% } %>
+      </div>
+      <div class="dialog__actions">
+        <button type="submit" class="btn btn--primary">Create notification</button>
+        <a class="btn btn--quiet" href="#top">Cancel</a>
+      </div>
+    </form>
+  </div>
+</div>
+
+<%- include('_layout_end') %>

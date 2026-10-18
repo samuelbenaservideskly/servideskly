@@ -1,0 +1,451 @@
+<%- include('_layout') %>
+
+<%- include('_template-tabs', { tab: 'categories' }) %>
+
+<%
+  // The dialogs are :target anchors, so "open" means the fragment matches.
+  // After a validation error there is no fragment, so the server says which
+  // one to reopen and that one gets the --open class instead.
+  function dialogClass(name) {
+    return 'dialog' + (openDialog === name ? ' dialog--open' : '');
+  }
+%>
+
+<div class="toolbar">
+  <a class="btn btn--primary" href="#new-category">
+    <span aria-hidden="true">+</span> New category
+  </a>
+  <a class="btn<%= categories.length === 0 ? ' btn--disabled' : '' %>"
+     href="<%= categories.length === 0 ? '#new-category' : '#new-subcategory' %>">New sub category</a>
+  <a class="btn<%= subcategories.length === 0 ? ' btn--disabled' : '' %>"
+     href="<%= subcategories.length === 0 ? '#new-subcategory' : '#new-item' %>">New item</a>
+  <a class="btn btn--quiet" href="#tree-view">Tree view</a>
+</div>
+
+<% if (nodes.length === 0) { %>
+  <div class="card">
+    <p><strong>Nothing here yet.</strong></p>
+    <p class="small muted">
+      Start with <a href="#new-category">New category</a>.
+    </p>
+  </div>
+<% } else { %>
+  <div class="card card--flush">
+    <table class="table table--tree">
+      <thead>
+        <tr>
+          <th scope="col" class="cell--narrow"><span class="visually-hidden">Edit</span></th>
+          <th scope="col">Name</th>
+        </tr>
+      </thead>
+      <tbody>
+        <% tree.forEach(function (category) { %>
+          <tr class="tree-row tree-row--1">
+            <td class="cell--narrow">
+              <a class="icon-link icon-link--small" id="node-<%= category.id %>" href="#edit-<%= category.id %>" title="Edit <%= category.name %>">
+                <%- include('../../partials/icon-gear', { size: 14 }) %>
+                <span class="visually-hidden">Edit</span>
+              </a>
+            </td>
+            <td>
+              <%
+                var cg = category.group_id
+                  ? groups.filter(function (g) { return g.id === category.group_id; })[0]
+                  : null;
+              %>
+              <% if (category.children.length > 0) { %>
+                <details class="tree">
+                  <summary class="tree__summary">
+                    <span class="tree__name"><%= category.name %></span>
+                    <% if (cg) { %><span class="pill pill--muted"><%= cg.name %></span><% } %>
+                    <% if (!category.is_active) { %><span class="pill pill--muted">retired</span><% } %>
+                    <span class="muted small"><%= category.children.length %> subcategor<%= category.children.length === 1 ? 'y' : 'ies' %></span>
+                    <span class="muted small"><%= usage[category.id] || 0 %> ticket(s)</span>
+                  </summary>
+
+                  <ul class="tree__children">
+                    <% category.children.forEach(function (sub) { %>
+                      <li>
+                        <div class="tree__entry">
+                          <a class="icon-link icon-link--small" id="node-<%= sub.id %>" href="#edit-<%= sub.id %>" title="Edit <%= sub.name %>">
+                            <%- include('../../partials/icon-gear', { size: 14 }) %>
+                            <span class="visually-hidden">Edit <%= sub.name %></span>
+                          </a>
+                          <span class="tree__name"><%= sub.name %></span>
+                          <% if (sub.group_id) { %>
+                            <% var sg = groups.filter(function (g) { return g.id === sub.group_id; })[0]; %>
+                            <% if (sg) { %><span class="pill pill--muted"><%= sg.name %></span><% } %>
+                          <% } %>
+                          <% if (!sub.is_active) { %><span class="pill pill--muted">retired</span><% } %>
+                          <span class="muted small"><%= usage[sub.id] || 0 %> ticket(s)</span>
+                        </div>
+
+                        <% if (sub.children.length > 0) { %>
+                          <ul class="tree__children">
+                            <% sub.children.forEach(function (item) { %>
+                              <li>
+                                <div class="tree__entry">
+                                  <a class="icon-link icon-link--small" id="node-<%= item.id %>" href="#edit-<%= item.id %>" title="Edit <%= item.name %>">
+                                    <%- include('../../partials/icon-gear', { size: 14 }) %>
+                                    <span class="visually-hidden">Edit <%= item.name %></span>
+                                  </a>
+                                  <span class="tree__name"><%= item.name %></span>
+                                  <% if (item.group_id) { %>
+                                    <% var ig = groups.filter(function (g) { return g.id === item.group_id; })[0]; %>
+                                    <% if (ig) { %><span class="pill pill--muted"><%= ig.name %></span><% } %>
+                                  <% } %>
+                                  <% if (!item.is_active) { %><span class="pill pill--muted">retired</span><% } %>
+                                  <span class="muted small"><%= usage[item.id] || 0 %> ticket(s)</span>
+                                </div>
+                              </li>
+                            <% }); %>
+                          </ul>
+                        <% } %>
+                      </li>
+                    <% }); %>
+                  </ul>
+                </details>
+              <% } else { %>
+                <span class="tree__name tree__name--leaf"><%= category.name %></span>
+                <% if (cg) { %><span class="pill pill--muted"><%= cg.name %></span><% } %>
+                <% if (!category.is_active) { %><span class="pill pill--muted">retired</span><% } %>
+                <span class="muted small">no subcategories yet</span>
+              <% } %>
+            </td>
+          </tr>
+        <% }); %>
+      </tbody>
+    </table>
+  </div>
+<% } %>
+
+<%# ---------------------------------------------------------------- dialogs %>
+
+<div class="<%= dialogClass('category') %>" id="new-category">
+  <a class="dialog__backdrop" href="#top" aria-label="Close"></a>
+  <div class="dialog__panel" role="dialog" aria-modal="true" aria-labelledby="new-category-title">
+    <div class="dialog__head">
+      <h2 id="new-category-title">New category</h2>
+      <a class="dialog__close" href="#top" aria-label="Close">&times;</a>
+    </div>
+
+    <form method="post" action="/admin/settings/templates/categories" class="stack">
+      <input type="hidden" name="_csrf" value="<%= locals.csrfToken %>">
+      <input type="hidden" name="from" value="category">
+
+        <% if (openDialog === 'category' && errors.form) { %>
+          <p class="field-error" role="alert"><%= errors.form %></p>
+        <% } %>
+
+      <div class="field">
+        <label for="cat-name">Name <span class="required">*</span></label>
+        <input id="cat-name" name="name" type="text" required maxlength="80"
+               value="<%= openDialog === 'category' ? (values.name || '') : '' %>">
+        <% if (openDialog === 'category' && errors.name) { %>
+          <p class="field-error" role="alert"><%= errors.name %></p>
+        <% } %>
+      </div>
+
+      <div class="field">
+        <label for="cat-description">Description</label>
+        <input id="cat-description" name="description" type="text" maxlength="300">
+      </div>
+
+      <div class="field">
+        <div class="label-row">
+          <label for="cat-group">Assign to technician group</label>
+          <span class="info" tabindex="0"><span class="info__mark" aria-hidden="true">i</span><span class="info__bubble" role="note">Optional. Tickets filed under this category or any level beneath it are routed to this group, unless a deeper level specifies another. <% if (groups.length === 0) { %> <a href="/admin/settings/groups">Create a group</a> first to use this option. <% } %></span></span>
+        </div>
+        <select id="cat-group" name="groupId">
+          <option value="">No group</option>
+          <% groups.forEach(function (group) { %>
+            <option value="<%= group.id %>"><%= group.name %></option>
+          <% }); %>
+        </select>
+      </div>
+
+      <div class="dialog__actions">
+        <button type="submit" class="btn btn--primary">Save</button>
+        <button type="submit" name="next" value="subcategory" class="btn">Save and add sub category</button>
+        <a class="btn btn--quiet" href="#top">Cancel</a>
+      </div>
+    </form>
+  </div>
+</div>
+
+<div class="<%= dialogClass('subcategory') %>" id="new-subcategory">
+  <a class="dialog__backdrop" href="#top" aria-label="Close"></a>
+  <div class="dialog__panel" role="dialog" aria-modal="true" aria-labelledby="new-sub-title">
+    <div class="dialog__head">
+      <h2 id="new-sub-title">New sub category</h2>
+      <a class="dialog__close" href="#top" aria-label="Close">&times;</a>
+    </div>
+
+    <% if (categories.length === 0) { %>
+      <p class="small">
+        A subcategory needs a category to sit under.
+        <a href="#new-category">Add a category</a> first.
+      </p>
+      <div class="dialog__actions">
+        <a class="btn btn--quiet" href="#top">Close</a>
+      </div>
+    <% } else { %>
+      <form method="post" action="/admin/settings/templates/categories" class="stack">
+        <input type="hidden" name="_csrf" value="<%= locals.csrfToken %>">
+        <input type="hidden" name="from" value="subcategory">
+
+        <% if (openDialog === 'subcategory' && errors.form) { %>
+          <p class="field-error" role="alert"><%= errors.form %></p>
+        <% } %>
+
+        <div class="field">
+          <label for="sub-name">Name <span class="required">*</span></label>
+          <input id="sub-name" name="name" type="text" required maxlength="80"
+                 value="<%= openDialog === 'subcategory' ? (values.name || '') : '' %>">
+          <% if (openDialog === 'subcategory' && errors.name) { %>
+            <p class="field-error" role="alert"><%= errors.name %></p>
+          <% } %>
+        </div>
+
+        <div class="field">
+          <label for="sub-description">Description</label>
+          <input id="sub-description" name="description" type="text" maxlength="300">
+        </div>
+
+        <div class="field">
+          <label for="sub-category">Category <span class="required">*</span></label>
+          <select id="sub-category" name="categoryId" required>
+            <option value="">Choose a category</option>
+            <% categories.forEach(function (category) { %>
+              <option value="<%= category.id %>"<%= preselect === category.id ? ' selected' : '' %>><%= category.name %></option>
+            <% }); %>
+          </select>
+        </div>
+
+        <div class="field">
+          <label for="sub-group">Assign to technician group</label>
+          <select id="sub-group" name="groupId">
+            <option value="">-- Inherit from the category --</option>
+            <% groups.forEach(function (group) { %>
+              <option value="<%= group.id %>"><%= group.name %></option>
+            <% }); %>
+          </select>
+        </div>
+
+        <div class="dialog__actions">
+          <button type="submit" class="btn btn--primary">Save</button>
+          <button type="submit" name="next" value="item" class="btn">Save and add item</button>
+          <a class="btn btn--quiet" href="#top">Cancel</a>
+        </div>
+      </form>
+    <% } %>
+  </div>
+</div>
+
+<div class="<%= dialogClass('item') %>" id="new-item">
+  <a class="dialog__backdrop" href="#top" aria-label="Close"></a>
+  <div class="dialog__panel" role="dialog" aria-modal="true" aria-labelledby="new-item-title">
+    <div class="dialog__head">
+      <h2 id="new-item-title">New item</h2>
+      <a class="dialog__close" href="#top" aria-label="Close">&times;</a>
+    </div>
+
+    <% if (subcategories.length === 0) { %>
+      <p class="small">
+        An item needs a subcategory to sit under.
+        <a href="#new-subcategory">Add a subcategory</a> first.
+      </p>
+      <div class="dialog__actions">
+        <a class="btn btn--quiet" href="#top">Close</a>
+      </div>
+    <% } else { %>
+      <form method="post" action="/admin/settings/templates/categories" class="stack">
+        <input type="hidden" name="_csrf" value="<%= locals.csrfToken %>">
+        <input type="hidden" name="from" value="item">
+
+        <% if (openDialog === 'item' && errors.form) { %>
+          <p class="field-error" role="alert"><%= errors.form %></p>
+        <% } %>
+
+        <div class="field">
+          <label for="item-name">Name <span class="required">*</span></label>
+          <input id="item-name" name="name" type="text" required maxlength="80"
+                 value="<%= openDialog === 'item' ? (values.name || '') : '' %>">
+          <% if (openDialog === 'item' && errors.name) { %>
+            <p class="field-error" role="alert"><%= errors.name %></p>
+          <% } %>
+        </div>
+
+        <div class="field">
+          <label for="item-description">Description</label>
+          <input id="item-description" name="description" type="text" maxlength="300">
+        </div>
+
+        <div class="field">
+          <label for="item-subcategory">Sub category <span class="required">*</span></label>
+          <select id="item-subcategory" name="subcategoryId" required>
+            <option value="">Choose a sub category</option>
+            <% subcategories.forEach(function (sub) { %>
+              <option value="<%= sub.id %>"<%= preselect === sub.id ? ' selected' : '' %>><%= sub.path %></option>
+            <% }); %>
+          </select>
+        </div>
+
+        <div class="field">
+          <label for="item-group">Assign to technician group</label>
+          <select id="item-group" name="groupId">
+            <option value="">-- Inherit from the sub category --</option>
+            <% groups.forEach(function (group) { %>
+              <option value="<%= group.id %>"><%= group.name %></option>
+            <% }); %>
+          </select>
+        </div>
+
+        <div class="dialog__actions">
+          <button type="submit" class="btn btn--primary">Save</button>
+          <a class="btn btn--quiet" href="#top">Cancel</a>
+        </div>
+      </form>
+    <% } %>
+  </div>
+</div>
+
+<%# One edit dialog per node: all three levels edit the same way. %>
+<% nodes.forEach(function (node) { %>
+  <div class="<%= dialogClass('edit-' + node.id) %>" id="edit-<%= node.id %>">
+    <a class="dialog__backdrop" href="#node-<%= node.id %>" aria-label="Close"></a>
+    <div class="dialog__panel" role="dialog" aria-modal="true">
+      <div class="dialog__head">
+        <h2><%= levelLabels[node.level] %></h2>
+        <a class="dialog__close" href="#node-<%= node.id %>" aria-label="Close">&times;</a>
+      </div>
+
+      <p class="small muted mono"><%= node.path %></p>
+
+      <form method="post" action="/admin/settings/templates/categories/<%= node.id %>" class="stack">
+        <input type="hidden" name="_csrf" value="<%= locals.csrfToken %>">
+
+        <% if (openDialog === 'edit-' + node.id && errors.form) { %>
+          <p class="field-error" role="alert"><%= errors.form %></p>
+        <% } %>
+
+        <div class="field">
+          <label for="name-<%= node.id %>">Name <span class="required">*</span></label>
+          <%# On a refusal, what was typed rather than what is stored. %>
+          <% var editing = openDialog === 'edit-' + node.id; %>
+          <input id="name-<%= node.id %>" name="name" type="text" required maxlength="80"
+                 value="<%= editing && values.name !== undefined ? values.name : node.name %>">
+          <% if (editing && errors.name) { %>
+            <p class="field-error" role="alert"><%= errors.name %></p>
+          <% } %>
+        </div>
+
+        <div class="field">
+          <label for="desc-<%= node.id %>">Description</label>
+          <input id="desc-<%= node.id %>" name="description" type="text" maxlength="300"
+                 value="<%= node.description %>">
+        </div>
+
+        <div class="field">
+          <label for="group-<%= node.id %>">Assign to technician group</label>
+          <select id="group-<%= node.id %>" name="groupId">
+            <option value=""><%= node.level === 1 ? '-- None --' : '-- Inherit from above --' %></option>
+            <% groups.forEach(function (group) { %>
+              <option value="<%= group.id %>"<%= node.group_id === group.id ? ' selected' : '' %>><%= group.name %></option>
+            <% }); %>
+          </select>
+        </div>
+
+        <div class="field">
+          <label for="order-<%= node.id %>">Sort order</label>
+          <input id="order-<%= node.id %>" name="sortOrder" type="number" min="0" max="9999"
+                 value="<%= node.sort_order %>" class="input--short">
+        </div>
+
+        <div class="field">
+          <div class="label-row">
+            <label class="checkbox">
+              <input type="checkbox" name="isActive" value="1"<%= node.is_active ? ' checked' : '' %>>
+              Offer this when filing a ticket
+            </label>
+            <%- include('../../partials/info', { text: 'Clear to retire this entry and everything beneath it. Tickets already filed against it are not affected.' }) %>
+          </div>
+        </div>
+
+        <div class="dialog__actions">
+          <button type="submit" class="btn btn--primary">Save</button>
+          <a class="btn btn--quiet" href="#node-<%= node.id %>">Cancel</a>
+        </div>
+      </form>
+
+      <% if ((usage[node.id] || 0) === 0) { %>
+        <form method="post" action="/admin/settings/templates/categories/<%= node.id %>/delete"
+              class="dialog__danger">
+          <input type="hidden" name="_csrf" value="<%= locals.csrfToken %>">
+          <button type="submit" class="btn btn--small btn--danger">
+            Remove<%= node.children.length > 0 ? ', and everything beneath it' : '' %>
+          </button>
+        </form>
+      <% } else { %>
+        <p class="hint muted dialog__danger">
+          <%= usage[node.id] %> ticket(s) are filed here, so it cannot be removed - how a ticket was classified is a record, not a setting. Retire it
+          instead, above.
+        </p>
+      <% } %>
+    </div>
+  </div>
+<% }); %>
+
+<div class="dialog" id="tree-view">
+  <a class="dialog__backdrop" href="#top" aria-label="Close"></a>
+  <div class="dialog__panel" role="dialog" aria-modal="true" aria-labelledby="tree-title">
+    <div class="dialog__head">
+      <h2 id="tree-title">Category tree</h2>
+      <a class="dialog__close" href="#top" aria-label="Close">&times;</a>
+    </div>
+
+    <% if (tree.length === 0) { %>
+      <p class="small muted">Nothing in the catalogue yet.</p>
+    <% } else { %>
+      <ul class="tree__children tree__children--plain">
+        <% tree.forEach(function (category) { %>
+          <li>
+            <% if (category.children.length > 0) { %>
+              <details>
+                <summary><%= category.name %></summary>
+                <ul class="tree__children">
+                  <% category.children.forEach(function (sub) { %>
+                    <li>
+                      <% if (sub.children.length > 0) { %>
+                        <details>
+                          <summary><%= sub.name %></summary>
+                          <ul class="tree__children">
+                            <% sub.children.forEach(function (item) { %>
+                              <li><%= item.name %></li>
+                            <% }); %>
+                          </ul>
+                        </details>
+                      <% } else { %>
+                        <%= sub.name %>
+                      <% } %>
+                    </li>
+                  <% }); %>
+                </ul>
+              </details>
+            <% } else { %>
+              <%= category.name %>
+            <% } %>
+          </li>
+        <% }); %>
+      </ul>
+    <% } %>
+
+    <div class="dialog__actions dialog__actions--spread">
+      <a href="#new-category">+ Category</a>
+      <a href="#new-subcategory">+ Sub Category</a>
+      <a href="#new-item">+ Item</a>
+    </div>
+  </div>
+</div>
+
+<%- include('_layout_end') %>

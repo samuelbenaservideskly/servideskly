@@ -1,0 +1,54 @@
+<%- include('partials/header') %>
+
+<%# An administrator the customer portal added chooses a password
+    (routes/admin-setup.ts), in the sign-in card like every other signed-out
+    page: the service desk's mark, the address as a chip, the password twice.
+    Laid out as login-reset.ejs, the other page that sets a password from a
+    link. %>
+<div class="signin">
+  <div class="card signin-card">
+    <%- include("partials/signin-mark") %>
+    <h1>Set up your password</h1>
+
+    <% if (done) { %>
+      <p class="lede">The account for <%= email %> is already set up.</p>
+      <a class="btn btn--primary btn--block" href="/login">Sign in</a>
+    <% } else if (directory) { %>
+      <p class="lede"><%= email %> signs in with your organisation account, so there is no password to set.</p>
+      <a class="btn btn--primary btn--block" href="/login">Sign in</a>
+    <% } else if (invalid) { %>
+      <p class="lede">This link is not valid any more. Links work for 7 days, while you are still an administrator.</p>
+      <p class="small muted">Ask whoever added you to add you again in the customer portal.</p>
+    <% } else { %>
+      <form method="post" action="/setup" class="stack local-signin">
+        <input type="hidden" name="_csrf" value="<%= locals.csrfToken %>">
+        <input type="hidden" name="t" value="<%= token %>">
+        <%# For the password manager: which account the password is for. %>
+        <div class="signin-identity">
+          <span class="avatar" aria-hidden="true"><%= email.slice(0, 2).toUpperCase() %></span>
+          <label for="email" class="visually-hidden">Email</label>
+          <input id="email" type="email" readonly value="<%= email %>" autocomplete="username" class="signin-identity__email">
+        </div>
+        <div class="pw-grid pw-grid--signin">
+          <div class="field">
+            <label for="password">Password</label>
+            <%- include('partials/password-input', { id: 'password', name: 'password', autocomplete: 'new-password', required: true, describedBy: error ? 'setup-error' : '' }) %>
+            <% if (error) { %><p class="field-error" id="setup-error" role="alert"><%= error %></p><% } %>
+          </div>
+          <div class="field">
+            <label for="confirmPassword">Confirm password</label>
+            <%- include('partials/password-input', { id: 'confirmPassword', name: 'confirmPassword', autocomplete: 'new-password', required: true }) %>
+          </div>
+          <%# The rules, ticking as they type; drawn by the server, so they say what is required without the script too. %>
+          <%- include('partials/password-rules') %>
+        </div>
+        <button type="submit" class="btn btn--primary btn--block">Set the password</button>
+      </form>
+    <% } %>
+  </div>
+</div>
+
+<%# The eye, and the ticks. See password-reveal.js. %>
+<script src="/assets/js/password-reveal.js?v=<%= locals.assetVersion %>" defer></script>
+
+<%- include('partials/footer') %>

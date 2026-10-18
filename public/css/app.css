@@ -1,0 +1,4493 @@
+/* Single stylesheet. No JavaScript is served, so the CSP can set
+   script-src 'none'. Every colour is a custom property, declared once here
+   and swapped for the dark theme.
+
+   The values below are only fallbacks. The live palette is generated from the
+   two colours set under Admin -> Settings -> Customisation and served as
+   /branding/theme.css, which is linked after this file and overrides them.
+
+   --brand is used wherever a colour sits behind white text; --accent is the
+   text/link colour, adjusted per theme so it reaches 4.5:1 against its
+   background. */
+
+:root {
+  color-scheme: light;
+  --brand: #635bff;
+  --brand-ink: #ffffff;
+  --bg: #f4f4f2;
+  --surface: #ffffff;
+  --surface-2: #faf9f8;
+  --border: #e3e2df;
+  --border-strong: #c7c6c1;
+  --text: #1d1d1b;
+  --text-muted: #5f5f5a;
+  --accent: #5048e5;
+  --accent-text: #ffffff;
+  --accent-soft: #eef0ff;
+  --danger: #8d1428;
+  --danger-soft: #fef3f2;
+  --success: #14663f;
+  --success-soft: #e7f2ec;
+  --warning: #7a4a05;
+  --warning-soft: #fbf1e0;
+  --info-soft: #f4f4f2;
+  --radius: 8px;
+  --shadow: 0 1px 2px rgba(29, 29, 27, 0.06), 0 1px 3px rgba(29, 29, 27, 0.08);
+  /* CSS keywords only: no font named, so none to license or ship. */
+  --mono: ui-monospace, monospace;
+}
+
+/* Dark mode, in two parts, because the reader gets three choices rather
+   than two: follow the operating system (the default), force light, or
+   force dark. The choice is stored in a cookie and rendered as data-theme
+   on <html>.
+
+   1. The media query applies the dark palette automatically - but not when
+      the reader has explicitly asked for light.
+   2. The attribute rule applies it regardless of the system setting, and
+      comes second so it wins.
+
+   A light-mode block is not needed: :root above is already light, and
+   data-theme="light" simply opts out of rule 1. */
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme='light']) {
+    color-scheme: dark;
+    --brand: #635bff;
+    --brand-ink: #ffffff;
+    --bg: #141413;
+    --surface: #1d1d1b;
+    --surface-2: #262624;
+    --border: #343431;
+    --border-strong: #4a4a45;
+    --text: #ffffff;
+    --text-muted: #a9a9a3;
+    --accent: #a5a0ff;
+    --accent-text: #1d1d1b;
+    --accent-soft: #25234a;
+    --danger: #f08a99;
+    --danger-soft: #3a1a20;
+    --success: #74d3a4;
+    --success-soft: #16301f;
+    --warning: #e7bc79;
+    --warning-soft: #2e2415;
+    --info-soft: #262624;
+    --shadow: none;
+  }
+}
+
+:root[data-theme='dark'] {
+  color-scheme: dark;
+  --brand: #635bff;
+  --brand-ink: #ffffff;
+  --bg: #141413;
+  --surface: #1d1d1b;
+  --surface-2: #262624;
+  --border: #343431;
+  --border-strong: #4a4a45;
+  --text: #ffffff;
+  --text-muted: #a9a9a3;
+  --accent: #a5a0ff;
+  --accent-text: #1d1d1b;
+  --accent-soft: #25234a;
+  --danger: #f08a99;
+  --danger-soft: #3a1a20;
+  --success: #74d3a4;
+  --success-soft: #16301f;
+  --warning: #e7bc79;
+  --warning-soft: #2e2415;
+  --info-soft: #262624;
+  --shadow: none;
+}
+
+* { box-sizing: border-box; }
+
+html { -webkit-text-size-adjust: 100%; }
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  /* --font comes from Customisation - Appearance (branding/theme.css). */
+  font: 15px/1.55 var(--font, "Helvetica Neue", Helvetica, Arial, sans-serif);
+}
+
+/* Links.
+ *
+ * Underlined only when pointed at or focused. The underline used to be the
+ * browser's default, so roughly twenty components turned it off one at a
+ * time and the ones nobody had reached read as underlined text in the middle
+ * of a card - reported 15 Oct 2026 on a dashboard widget.
+ *
+ * **In flowing text the underline stays** (.prose below): there a link has
+ * to be findable without relying on its colour, which is what the contrast
+ * guidance asks for. In the chrome - cards, tables, toolbars - position and
+ * weight already say what is clickable.
+ */
+a { color: var(--accent); text-decoration: none; }
+a:hover, a:focus-visible { text-decoration: underline; }
+
+/* A ticket description, a comment, a notification body: ordinary prose,
+   where a link is found by reading rather than by where it sits. */
+.prose a, .portal-prose a { text-decoration: underline; }
+
+h1 { font-size: 1.5rem; margin: 0 0 0.25rem; line-height: 1.25; }
+h2 { font-size: 1.1rem; margin: 1.5rem 0 0.5rem; }
+
+code, .mono { font-family: var(--mono); font-size: 0.88em; }
+
+.skip-link {
+  position: absolute;
+  left: -9999px;
+}
+.skip-link:focus {
+  left: 0.5rem;
+  top: 0.5rem;
+  z-index: 10;
+  background: var(--surface);
+  padding: 0.5rem 0.75rem;
+  border-radius: var(--radius);
+  border: 1px solid var(--border-strong);
+}
+
+/* ---------------------------------------------------------------- top bar */
+
+.topbar {
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  box-shadow: inset 0 -3px 0 var(--brand);
+}
+
+.topbar__inner {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0.65rem 1.25rem;
+  display: flex;
+  align-items: center;
+  gap: 1.25rem;
+  flex-wrap: wrap;
+}
+
+.brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.55rem;
+  font-weight: 650;
+  color: var(--text);
+  text-decoration: none;
+  letter-spacing: -0.01em;
+}
+.brand:hover { text-decoration: none; }
+
+/* Uploaded artwork is usually a dark wordmark, so it sits on a white plate:
+   that keeps its own colours exact and legible against the dark topbar. */
+.brand__logo {
+  display: block;
+  height: 1.35rem;
+  width: auto;
+  background: var(--logo-plate, #ffffff);
+  border-radius: 3px;
+  padding: 0.2rem 0.3rem;
+}
+
+.nav {
+  display: flex;
+  gap: 0.35rem;
+  flex-wrap: wrap;
+}
+
+.nav a {
+  padding: 0.35rem 0.65rem;
+  border-radius: 6px;
+  color: var(--text-muted);
+  text-decoration: none;
+  font-weight: 500;
+}
+.nav a:hover { background: var(--surface-2); color: var(--text); text-decoration: none; }
+.nav a[aria-current] { background: var(--accent-soft); color: var(--accent); font-weight: 600; }
+
+/* margin-left pushes this group right, rather than margin-right on .nav:
+   the sign-in page has no nav, and the controls still belong on the right. */
+.account {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  font-size: 0.9rem;
+  margin-left: auto;
+}
+
+.account__name { display: inline-flex; align-items: center; gap: 0.4rem; }
+
+/* ------------------------------------------------------------------ layout */
+
+.wrap {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 1.5rem 1.25rem 3rem;
+}
+
+.wrap--narrow { max-width: 720px; margin: 0 auto; }
+
+.page-head {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
+  margin-bottom: 1.25rem;
+}
+
+.columns { display: grid; grid-template-columns: minmax(0, 1fr); gap: 1.25rem; }
+
+@media (min-width: 62rem) {
+  .columns { grid-template-columns: minmax(0, 2fr) minmax(18rem, 1fr); align-items: start; }
+}
+
+.card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 1.1rem 1.25rem;
+  box-shadow: var(--shadow);
+  margin-bottom: 1rem;
+}
+
+.card--centred { text-align: center; margin-top: 3rem; }
+.card--info { background: var(--info-soft); border-color: var(--border); }
+.card--warn { background: var(--warning-soft); border-color: var(--warning); }
+
+.section-title { font-size: 1rem; margin: 0 0 0.75rem; text-transform: none; }
+
+
+/* ------------------------------------------------------------------ forms */
+
+.stack { display: grid; gap: 0.75rem; }
+/* A field is a grid of label, control and whatever follows it.
+ *
+ * align-content: start is load bearing: auto-sized rows stretch to fill
+ * the grid area by default, so a field with no hint standing beside one
+ * that has a hint grew its own rows to match and left its control sitting
+ * lower than its neighbours' - reported 16 Oct 2026 on the template strip,
+ * where Request type sat below Name and Summary. The rows keep their own
+ * height now and every control in a row starts on the same line. */
+.field { display: grid; gap: 0.3rem; align-content: start; }
+
+label { font-weight: 550; font-size: 0.9rem; }
+
+input[type="text"],
+input[type="email"],
+input[type="search"],
+input[type="password"],
+input[type="number"],
+input[type="url"],
+input[type="tel"],
+input[type="date"],
+input[type="time"],
+input[type="datetime-local"],
+select,
+textarea {
+  width: 100%;
+  padding: 0.5rem 0.6rem;
+  font: inherit;
+  color: var(--text);
+  background: var(--surface);
+  border: 1px solid var(--border-strong);
+  border-radius: 6px;
+}
+
+textarea { resize: vertical; min-height: 6rem; }
+
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible,
+button:focus-visible,
+a:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.hint { margin: 0; color: var(--text-muted); font-size: 0.82rem; }
+.field-error { margin: 0; color: var(--danger); font-size: 0.85rem; font-weight: 550; }
+
+.check { display: inline-flex; align-items: center; gap: 0.4rem; font-weight: 450; }
+.check--tight { font-size: 0.8rem; color: var(--text-muted); }
+
+.actions { display: flex; gap: 0.5rem; flex-wrap: wrap; }
+
+.filters {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.45rem 0.75rem;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 0.75rem 1rem;
+  margin-bottom: 1rem;
+  font-size: 0.85rem;
+}
+
+/* A label and the control it names are one item, so the row never wraps
+   between them - "Search" at the end of one line and its box at the start
+   of the next (reported 16 Oct 2026). */
+.filters__field {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.filters label {
+  color: var(--text-muted);
+  font-size: inherit;
+  font-weight: 550;
+}
+.filters input,
+.filters select,
+.filters .btn,
+.filters button {
+  font-size: inherit;
+  width: auto;
+  min-width: 8rem;
+}
+/* A control in the bar is tighter than one in a form: a form is filled in
+   once, a filter bar is read past. */
+.filters input,
+.filters select { padding: 0.35rem 0.5rem; }
+.filters .btn,
+.filters button { padding: 0.35rem 0.7rem; min-width: 0; }
+
+.inline-form { display: inline-flex; align-items: center; gap: 0.35rem; margin: 0 0 0.25rem; }
+
+/* --------------------------------------------------------------- buttons */
+
+.btn {
+  display: inline-block;
+  padding: 0.45rem 0.85rem;
+  font: inherit;
+  font-weight: 550;
+  line-height: 1.3;
+  color: var(--text);
+  background: var(--surface);
+  border: 1px solid var(--border-strong);
+  border-radius: 6px;
+  cursor: pointer;
+  text-decoration: none;
+}
+.btn:hover { background: var(--surface-2); text-decoration: none; }
+.btn[disabled] { opacity: 0.55; cursor: not-allowed; }
+
+.btn--primary {
+  background: var(--brand);
+  border-color: var(--brand);
+  color: var(--brand-ink);
+}
+.btn--primary:hover { filter: brightness(1.08); background: var(--brand); }
+
+.btn--quiet { background: transparent; border-color: var(--border); color: var(--text-muted); }
+.btn--danger { color: var(--danger); border-color: var(--danger); background: transparent; }
+.btn--danger:hover { background: var(--danger-soft); }
+.btn--small { padding: 0.25rem 0.55rem; font-size: 0.82rem; }
+.btn--block { width: 100%; }
+
+/* ----------------------------------------------------------------- tables */
+
+.table-scroll { overflow-x: auto; border: 1px solid var(--border); border-radius: var(--radius); background: var(--surface); }
+
+.table { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
+.table th, .table td { padding: 0.6rem 0.75rem; text-align: left; vertical-align: top; border-bottom: 1px solid var(--border); }
+/* Sentence case, 12-13px, medium weight, a neutral colour and a line under
+   the row rather than a filled band. ALL CAPS with letter spacing read as
+   shouting on a page that is mostly table. */
+.table thead th {
+  background: transparent;
+  font-size: 0.8rem;
+  font-weight: 600;
+  letter-spacing: 0;
+  color: var(--text-muted);
+  white-space: nowrap;
+  border-bottom: 1.5px solid var(--border-strong);
+  padding-top: 0.5rem;
+  padding-bottom: 0.5rem;
+}
+.table tbody tr:last-child td { border-bottom: none; }
+.table--dense th, .table--dense td { padding: 0.4rem 0.6rem; }
+
+.detail-cell { max-width: 28rem; word-break: break-word; }
+
+/* ------------------------------------------------------------ indicators */
+
+.stats { display: flex; gap: 0.75rem; flex-wrap: wrap; margin-bottom: 1.25rem; }
+
+.stat {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 0.7rem 1rem;
+  min-width: 7.5rem;
+  display: grid;
+  gap: 0.1rem;
+}
+.stat__value { font-size: 1.35rem; font-weight: 650; line-height: 1.1; }
+.stat__label { color: var(--text-muted); font-size: 0.8rem; }
+
+.pill, .badge, .chip {
+  display: inline-block;
+  padding: 0.1rem 0.45rem;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  white-space: nowrap;
+  border: 1px solid transparent;
+}
+
+.pill--open        { background: var(--accent-soft); color: var(--accent); }
+.pill--in_progress { background: var(--warning-soft); color: var(--warning); }
+.pill--pending     { background: var(--surface-2); color: var(--text-muted); border-color: var(--border); }
+.pill--resolved    { background: var(--success-soft); color: var(--success); }
+.pill--closed      { background: var(--surface-2); color: var(--text-muted); border-color: var(--border); }
+
+.pill--p-low     { background: var(--surface-2); color: var(--text-muted); border-color: var(--border); }
+.pill--p-normal  { background: var(--surface-2); color: var(--text-muted); border-color: var(--border); }
+.pill--p-high    { background: var(--warning-soft); color: var(--warning); }
+.pill--p-urgent, .pill--urgent { background: var(--danger-soft); color: var(--danger); }
+
+.badge--user     { background: var(--surface-2); color: var(--text-muted); border-color: var(--border); }
+.badge--agent    { background: var(--accent-soft); color: var(--accent); }
+.badge--admin    { background: var(--danger-soft); color: var(--danger); }
+.badge--internal { background: var(--warning-soft); color: var(--warning); }
+.badge--lock     { background: var(--surface-2); color: var(--text-muted); border-color: var(--border); }
+
+.chip { background: var(--surface-2); color: var(--text-muted); border-color: var(--border); }
+
+/* -------------------------------------------------------------- messages */
+
+.flash {
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 0.65rem 0.9rem;
+  margin-bottom: 1rem;
+  font-size: 0.92rem;
+}
+.flash--success { background: var(--success-soft); border-color: var(--success-soft); color: var(--success); }
+.flash--error   { background: var(--danger-soft);  border-color: var(--danger-soft);  color: var(--danger); }
+.flash--info    { background: var(--info-soft);    border-color: var(--info-soft);    color: var(--text); }
+
+.warning {
+  background: var(--warning-soft);
+  color: var(--warning);
+  border-radius: 6px;
+  padding: 0.65rem 0.9rem;
+  font-size: 0.88rem;
+}
+
+.empty {
+  background: var(--surface);
+  border: 1px dashed var(--border-strong);
+  border-radius: var(--radius);
+  padding: 2.5rem 1.25rem;
+  text-align: center;
+  color: var(--text-muted);
+}
+
+/* -------------------------------------------------------------- content */
+
+.lede { color: var(--text-muted); margin-top: 0; }
+.muted { color: var(--text-muted); }
+.small { font-size: 0.85rem; }
+
+.status-code { font-size: 2.5rem; font-weight: 700; margin: 0; color: var(--text-muted); }
+
+.prose { white-space: pre-wrap; overflow-wrap: break-word; }
+
+.comment__head {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  padding-bottom: 0.5rem;
+  margin-bottom: 0.65rem;
+  border-bottom: 1px solid var(--border);
+}
+
+.comment--internal { background: var(--warning-soft); }
+
+.details { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 0.35rem 0.9rem; margin: 0; font-size: 0.9rem; }
+.details dt { color: var(--text-muted); }
+/* The value is read against its label, so it carries the weight - asked
+   for 15 Oct 2026 on the Identity card. */
+.details dd { margin: 0; font-weight: 560; }
+
+.timeline { list-style: none; margin: 0; padding: 0; display: grid; gap: 0.6rem; font-size: 0.85rem; }
+.timeline li { padding-left: 0.75rem; border-left: 2px solid var(--border); }
+
+.pagination { display: flex; align-items: center; gap: 1rem; margin-top: 1rem; flex-wrap: wrap; }
+
+.debug { margin-top: 1.5rem; text-align: left; }
+.debug pre { overflow-x: auto; background: var(--surface-2); padding: 0.75rem; border-radius: 6px; font-size: 0.8rem; }
+
+/* ------------------------------------------------------------ sign-in card */
+
+.signin-logo {
+  display: block;
+  max-width: 200px;
+  max-height: 4.5rem;
+  width: auto;
+  height: auto;
+  margin: 0 auto 1.25rem;
+  /* A dark wordmark needs a ground in dark mode; artwork that brought its
+     own transparency does not, and --logo-plate says which this is. */
+  background: var(--logo-plate, #ffffff);
+  border-radius: 4px;
+  /* No padding when there is no plate to pad: the logo is the only thing
+     there, and the card already has its own room. */
+  padding: var(--logo-plate-pad, 0.6rem 0.8rem);
+}
+
+/* ----------------------------------------------------------- attachments */
+
+.attachments { list-style: none; margin: 0 0 1rem; padding: 0; display: grid; gap: 0.4rem; }
+
+.attachment {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  flex-wrap: wrap;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 0.5rem 0.75rem;
+}
+
+.attachment--internal { background: var(--warning-soft); }
+/* One line. The name is shortened in the middle by shortFileName(), which
+   keeps the extension; this is the guard for anything it did not catch. */
+.attachment__name {
+  font-weight: 550;
+  min-width: 0;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.attachment__meta { margin-right: auto; }
+
+input[type="file"] {
+  width: 100%;
+  padding: 0.45rem 0.6rem;
+  font: inherit;
+  color: var(--text);
+  background: var(--surface);
+  border: 1px dashed var(--border-strong);
+  border-radius: 6px;
+}
+
+/* --------------------------------------------------------------- settings */
+
+.sub-title {
+  font-size: 0.82rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-muted);
+  margin: 1.25rem 0 0.25rem;
+  padding-top: 0.75rem;
+  border-top: 1px solid var(--border);
+}
+
+.tight-list { margin: 0.35rem 0 0; padding-left: 1.1rem; }
+.tight-list li { margin-bottom: 0.3rem; }
+
+.details.small dd { word-break: break-all; }
+
+/* ------------------------------------------------------ local sign-in card */
+
+.local-signin {
+  margin-top: 1.5rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--border);
+  text-align: left;
+}
+
+.local-signin > summary {
+  cursor: pointer;
+  font-weight: 550;
+  font-size: 0.9rem;
+  color: var(--text-muted);
+  text-align: center;
+}
+
+.local-signin > summary:hover { color: var(--text); }
+.local-signin .stack { margin-top: 0.75rem; }
+
+/* ------------------------------------------------------- brand name text */
+
+.brand__name {
+  font-weight: 650;
+  letter-spacing: -0.01em;
+}
+
+/* --------------------------------------------------------- settings shell */
+
+.settings-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 1.25rem;
+  align-items: start;
+}
+
+@media (min-width: 60rem) {
+  .settings-layout { grid-template-columns: 16rem minmax(0, 1fr); }
+  .settings-side { position: sticky; top: 1rem; }
+}
+
+.settings-nav {
+  display: grid;
+  gap: 0.25rem;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 0.5rem;
+}
+
+.settings-nav__item {
+  display: grid;
+  gap: 0.1rem;
+  padding: 0.5rem 0.65rem;
+  border-radius: 6px;
+  text-decoration: none;
+  color: var(--text);
+}
+
+.settings-nav__item:hover { background: var(--surface-2); text-decoration: none; }
+
+.settings-nav__item--current {
+  background: var(--accent-soft);
+}
+
+.settings-nav__title { font-weight: 600; font-size: 0.92rem; }
+.settings-nav__blurb { color: var(--text-muted); font-size: 0.78rem; line-height: 1.35; }
+.settings-nav__item--current .settings-nav__title { color: var(--accent); }
+
+.settings-body > .card:last-child { margin-bottom: 0; }
+
+.status-note { color: var(--text-muted); font-size: 0.85rem; align-self: center; }
+
+/* ------------------------------------------------------- colour controls */
+
+.colour-row {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+/* A native colour input: the round swatch opens the platform picker. */
+.colour-swatch {
+  width: 3rem;
+  height: 2.25rem;
+  padding: 0.15rem;
+  border: 1px solid var(--border-strong);
+  border-radius: 6px;
+  background: var(--surface);
+  cursor: pointer;
+}
+
+.colour-value { color: var(--text-muted); }
+.colour-entry { margin-top: 0.35rem; }
+
+/* --------------------------------------------------------- asset preview */
+
+.asset-preview {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  flex-wrap: wrap;
+  padding: 0.85rem 1rem;
+  margin-bottom: 1rem;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+}
+
+/* The same ground the real pages give it, so the preview tells the truth
+   about a transparent logo rather than flattering it. */
+.asset-preview__logo {
+  max-height: 3rem;
+  max-width: 16rem;
+  width: auto;
+  background: var(--logo-plate, #ffffff);
+  border-radius: 4px;
+  padding: 0.4rem 0.6rem;
+}
+
+.asset-preview__favicon {
+  width: 2rem;
+  height: 2rem;
+  border-radius: 4px;
+  background: #ffffff;
+}
+
+.stats--stacked { flex-direction: column; align-items: stretch; }
+.stats--stacked .stat { min-width: 0; }
+
+/* --------------------------------------------------------------------------
+   Ticket templates and local account administration
+   -------------------------------------------------------------------------- */
+
+.template-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 0.4rem; }
+
+.template-list__item a {
+  display: block;
+  padding: 0.6rem 0.75rem;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface);
+  text-decoration: none;
+  color: inherit;
+}
+
+.template-list__item a:hover { border-color: var(--accent); background: var(--surface-2); }
+
+.template-list__item--current a {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+}
+
+.template-list__name { display: block; font-weight: 600; }
+.template-list__summary { display: block; color: var(--text-muted); font-size: 0.85rem; }
+
+.fieldset {
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 0.75rem 0.9rem 0.9rem;
+  margin: 0;
+  display: grid;
+  gap: 0.6rem;
+}
+
+.fieldset legend {
+  padding: 0 0.35rem;
+  font-size: 0.82rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--text-muted);
+}
+
+.field--row {
+  grid-template-columns: 1fr auto;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.checkbox {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.85rem;
+  color: var(--text-muted);
+  white-space: nowrap;
+}
+
+.checkbox input { width: auto; margin: 0; }
+
+.hint-inline { color: var(--text-muted); font-weight: 400; font-size: 0.82rem; }
+
+.input--short { max-width: 14rem; }
+
+.inline { display: inline-flex; align-items: center; gap: 0.35rem; margin: 0 0.25rem 0.25rem 0; }
+.inline select, .inline input { width: auto; }
+
+.row-actions { display: flex; flex-wrap: wrap; gap: 0.25rem; align-items: center; }
+
+.section-head { margin: 1.5rem 0 0.75rem; font-size: 1.1rem; }
+
+.notice {
+  margin: 0;
+  padding: 0.55rem 0.7rem;
+  border-radius: 8px;
+  background: var(--accent-soft);
+  color: var(--accent);
+  font-size: 0.88rem;
+}
+
+.notice a { color: inherit; }
+
+.pill--ok     { background: var(--success-soft); color: var(--success); }
+.pill--warn   { background: var(--warning-soft); color: var(--warning); }
+.pill--muted  { background: var(--surface-2); color: var(--text-muted); border-color: var(--border); }
+
+.card__title { margin: 0; font-size: 0.95rem; }
+
+/* `left: 0` because an absolute box with no offset sits where it would have
+   been in the flow - inside a wide table, past the right edge of the page,
+   and a table's own scroll box does not contain it. */
+.visually-hidden {
+  position: absolute;
+  left: 0;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* Shown once, immediately after a SCIM token is generated: loud enough that
+   nobody navigates away without copying it. */
+.card--token {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+}
+
+.token {
+  font-family: var(--mono);
+  font-size: 0.95rem;
+  word-break: break-all;
+  user-select: all;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 0.6rem 0.75rem;
+  margin: 0.5rem 0;
+}
+
+/* --------------------------------------------------------------------------
+   Users and technician groups
+   -------------------------------------------------------------------------- */
+
+.link-strong { font-weight: 600; text-decoration: none; color: var(--accent); }
+.link-strong:hover { text-decoration: underline; }
+
+.breadcrumb { margin: 0 0 0.75rem; font-size: 0.85rem; }
+.breadcrumb a { color: var(--text-muted); text-decoration: none; }
+.breadcrumb a:hover { color: var(--accent); text-decoration: underline; }
+
+/* A checkbox that owns its own line, for membership lists. */
+.checkbox--block {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+  white-space: normal;
+  color: var(--text);
+  padding: 0.3rem 0;
+}
+
+.checkbox--block input { margin-top: 0.2rem; }
+.checkbox--block .badge { margin-left: 0.35rem; }
+
+.pagination { display: flex; flex-wrap: wrap; gap: 0.25rem; margin: 0.75rem 0; }
+
+.pagination__item {
+  padding: 0.25rem 0.6rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  text-decoration: none;
+  color: var(--text-muted);
+  font-size: 0.85rem;
+}
+
+.pagination__item--current {
+  background: var(--accent-soft);
+  color: var(--accent);
+  border-color: var(--accent);
+  font-weight: 600;
+}
+
+/* --------------------------------------------------------------------------
+   Colour mode, and the settings icon
+   -------------------------------------------------------------------------- */
+
+/* A <details> disclosure, not a scripted menu: no JavaScript is served, so
+   the policy stays at script-src 'none'. It lives in the masthead, so the
+   panel drops downward from the button. */
+.colour-mode {
+  position: relative;
+}
+
+.colour-mode__button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2rem;
+  height: 2rem;
+  border-radius: var(--radius);
+  color: var(--text-muted);
+  cursor: pointer;
+  user-select: none;
+  list-style: none;
+}
+
+/* Safari and Chrome draw their own disclosure triangle; this removes both. */
+.colour-mode__button::-webkit-details-marker { display: none; }
+.colour-mode__button::marker { content: ''; }
+
+.colour-mode__button:hover { background: var(--surface-2); color: var(--text); }
+
+.colour-mode[open] > .colour-mode__button {
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+
+.colour-mode__menu {
+  position: absolute;
+  right: 0;
+  top: calc(100% + 0.35rem);
+  z-index: 30;
+  display: flex;
+  flex-direction: column;
+  min-width: 11rem;
+  padding: 0.25rem;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius);
+  background: var(--surface);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.18);
+}
+
+.colour-mode__heading {
+  margin: 0;
+  padding: 0.3rem 0.6rem 0.4rem;
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--text-muted);
+}
+
+.colour-mode__option {
+  appearance: none;
+  border: 0;
+  background: transparent;
+  color: var(--text);
+  font: inherit;
+  font-size: 0.85rem;
+  text-align: left;
+  padding: 0.4rem 0.6rem;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.colour-mode__option:hover { background: var(--surface-2); }
+
+.colour-mode__option--current {
+  background: var(--accent-soft);
+  color: var(--accent);
+  font-weight: 600;
+}
+/* An icon-only navigation link. The label is still in the DOM for a screen
+   reader; only the glyph is shown. */
+.icon-link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2rem;
+  height: 2rem;
+  border-radius: var(--radius);
+  color: var(--text-muted);
+  text-decoration: none;
+}
+
+.icon-link:hover { background: var(--surface-2); color: var(--text); }
+
+.icon-link[aria-current] { color: var(--accent); background: var(--accent-soft); }
+
+/* --------------------------------------------------------------------------
+   The category catalogue
+   -------------------------------------------------------------------------- */
+
+/* Tabs within a settings section, for the pages that belong together.
+
+   These were two pieces of small grey text on a hairline, easy to miss
+   entirely. They are now the size of body text, sit on a tinted strip, and
+   the current one is a filled tab rather than a coloured word - so the row
+   reads as a control you can press. */
+.subtabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.2rem;
+  margin: 0 0 1.25rem;
+  padding: 0.25rem;
+  background: var(--tint-a);
+  border-radius: 999px;
+}
+
+.subtabs a {
+  padding: 0.45rem 1.05rem;
+  text-decoration: none;
+  color: var(--text-muted);
+  border-radius: 999px;
+  font-size: 0.92rem;
+  font-weight: 600;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+
+.subtabs a:hover {
+  color: var(--text);
+  background: color-mix(in srgb, var(--surface) 70%, transparent);
+  text-decoration: none;
+}
+
+/* The current one, marked the way the sidebar marks its own. */
+.subtabs__item--current,
+.subtabs a.subtabs__item--current:hover {
+  color: var(--brand-ink) !important;
+  background: var(--grad);
+}
+
+
+/* ---------------------------------------------------------------------------
+   Dialogs, without JavaScript.
+
+   Nothing on this site ships a script - that is what allows
+   `script-src 'none'` - so a modal cannot be opened by a click handler. These
+   are hidden by default and shown when the fragment in the address bar names
+   them (`:target`), which the browser does on its own. A link to `#` closes
+   one.
+
+   The `.dialog--open` class is the same thing from the server side: after a
+   validation error there is no fragment to match, so the response says which
+   dialog to reopen and it comes back with the submitted values intact.
+   --------------------------------------------------------------------------- */
+
+.dialog {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  display: none;
+  padding: 1.5rem 1rem;
+  overflow-y: auto;
+}
+
+.dialog:target,
+.dialog--open {
+  display: block;
+}
+
+/* A dialog reopened by the server has no fragment to lose, so its close
+   links (to #top, or the row it came from) give the page a different
+   target - and that is what closes it. Without this, Cancel and the cross
+   did nothing after a refused save. */
+:root:has(:target) .dialog--open:not(:target) {
+  display: none;
+}
+
+/* Opened in place by a page's own script (form-builder.js,
+   automation-canvas.js). A class of its own, so the rule above - meant for
+   the server's reopen - cannot hide it when the address happens to name
+   something (#diagram after a move): that made every popup look dead. */
+.dialog.dialog--shown {
+  display: block;
+}
+
+.pick-list {
+  display: grid;
+  gap: 0.25rem;
+}
+
+.pick-option {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.5rem 0.7rem;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+.pick-option:has(input:checked) {
+  border-color: var(--text);
+}
+
+.pick-option input {
+  accent-color: var(--brand);
+}
+
+.dialog__backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(29, 29, 27, 0.55);
+  /* The backdrop is a link so that clicking away closes the dialog. */
+  display: block;
+}
+
+.dialog__panel {
+  position: relative;
+  max-width: 34rem;
+  margin: 0 auto;
+  padding: 1.25rem 1.5rem 1.5rem;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  box-shadow: 0 18px 48px rgba(29, 29, 27, 0.28);
+}
+
+.dialog__head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 0.75rem;
+  padding-bottom: 0.6rem;
+  border-bottom: 1px solid var(--border);
+}
+
+.dialog__head h2 {
+  margin: 0;
+  font-size: 1.1rem;
+}
+
+.dialog__close {
+  font-size: 1.5rem;
+  line-height: 1;
+  text-decoration: none;
+  color: var(--text-muted);
+}
+
+.dialog__close:hover { color: var(--text); }
+
+.dialog__actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+  margin-top: 1.1rem;
+  padding-top: 0.9rem;
+  border-top: 1px solid var(--border);
+}
+
+.dialog__actions--spread { justify-content: space-between; }
+
+.dialog__danger {
+  margin-top: 1rem;
+  padding-top: 0.8rem;
+  border-top: 1px dashed var(--border);
+}
+
+/* --------------------------------------------------------------- toolbars */
+
+.toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin: 1rem 0;
+}
+
+/* Offered but not yet usable - a subcategory needs a category first. The
+   link still goes somewhere sensible (the dialog that unblocks it), so this
+   is a hint rather than a dead control. */
+.btn--disabled { opacity: 0.55; }
+
+.required { color: var(--accent); }
+
+/* ------------------------------------------------------- the catalogue tree */
+
+.card--flush { padding: 0; overflow: hidden; }
+
+.table--tree td { vertical-align: top; }
+
+.cell--narrow { width: 2.25rem; }
+
+.tree__summary {
+  display: flex;
+  align-items: baseline;
+  gap: 0.6rem;
+  cursor: pointer;
+}
+
+.tree__name { font-weight: 600; }
+.tree__name--leaf { font-weight: 600; margin-right: 0.6rem; }
+
+.tree__children {
+  margin: 0.4rem 0 0;
+  padding-left: 1.25rem;
+  list-style: none;
+  border-left: 1px solid var(--border);
+}
+
+.tree__children--plain { border-left: 0; padding-left: 0; }
+
+.tree__children li { margin: 0.3rem 0; }
+
+.tree__entry {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.5rem;
+}
+
+.icon-link--small { color: var(--text-muted); text-decoration: none; }
+.icon-link--small:hover { color: var(--accent); }
+
+/* A field the template fixed: shown, not asked for. Styled as a value rather
+   than a disabled input, because a greyed-out box invites a click that will
+   not work. */
+.locked-value {
+  margin: 0;
+  padding: 0.5rem 0.65rem;
+  white-space: pre-wrap;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+}
+
+.icon-btn--danger:hover:not([disabled]) { color: var(--accent); }
+
+/* ---------------------------------------------------------------------------
+   The template form builder: a canvas and a palette.
+
+   The canvas on the left is a preview of the real form; the palette on the
+   right holds what is not on it yet. The two sit side by side on a wide
+   screen and stack on a narrow one, where the palette comes first - on a
+   phone, "what can I add" is more useful above the fold than the bottom of a
+   long form.
+
+   The gear and bin appear on hover **and on keyboard focus**. Hover alone
+   would be unreachable without a pointer and invisible on a touch screen, so
+   they are dimmed rather than removed.
+   --------------------------------------------------------------------------- */
+
+.builder {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 17rem;
+  gap: 1rem;
+  align-items: start;
+}
+
+@media (max-width: 860px) {
+  .builder { grid-template-columns: 1fr; }
+  .builder__palette { order: -1; }
+}
+
+.builder__main { min-width: 0; }
+
+.builder__head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+/* ----------------------------------------------------------------- canvas */
+
+.canvas__list {
+  margin: 1rem 0 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.widget {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+  padding: 0.7rem 0.85rem;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+}
+
+/* The mode. Each row says it in words as well, so the border only has to
+   tell the three apart at a glance - quietly. */
+.widget--mandatory { border-color: var(--accent); }
+.widget--view_only { border-style: dashed; }
+
+.widget__grip {
+  color: var(--text-muted);
+  line-height: 1.6;
+  cursor: default;
+  user-select: none;
+}
+
+.canvas--draggable .widget,
+.canvas--draggable .widget__grip { cursor: grab; }
+
+.widget--dragging { opacity: 0.4; }
+
+.widget--over {
+  border-color: var(--accent);
+  box-shadow: inset 0 0 0 1px var(--accent);
+}
+
+/* The preview of the real control. Nothing in here carries a name, so none
+   of it is ever submitted - it is a picture of the form, not the form. */
+.widget__preview {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  flex: 1;
+  min-width: 0;
+}
+
+.widget__label { font-weight: 600; }
+
+.widget__preview input,
+.widget__preview select,
+.widget__preview textarea {
+  width: 100%;
+  opacity: 0.75;
+  cursor: default;
+}
+
+.preview-note {
+  margin: 0;
+  padding: 0.4rem 0.6rem;
+  font-size: 0.85rem;
+  color: var(--text-muted);
+  border: 1px dashed var(--border-strong);
+  border-radius: 6px;
+}
+
+/* Always visible, deliberately.
+
+   These were revealed on hover, copying the reference product, and it made
+   the settings unreachable: there was no sign a row had a gear at all, so
+   "I cannot set the category" was the honest reading of the page. A control
+   that is needed on every row is not a decoration to hide.
+
+   They are muted rather than hidden, and brighten with the row. */
+.widget__tools {
+  display: flex;
+  align-items: center;
+  gap: 0.15rem;
+  opacity: 0.6;
+  transition: opacity 120ms ease-in-out;
+}
+
+.widget:hover .widget__tools,
+.widget:focus-within .widget__tools { opacity: 1; }
+
+/* What this field falls back to, on the row rather than behind the gear. */
+.widget__default {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.35rem;
+  font-size: 0.82rem;
+  color: var(--text-muted);
+}
+
+.widget__default strong { color: var(--text); font-weight: 600; }
+
+.palette-chip__set {
+  font-size: 0.78rem;
+  text-decoration: none;
+  color: var(--text-muted);
+  border-bottom: 1px dotted currentColor;
+}
+
+.palette-chip__set:hover { color: var(--accent); }
+
+/* The landing strip at the end, and the whole canvas when it is empty. */
+.canvas__drop {
+  margin-top: 0.5rem;
+  padding: 1rem;
+  font-size: 0.9rem;
+  color: var(--text-muted);
+  text-align: center;
+  border: 1px dashed var(--border-strong);
+  border-radius: 8px;
+}
+
+.canvas__list--empty .canvas__drop {
+  margin-top: 1rem;
+  padding: 2rem 1rem;
+}
+
+.canvas__drop--over {
+  color: var(--text);
+  border-color: var(--accent);
+  border-style: solid;
+  background: var(--surface-2);
+}
+
+/* ---------------------------------------------------------------- palette */
+
+.builder__palette { align-self: start; }
+
+.palette__heading {
+  margin: 1rem 0 0.4rem;
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+/* The palette's two create buttons: a column, so they are one width and
+   sit under the heading rather than beside each other at two sizes. */
+.palette__new {
+  display: grid;
+  gap: 0.4rem;
+  justify-items: stretch;
+}
+
+.palette__new .btn { text-align: center; }
+
+.palette__list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+/* A field waiting in the builder's palette.
+
+   Named for the palette, not called a "chip": .chip already meant the
+   comment-count badge on the ticket list, and a second rule for it gave every
+   count a border and padding - so a ticket with one comment appeared to have
+   an empty text box under its title. */
+
+.palette-chip {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.4rem 0.5rem;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+}
+
+.palette-chip--draggable { cursor: grab; }
+.palette-chip--dragging { opacity: 0.4; }
+
+.palette-chip__grip { color: var(--text-muted); user-select: none; }
+.palette-chip__label { flex: 1; min-width: 0; font-size: 0.9rem; }
+
+/* ------------------------------------------------------------ small tools */
+
+.icon-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.75rem;
+  height: 1.75rem;
+  padding: 0;
+  font-size: 0.85rem;
+  line-height: 1;
+  color: var(--text-muted);
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.icon-btn:hover:not([disabled]) {
+  color: var(--text);
+  border-color: var(--border-strong);
+  background: var(--surface);
+}
+
+.icon-btn--danger:hover:not([disabled]) { color: var(--accent); }
+
+.icon-btn[disabled] { opacity: 0.3; cursor: default; }
+
+/* A radio with a description beside it, for the mode menu. */
+.choice {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.6rem;
+  padding: 0.45rem 0;
+}
+
+.choice + .choice { border-top: 1px solid var(--border); }
+
+.choice span {
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+}
+
+/* Two columns of fields on a wide screen, one on a narrow one. Used by the
+   template strip, which is six short fields rather than a long column. */
+.grid-2 {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(16rem, 1fr));
+  gap: 0.25rem 1.25rem;
+}
+
+/* Tasks share the builder's main column, under the canvas: they belong to the
+   same template and splitting them across cards made the page twice as tall
+   as it needed to be. */
+.builder__tasks {
+  margin-top: 1.5rem;
+  padding-top: 1.25rem;
+  border-top: 1px solid var(--border);
+}
+
+/* Checkboxes and radios, drawn to match everything else.
+ *
+ * They were the browser's control tinted with `accent-color`, which is a
+ * hard near-black square - the pre-2026 look, and the last control wearing
+ * it. The brand used to be crimson, and the note here said a page of ticked
+ * boxes in it would read as a page of warnings; the brand is the indigo of
+ * every primary control now, so a ticked box in it reads as a ticked box.
+ *
+ * accent-color stays for a browser that ignores `appearance: none`, which
+ * then shows its own control rather than an empty square. */
+input[type='checkbox'],
+input[type='radio'] {
+  appearance: none;
+  -webkit-appearance: none;
+  accent-color: var(--brand);
+  /* The default is small enough to be fiddly next to body text. */
+  width: 1.1rem;
+  height: 1.1rem;
+  flex: 0 0 auto;
+  margin: 0;
+  border: 1.5px solid var(--border-strong);
+  background: var(--surface);
+  background-repeat: no-repeat;
+  background-position: center;
+  cursor: pointer;
+  transition: background-color 0.12s ease, border-color 0.12s ease;
+}
+
+input[type='checkbox'] { border-radius: 5px; }
+input[type='radio'] { border-radius: 50%; }
+
+input[type='checkbox']:hover:not(:disabled),
+input[type='radio']:hover:not(:disabled) {
+  border-color: var(--brand);
+}
+
+input[type='checkbox']:checked {
+  background-color: var(--brand);
+  border-color: var(--brand);
+  /* A tick in the ink that reads on the brand. A constant, not typed text. */
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='none' stroke='%23ffffff' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M3.5 8.5l3 3 6-6'/%3E%3C/svg%3E");
+  background-size: 0.8rem;
+}
+
+input[type='radio']:checked {
+  border-color: var(--brand);
+  /* The dot is the border drawn inwards, so it needs no second element. */
+  box-shadow: inset 0 0 0 3.5px var(--surface), inset 0 0 0 1rem var(--brand);
+}
+
+input[type='checkbox']:focus-visible,
+input[type='radio']:focus-visible {
+  outline: 2px solid var(--brand);
+  outline-offset: 2px;
+}
+
+input[type='checkbox']:disabled,
+input[type='radio']:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+/* A builder action redirects back to the row it changed, so the row needs
+   room above it - otherwise it lands flush against the top of the viewport
+   with no context around it. */
+.widget[id],
+.builder[id],
+.builder__tasks[id],
+.section-title[id] {
+  scroll-margin-top: 1.5rem;
+}
+
+/* ---------------------------------------------------------------------------
+   A form that changes with a choice, without any JavaScript.
+
+   The two choices are radio buttons placed first in the form; the panels are
+   their later siblings, so `:checked ~` can hide the one that does not apply.
+   A <select> cannot do this - CSS has no way to see which option is chosen -
+   which is why the control is a pair of radios dressed as a segmented button.
+
+   The radios are visually hidden rather than display:none, because a hidden
+   input cannot be focused and these have to be reachable with a keyboard.
+   --------------------------------------------------------------------------- */
+
+.kind-radio {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.segmented {
+  display: inline-flex;
+  padding: 0.25rem;
+  gap: 0.25rem;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+}
+
+.segmented__option {
+  padding: 0.4rem 0.9rem;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.segmented__option:hover { color: var(--text); }
+
+/* The chosen one, and the panel that goes with it. */
+.kind-radio--graph:checked ~ .field .segmented__option--graph,
+.kind-radio--imap:checked ~ .field .segmented__option--imap {
+  color: var(--text);
+  background: var(--surface);
+  box-shadow: inset 0 0 0 1px var(--border-strong);
+}
+
+.kind-radio--graph:checked ~ .only-imap,
+.kind-radio--imap:checked ~ .only-graph {
+  display: none;
+}
+
+/* Keyboard focus has to be visible, since the input itself is not. */
+.kind-radio:focus-visible ~ .field .segmented {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+/* A label for something that is not one input, so it cannot be a <label>. */
+.label {
+  display: block;
+  font-weight: 600;
+  margin-bottom: 0.3rem;
+}
+
+/* ------------------------------------------------- notification preview */
+
+/* The placeholders, with the value each stands for in the preview, so the
+   list is a legend for what is on screen rather than a table of names. */
+.placeholder-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 0.35rem 1.5rem;
+  grid-template-columns: repeat(auto-fit, minmax(16rem, 1fr));
+}
+
+.placeholder-list li {
+  display: flex;
+  gap: 0.5rem;
+  align-items: baseline;
+  min-width: 0;
+}
+
+.placeholder-list span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Drawn like a message in a mail client: a subject line, then the body in
+   its own frame. The frame is a separate document, so nothing in it can
+   style the page around it. */
+.mail-preview {
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  overflow: hidden;
+  background: var(--surface);
+}
+
+.mail-preview__subject {
+  display: flex;
+  gap: 0.6rem;
+  align-items: baseline;
+  padding: 0.6rem 0.8rem;
+  border-bottom: 1px solid var(--border);
+}
+
+/* White whatever the colour scheme is: the message will be read in a mail
+   client, which will not honour a dark background. */
+.mail-preview__body {
+  display: block;
+  width: 100%;
+  height: 26rem;
+  border: 0;
+  background: #fff;
+}
+
+/* ------------------------------------------------------- the info bubble */
+
+/* An explanation attached to a control instead of printed underneath it.
+   See views/partials/info.ejs for why the markup is shaped as it is. */
+.info {
+  position: relative;
+  display: inline-flex;
+  vertical-align: middle;
+  margin-left: 0.35rem;
+  cursor: help;
+}
+
+/* Drawn, not typed: a letter i in a circle never sat in the middle - its
+   place depends on the font's metrics. The mark is a mask over the text
+   colour, so it follows the theme and stays centred at any size; the "i" in
+   the markup is kept for anything that does not draw masks. */
+.info__mark {
+  display: inline-block;
+  flex-shrink: 0;
+  width: 0.85rem;
+  height: 0.85rem;
+  vertical-align: -0.1em;
+  color: var(--text-muted);
+  background: currentColor;
+  font-size: 0;
+  line-height: 0;
+  user-select: none;
+  -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Ccircle cx='8' cy='8' r='7.2' fill='none' stroke='black' stroke-width='1.4'/%3E%3Ccircle cx='8' cy='4.7' r='1' fill='black'/%3E%3Crect x='7.3' y='6.7' width='1.4' height='5.2' rx='0.7' fill='black'/%3E%3C/svg%3E") center / contain no-repeat;
+  mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Ccircle cx='8' cy='8' r='7.2' fill='none' stroke='black' stroke-width='1.4'/%3E%3Ccircle cx='8' cy='4.7' r='1' fill='black'/%3E%3Crect x='7.3' y='6.7' width='1.4' height='5.2' rx='0.7' fill='black'/%3E%3C/svg%3E") center / contain no-repeat;
+}
+
+.info:hover .info__mark,
+.info:focus .info__mark {
+  color: var(--text);
+}
+
+.info:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+  border-radius: 50%;
+}
+
+/* Hidden with opacity alone, so a screen reader can still reach the text.
+   `display: none` and `visibility: hidden` would both remove it. */
+.info__bubble {
+  position: absolute;
+  left: 0;
+  top: calc(100% + 6px);
+  z-index: 30;
+  width: max-content;
+  max-width: min(24rem, 70vw);
+  padding: 0.5rem 0.65rem;
+  background: var(--surface);
+  color: var(--text);
+  border: 1px solid var(--border-strong);
+  border-radius: 6px;
+  box-shadow: 0 6px 20px rgb(0 0 0 / 18%);
+  font-size: 0.8rem;
+  font-weight: 400;
+  font-style: normal;
+  line-height: 1.45;
+  text-align: left;
+  white-space: normal;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 120ms ease;
+}
+
+.info:hover .info__bubble,
+.info:focus .info__bubble,
+.info:focus-within .info__bubble {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+/* Near the right-hand edge of a form the bubble would otherwise run off. */
+.info--end .info__bubble {
+  left: auto;
+  right: 0;
+}
+
+/* On a narrow screen there is no side of the mark with room for the bubble,
+   and a hidden one still takes up space - pushed past the right edge, it
+   gave every page a sideways scroll. So the mark stops being the containing
+   block and the bubble spans the page (or the dialog it sits in) between the
+   gutters. `top: auto` keeps its vertical place at the mark, and the margin
+   puts it just below. */
+@media (max-width: 40rem) {
+  .info {
+    position: static;
+  }
+
+  .info .info__bubble {
+    left: 1rem;
+    right: 1rem;
+    top: auto;
+    width: auto;
+    max-width: none;
+    margin-top: calc(1.05rem + 6px);
+  }
+}
+
+/* A label and its ⓘ stay on one line; the checkbox text may wrap. */
+.label-row {
+  display: flex;
+  align-items: center;
+  gap: 0.1rem;
+  flex-wrap: wrap;
+}
+
+.label-row .checkbox { white-space: normal; }
+
+/* --------------------------------------------- the signature-cut example */
+
+.sample-pair {
+  display: grid;
+  gap: 1rem;
+  grid-template-columns: repeat(auto-fit, minmax(16rem, 1fr));
+}
+
+/* A message as it arrived: whitespace is the content, so it is kept. */
+.sample {
+  margin: 0;
+  padding: 0.6rem 0.7rem;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  font-size: 0.8rem;
+  line-height: 1.5;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+/* A row of buttons, where some are wrapped in a form to carry a CSRF token.
+   Without this the form is the flex item: it stretches to the row height
+   while the button inside stays its own size, and its own margin lifts it -
+   so an <a> button and a <button> beside it do not line up. Reported twice:
+   once on a toolbar, once on the Tickets page head. */
+.toolbar,
+.page-head__actions {
+  align-items: center;
+}
+
+.toolbar .inline,
+.toolbar .inline-form,
+.toolbar form,
+.page-head__actions .inline,
+.page-head__actions .inline-form,
+.page-head__actions form {
+  margin: 0;
+}
+
+/* ------------------------------------------------------- the member picker */
+
+/* Search and page size on one line above the list. */
+.picker-bar {
+  display: flex;
+  align-items: flex-end;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.picker-bar .field {
+  gap: 0;
+}
+
+.picker-bar input[type="search"] {
+  min-width: 14rem;
+}
+
+.picker-bar select {
+  width: auto;
+}
+
+.pager {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  flex-wrap: wrap;
+  margin-top: 0.75rem;
+}
+
+/* For a label that names a control already obvious on screen: present for a
+   screen reader, gone for everybody else. */
+.sr-only {
+  position: absolute;
+  left: 0; /* see .visually-hidden */
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* ------------------------------------------------------- the file picker */
+
+/* The browser's own "Choose files" button, which otherwise arrives in each
+   browser's native style and matches nothing else on the page. The input is
+   kept - it is the only control that can open a file dialog without a script -
+   and only its button is restyled. */
+input[type="file"] {
+  width: 100%;
+  padding: 0.35rem;
+  font: inherit;
+  font-size: 0.9rem;
+  color: var(--text-muted);
+  background: var(--surface);
+  border: 1px dashed var(--border-strong);
+  border-radius: 6px;
+}
+
+input[type="file"]::file-selector-button {
+  margin-right: 0.6rem;
+  padding: 0.35rem 0.75rem;
+  font: inherit;
+  font-weight: 550;
+  font-size: 0.85rem;
+  color: var(--text);
+  background: var(--surface-2);
+  border: 1px solid var(--border-strong);
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+input[type="file"]::file-selector-button:hover {
+  background: var(--surface);
+  border-color: var(--text);
+}
+
+input[type="file"]:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+/* A file the requester has already been emailed. Distinct from the internal
+   badge, because the two say opposite things about who has seen it. */
+.badge--sent {
+  background: var(--success-soft);
+  color: var(--success);
+  border-color: var(--success);
+}
+
+/* ------------------------------------------------------ requester portal */
+
+/* The settings shell without its sidebar, for a page that needs the width. */
+@media (min-width: 60rem) {
+  .settings-layout--wide { grid-template-columns: minmax(0, 1fr); }
+}
+
+.portal-editor-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.75rem 1.25rem;
+  margin-bottom: 1rem;
+}
+
+.portal-editor-head__name {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+  flex: 1;
+}
+
+.portal-editor-head__name input { max-width: 22rem; }
+
+.portal-editor-head__actions { display: flex; flex-wrap: wrap; gap: 0.5rem; }
+
+/* Code on the left, the page on the right; stacked on a narrow screen. */
+.portal-editor {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 1rem;
+  align-items: start;
+  scroll-margin-top: 1rem;
+}
+
+@media (min-width: 70rem) {
+  .portal-editor { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
+}
+
+.portal-code {
+  font-family: var(--mono);
+  font-size: 0.85rem;
+  line-height: 1.5;
+  min-height: 34rem;
+  tab-size: 2;
+  white-space: pre;
+  overflow-x: auto;
+}
+
+.portal-editor__preview { padding: 0.75rem; }
+.portal-editor__preview-title { margin: 0 0 0.5rem; }
+
+.portal-editor__frame {
+  display: block;
+  width: 100%;
+  height: 40rem;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--bg);
+}
+
+/* One click selects the whole variable, ready to copy - no script needed. */
+.copyable { user-select: all; cursor: copy; overflow-wrap: anywhere; }
+
+.portal-variables summary { cursor: pointer; }
+.portal-variables[open] summary { margin-bottom: 0.75rem; }
+
+/* Inside the editor's frame the page is a picture: a click would navigate
+   the frame away from the preview, and the forms are real. */
+.portal-frame { pointer-events: none; user-select: none; }
+
+.portal-preview-bar {
+  position: sticky;
+  top: 0;
+  z-index: 40;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem 1rem;
+  padding: 0.5rem 1rem;
+  background: var(--text);
+  color: var(--bg);
+  font-size: 0.9rem;
+}
+
+.portal-preview-bar .btn { background: var(--bg); color: var(--text); }
+
+/* ------------------------------------------------------------ row actions */
+
+/* A table cell must stay a table cell. `display: flex` on the <td> took it
+   out of the row's layout, so its border no longer lined up with the cells
+   beside it - the "wrong line" under Actions. The buttons are laid out
+   inline instead, each with the same spacing whether it is a link or a
+   one-button form. */
+td.row-actions { display: table-cell; }
+
+/* The gap is on the **left** of each action, not the right.
+ *
+ * The cell is right-aligned, so a right margin on the last child leaves it
+ * short of the edge - and a row with three actions then ends in a different
+ * place from a row with two, which is the misalignment reported on the
+ * templates list (16 Oct 2026): every row's bin should sit in one column. */
+td.row-actions > a,
+td.row-actions > button,
+td.row-actions > form,
+td.row-actions > span {
+  vertical-align: middle;
+  margin: 0.15rem 0 0.15rem 0.3rem;
+}
+
+td.row-actions > form.inline { display: inline-flex; }
+
+/* A square button holding only an icon, the height of its text neighbours. */
+.btn--icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding-left: 0.5rem;
+  padding-right: 0.5rem;
+}
+
+.btn--icon svg { display: block; }
+
+/* A column heading with an ⓘ beside it, on one line. */
+.th-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  white-space: nowrap;
+}
+
+/* ------------------------------------------------------------ integrations */
+
+.integration-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(10rem, 10rem));
+  gap: 1rem;
+}
+
+/* A small square per integration: its mark, its name, whether it is on. */
+.integration-tile {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  aspect-ratio: 1 / 1;
+  padding: 1rem 0.75rem;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  color: var(--text);
+  text-align: center;
+  text-decoration: none;
+}
+
+.integration-tile:hover,
+.integration-tile:focus-visible {
+  border-color: var(--brand);
+  text-decoration: none;
+}
+
+.integration-tile__name { font-weight: 600; font-size: 0.92rem; line-height: 1.25; }
+
+.entra-logo { width: 3rem; height: 3rem; display: block; }
+.entra-logo--small { width: 1.5rem; height: 1.5rem; }
+
+.integration-head { margin-bottom: 1rem; }
+
+.integration-head__title {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  margin: 0.5rem 0 0;
+  font-size: 1.15rem;
+}
+
+/* ------------------------------------------------------------- back links */
+
+/* "All portals", "All users" above a detail page: one pill-shaped button,
+   the chevron in a round badge at its start. */
+.back-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.25rem 0.9rem 0.25rem 0.25rem;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--surface);
+  color: var(--text-muted);
+  font-size: 0.88rem;
+  font-weight: 600;
+  line-height: 1.2;
+  text-decoration: none;
+  transition: border-color 0.15s, color 0.15s, background 0.15s;
+}
+
+.back-link__icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.6rem;
+  height: 1.6rem;
+  border-radius: 50%;
+  background: var(--surface-2);
+  color: var(--text);
+  transition: background 0.15s, color 0.15s, transform 0.15s;
+}
+
+.back-link:hover,
+.back-link:focus-visible {
+  border-color: var(--brand);
+  color: var(--text);
+  text-decoration: none;
+}
+
+.back-link:hover .back-link__icon,
+.back-link:focus-visible .back-link__icon {
+  background: var(--brand);
+  color: #fff;
+  transform: translateX(-2px);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .back-link__icon { transition: none; }
+  .back-link:hover .back-link__icon { transform: none; }
+}
+
+/* ------------------------------------------------------ local sign-in card */
+
+.local-signin-card { scroll-margin-top: 1rem; }
+
+.local-signin-card__row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.local-signin-card .hint { margin: 0.5rem 0 0; }
+
+/* Inside an older .breadcrumb wrapper, the back link keeps its own hover. */
+.breadcrumb .back-link:hover { color: var(--text); text-decoration: none; }
+
+/* A tab that exists but cannot be opened yet - Entra ID under Users before
+   Entra ID is connected. Shown, so its absence is not a mystery. */
+.subtabs__item--disabled {
+  padding: 0.45rem 1.05rem;
+  color: var(--text-muted);
+  border-radius: 999px;
+  font-size: 0.92rem;
+  font-weight: 600;
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* "or" between the two ways in on the sign-in page. */
+.signin-divider {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin: 1rem 0;
+  color: var(--text-muted);
+  font-size: 0.85rem;
+}
+
+.signin-divider::before,
+.signin-divider::after {
+  content: '';
+  flex: 1;
+  border-top: 1px solid var(--border);
+}
+
+/* Row actions stay on one line; a narrow screen scrolls the table instead
+   (every list sits in .table-scroll), which keeps the row line straight. */
+td.row-actions { white-space: nowrap; }
+
+/* The bin is exactly as tall as its text neighbours: 0.82rem text at the
+   body line height is ~17px, so the icon is drawn that size. */
+.btn--small.btn--icon svg { width: 17px; height: 17px; }
+
+/* A second row of tabs under the first - Ticket templates' type tabs. Lighter,
+   so it reads as a filter on the tab above rather than a rival to it. */
+.subtabs--secondary {
+  background: transparent;
+  padding: 0;
+  margin-bottom: 1rem;
+  flex-wrap: wrap;
+}
+
+.subtabs--secondary a {
+  font-size: 0.88rem;
+  padding: 0.3rem 0.85rem;
+  box-shadow: inset 0 0 0 1px var(--border);
+}
+
+.subtabs--secondary a:hover { background: var(--surface-2); }
+
+.subtabs--secondary .subtabs__item--current,
+.subtabs--secondary a.subtabs__item--current:hover {
+  box-shadow: none;
+}
+
+/* ---------------------------------------------------------------- dropdowns */
+
+/* One look for every <select>: the native arrow differed per browser and
+   operating system and sat at a different height from the text inputs, so
+   a form read as two styles. The chevron is a data: image (img-src allows
+   data:), mid-grey so it reads on both themes; the opened list follows the
+   theme through color-scheme on :root. */
+select:not([multiple]) {
+  appearance: none;
+  -webkit-appearance: none;
+  padding-right: 2.1rem;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='none' stroke='%238a8a85' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M4 6l4 4 4-4'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 0.65rem center;
+  background-size: 0.85rem;
+  cursor: pointer;
+  line-height: 1.4;
+}
+
+select:not([multiple]):hover { border-color: var(--text-muted); }
+
+select:disabled { opacity: 0.6; cursor: not-allowed; }
+
+/* The list itself, where the browser lets it be styled. */
+select option,
+select optgroup {
+  background: var(--surface);
+  color: var(--text);
+}
+
+select optgroup { font-weight: 650; }
+
+/* ---------------------------------------------------------- custom images */
+
+.image-list { display: grid; gap: 1rem; }
+
+.image-card {
+  display: grid;
+  grid-template-columns: 8rem minmax(0, 1fr);
+  gap: 1.25rem;
+  align-items: start;
+  scroll-margin-top: 1rem;
+}
+
+/* A checkerboard, so a transparent image is visibly transparent. */
+.image-card__thumb {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 8rem;
+  height: 8rem;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background-color: #fff;
+  background-image:
+    linear-gradient(45deg, #eee 25%, transparent 25%),
+    linear-gradient(-45deg, #eee 25%, transparent 25%),
+    linear-gradient(45deg, transparent 75%, #eee 75%),
+    linear-gradient(-45deg, transparent 75%, #eee 75%);
+  background-size: 16px 16px;
+  background-position: 0 0, 0 8px, 8px -8px, -8px 0;
+  overflow: hidden;
+}
+
+.image-card__thumb img { max-width: 100%; max-height: 100%; display: block; }
+
+.image-card__head {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 1rem;
+}
+
+/* A snippet to copy: one line, scrolls rather than wraps. */
+.snippet {
+  display: block;
+  padding: 0.45rem 0.6rem;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  white-space: nowrap;
+  overflow-x: auto;
+}
+
+@media (max-width: 40rem) {
+  .image-card { grid-template-columns: minmax(0, 1fr); }
+}
+
+/* Custom images as collapsed rows: a long list stays scannable. */
+.image-list { gap: 0.5rem; }
+
+.image-row { padding: 0; scroll-margin-top: 1rem; }
+
+.image-row__summary {
+  display: flex;
+  align-items: center;
+  gap: 0.9rem;
+  padding: 0.6rem 0.9rem;
+  cursor: pointer;
+  list-style: none;
+}
+
+.image-row__summary::-webkit-details-marker { display: none; }
+
+.image-row__thumb {
+  flex: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.75rem;
+  height: 2.75rem;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: #fff;
+  overflow: hidden;
+}
+
+.image-row__thumb img { max-width: 100%; max-height: 100%; display: block; }
+
+.image-row__title { display: grid; gap: 0.1rem; flex: 1; min-width: 0; }
+.image-row__title .small { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+.image-row__chevron {
+  flex: none;
+  color: var(--text-muted);
+  transition: transform 0.15s;
+}
+
+.image-row[open] .image-row__chevron { transform: rotate(180deg); }
+
+.image-row__body {
+  padding: 0.25rem 0.9rem 0.9rem;
+  border-top: 1px solid var(--border);
+  padding-top: 0.75rem;
+}
+
+.image-row__actions { display: flex; justify-content: flex-end; }
+
+@media (prefers-reduced-motion: reduce) {
+  .image-row__chevron { transition: none; }
+}
+
+/* SLA settings. */
+.time-range { display: flex; align-items: center; gap: 0.5rem; }
+.time-range input { width: auto; }
+.day-picker { display: flex; flex-wrap: wrap; gap: 0.25rem 1rem; }
+.sla-table input { max-width: 8rem; }
+
+/* SLA state on a ticket. */
+.sla-badge { display: inline-flex; align-items: center; gap: 0.35rem; font-size: 0.8rem; }
+.sla-badge--met { color: var(--success); }
+.sla-badge--due { color: var(--text-muted); }
+.sla-badge--at_risk { color: var(--warning); font-weight: 600; }
+.sla-badge--breached { color: var(--danger); font-weight: 650; }
+
+/* Inside an uppercase table header the mark became a capital I - a bar. The
+   mark is a symbol, not a word, so it ignores the heading's text styling. */
+.info__mark {
+  text-transform: none;
+  letter-spacing: normal;
+}
+
+/* The explanation inside an ⓘ is a sentence wherever the mark sits - in an
+   uppercase, bold, letter-spaced table header too. */
+th .info,
+th .info__bubble {
+  text-transform: none;
+  letter-spacing: normal;
+  font-weight: 400;
+  font-size: 0.85rem;
+  white-space: normal;
+}
+
+/* The opened list, where the browser allows it (Chrome and Edge 135+:
+   customisable select). Elsewhere the list stays native, which is what it
+   was. No script either way. */
+@supports (appearance: base-select) {
+  select:not([multiple]) {
+    appearance: base-select;
+  }
+
+  /* The background chevron above already draws the arrow. */
+  select:not([multiple])::picker-icon { display: none; }
+
+  select:not([multiple])::picker(select) {
+    appearance: base-select;
+    margin-top: 0.25rem;
+    padding: 0.3rem;
+    border: 1px solid var(--border-strong);
+    border-radius: 8px;
+    background: var(--surface);
+    color: var(--text);
+    box-shadow: 0 12px 32px rgba(29, 29, 27, 0.18);
+  }
+
+  select:not([multiple]) option {
+    padding: 0.45rem 0.6rem;
+    border-radius: 5px;
+    background: transparent;
+  }
+
+  select:not([multiple]) option:hover,
+  select:not([multiple]) option:focus-visible {
+    background: var(--surface-2);
+    outline: none;
+  }
+
+  select:not([multiple]) option:checked {
+    background: var(--accent-soft);
+    color: var(--text);
+    font-weight: 600;
+  }
+
+  select:not([multiple]) option::checkmark { color: var(--accent); }
+
+  select:not([multiple]) optgroup { padding: 0.25rem 0; }
+  select:not([multiple]) optgroup legend {
+    padding: 0.35rem 0.6rem 0.15rem;
+    color: var(--text-muted);
+    font-size: 0.78rem;
+    font-weight: 650;
+  }
+}
+
+/* A group of choices laid out as an ordinary field - its legend reads as a
+   label, with no browser box around it (Locale's clock, SLA's working days).
+   The boxed variant is .fieldset. */
+fieldset.field {
+  border: 0;
+  padding: 0;
+  margin: 0;
+  min-width: 0;
+}
+
+fieldset.field > legend {
+  padding: 0;
+  margin-bottom: 0.35rem;
+  font-weight: 600;
+  font-size: 0.92rem;
+}
+
+fieldset.field > .check { display: flex; margin-bottom: 0.25rem; }
+
+/* Five tabs (Customisation) do not fit a phone in one row: wrap rather than
+   push the page sideways. */
+.subtabs { flex-wrap: wrap; }
+
+/* An explanation never wider than the screen it opens on. */
+.info__bubble { max-width: min(18rem, calc(100vw - 2rem)); }
+
+/* ------------------------------------------------------------ copy buttons */
+
+.copy-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.2rem 0.4rem;
+  border: 1px solid var(--border);
+  border-radius: 5px;
+  background: var(--surface);
+  color: var(--text-muted);
+  font: inherit;
+  font-size: 0.75rem;
+  cursor: pointer;
+  line-height: 1;
+}
+
+.copy-btn[hidden] { display: none; }
+.copy-btn:hover { color: var(--text); border-color: var(--border-strong); }
+.copy-btn--done { color: var(--success); border-color: var(--success); }
+.copy-btn--failed { color: var(--warning); border-color: var(--warning); }
+.copy-btn__status:empty { display: none; }
+.copy-btn svg { display: block; }
+
+.image-row__copies { display: inline-flex; gap: 0.3rem; flex: none; }
+
+.snippet-row { display: flex; align-items: center; gap: 0.4rem; }
+.snippet-row .snippet { flex: 1; min-width: 0; }
+
+@media (max-width: 40rem) {
+  .copy-btn__tag { display: none; }
+}
+
+/* The image just uploaded: closed like the rest, but marked. */
+.image-row:target { border-color: var(--accent); box-shadow: 0 0 0 2px var(--accent-soft); }
+
+/* The portal editor's Preview / HTML switch. */
+.preview-switch { margin-bottom: 0.5rem; }
+.view-radio--preview:checked ~ .only-html,
+.view-radio--html:checked ~ .only-preview { display: none; }
+.view-radio--preview:checked ~ .preview-switch .view-option--preview,
+.view-radio--html:checked ~ .preview-switch .view-option--html {
+  color: var(--text);
+  background: var(--surface);
+  box-shadow: inset 0 0 0 1px var(--border-strong);
+}
+.view-radio--preview:focus-visible ~ .preview-switch,
+.view-radio--html:focus-visible ~ .preview-switch { outline: 2px solid var(--accent); outline-offset: 2px; }
+.portal-editor__frame--source { background: #fff; }
+
+/* Anchors a dialog closes back to: a palette field, a catalogue row. Not
+   flush against the top of the viewport when they are scrolled to. */
+.palette-chip[id],
+.icon-link[id] {
+  scroll-margin-top: 6rem;
+}
+
+/* Identity provider buttons on the sign-in page, one under another. */
+.signin-provider + .signin-provider { margin-top: 0.5rem; }
+
+/* ---------------------------------------------------------------------------
+   Dashboards (Settings - Dashboards), shown to requesters
+   --------------------------------------------------------------------------- */
+.dashboard {
+  margin: 0 0 1.25rem;
+  padding: 1rem 1.1rem;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--surface);
+}
+.dashboard__head { display: flex; justify-content: space-between; align-items: baseline; gap: 1rem; margin-bottom: 0.6rem; }
+.dashboard__title { margin: 0; font-size: 1.05rem; }
+.dashboard__date { color: var(--text-muted); font-size: 0.85rem; }
+.availability-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 0.35rem; }
+.availability { display: flex; flex-wrap: wrap; align-items: baseline; gap: 0.5rem; }
+.availability__name { font-weight: 600; min-width: 10rem; }
+.availability__status {
+  display: inline-block;
+  padding: 0.05rem 0.5rem;
+  border-radius: 999px;
+  font-size: 0.82rem;
+  background: var(--surface-2);
+  color: var(--text-muted);
+}
+.availability__status--office,
+.availability__status--home_office,
+.availability__status--available { background: var(--success-soft); color: var(--success); }
+.availability__status--vacation,
+.availability__status--sick,
+.availability__status--day_off,
+.availability__status--business_trip,
+.availability__status--unavailable { background: var(--warning-soft); color: var(--warning); }
+.availability__status--unset { background: none; }
+.availability__location { color: var(--text-muted); font-size: 0.85rem; }
+.availability__empty { margin: 0; color: var(--text-muted); font-size: 0.9rem; }
+.availability-week__today { color: var(--accent); }
+.availability-form__title { margin: 0.5rem 0 0; font-size: 0.95rem; }
+#availability { scroll-margin-top: 1rem; margin-top: 1.25rem; }
+.dashboard-preview { width: 100%; min-height: 260px; border: 1px solid var(--border); border-radius: 8px; background: var(--bg); }
+.dashboard-preview__body { padding: 1rem; }
+
+/* ---------------------------------------------------------------------------
+   Automation editor (Settings - Advanced - Automation)
+   --------------------------------------------------------------------------- */
+.automation-rename { display: flex; gap: 0.5rem; align-items: center; flex: 1; }
+.automation-rename input { max-width: 26rem; }
+.automation-diagram-card { padding: 0.75rem; }
+.automation-diagram { display: block; font-size: 13px; }
+.automation-diagram a { cursor: pointer; }
+.automation-diagram__box { fill: var(--surface-2); stroke: var(--border-strong); stroke-width: 1.2; }
+.automation-diagram__box--trigger { fill: var(--accent-soft); stroke: var(--accent); }
+.automation-diagram__box--condition { fill: var(--warning-soft); stroke: var(--warning); }
+.automation-diagram__box--problem { stroke: var(--danger); stroke-dasharray: 5 3; }
+.automation-diagram__box--loose { opacity: 0.6; }
+.automation-diagram a:hover .automation-diagram__box,
+.automation-diagram a:focus .automation-diagram__box { stroke-width: 2.4; }
+.automation-diagram__label { fill: var(--text); font-weight: 600; }
+.automation-diagram__summary { fill: var(--text-muted); font-size: 11.5px; }
+.automation-diagram__wire { fill: none; stroke: var(--text-muted); stroke-width: 1.6; }
+.automation-diagram__pin { fill: var(--text-muted); font-size: 11px; text-anchor: middle; }
+.automation-step { scroll-margin-top: 1rem; }
+.automation-step__head { display: flex; flex-wrap: wrap; gap: 0.5rem; align-items: center; justify-content: space-between; }
+.automation-step__title { margin: 0; font-size: 1rem; }
+.automation-step__grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(16rem, 100%), 1fr)); gap: 0.75rem 1rem; }
+.automation-step__wide { grid-column: 1 / -1; }
+#add-step, #steps, #network { scroll-margin-top: 1rem; }
+
+/* ---------------------------------------------------------------------------
+   Sections in two columns: the builder's canvas and the ticket form.
+   A field is half a row (beside another) or the whole row.
+   --------------------------------------------------------------------------- */
+.canvas-section {
+  border: 1px dashed var(--border-strong);
+  border-radius: 10px;
+  padding: 0.6rem 0.75rem 0.75rem;
+}
+.canvas-section--lead { border-style: none; padding: 0; }
+.canvas-section__head {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.2rem 0 0.6rem;
+  margin-bottom: 0.6rem;
+  border-bottom: 1px solid var(--border);
+  scroll-margin-top: 1rem;
+}
+.canvas-section__title { margin: 0; flex: 1; font-size: 1.05rem; font-weight: 600; }
+.canvas-section__title--untitled { color: var(--text-muted); font-weight: 450; }
+.canvas--draggable .canvas-section__head { cursor: grab; }
+.canvas-section__grid,
+.form-section__grid {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.6rem 1rem;
+  align-items: start;
+}
+.canvas-section__grid > .widget { flex-wrap: wrap; scroll-margin-top: 1rem; }
+.widget--full,
+.form-cell--full,
+.canvas-section__empty { grid-column: 1 / -1; }
+.canvas-section__empty {
+  padding: 0.9rem;
+  font-size: 0.88rem;
+  color: var(--text-muted);
+  text-align: center;
+  border: 1px dashed var(--border-strong);
+  border-radius: 8px;
+}
+
+.form-section {
+  margin: 0 0 1rem;
+  padding: 1rem 1.1rem;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--surface);
+}
+.form-section__title {
+  margin: -0.2rem 0 0.9rem;
+  padding-bottom: 0.6rem;
+  font-size: 1.05rem;
+  border-bottom: 1px solid var(--border);
+}
+.form-cell { min-width: 0; }
+.form-cell > .field { margin: 0; }
+
+@media (max-width: 720px) {
+  .canvas-section__grid,
+  .form-section__grid { grid-template-columns: minmax(0, 1fr); }
+}
+
+/* The connection dialog's type switch: the same radio-and-sibling technique
+   as the mailbox dialog, three ways. */
+.auth-radio--oauth2:checked ~ .field .segmented__option--oauth2,
+.auth-radio--oauth2_user:checked ~ .field .segmented__option--oauth2_user,
+.auth-radio--api_key:checked ~ .field .segmented__option--api_key,
+.auth-radio--basic:checked ~ .field .segmented__option--basic,
+.auth-radio--mtls:checked ~ .field .segmented__option--mtls {
+  color: var(--text);
+  background: var(--surface);
+  box-shadow: inset 0 0 0 1px var(--border-strong);
+}
+/* Every type's panel is hidden; the chosen one is shown. Each panel is a grid. */
+.conn-panel { display: none; }
+.auth-radio--oauth2:checked ~ .only-oauth2,
+.auth-radio--oauth2_user:checked ~ .only-oauth2_user,
+.auth-radio--api_key:checked ~ .only-api_key,
+.auth-radio--basic:checked ~ .only-basic,
+.auth-radio--mtls:checked ~ .only-mtls { display: grid; }
+.segmented--wrap { flex-wrap: wrap; }
+.conn-pem { font-family: var(--mono); font-size: 0.8rem; }
+.field-label { font-weight: 600; font-size: 0.9rem; }
+
+/* A section with its labels beside the controls, on a wide screen. */
+@media (min-width: 721px) {
+  .form-section--beside .form-cell > .field {
+    grid-template-columns: minmax(6rem, 34%) minmax(0, 1fr);
+    column-gap: 0.75rem;
+    align-items: start;
+  }
+  .form-section--beside .form-cell > .field > * { grid-column: 2; }
+  .form-section--beside .form-cell > .field > :first-child {
+    grid-column: 1;
+    grid-row: 1 / span 6;
+    padding-top: 0.45rem;
+  }
+}
+
+/* A section a requester can fold away. */
+.form-section--foldable > summary {
+  cursor: pointer;
+  list-style: none;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+.form-section--foldable > summary::-webkit-details-marker { display: none; }
+.form-section--foldable > summary::before {
+  content: "";
+  width: 0.5rem;
+  height: 0.5rem;
+  border-right: 2px solid currentColor;
+  border-bottom: 2px solid currentColor;
+  transform: rotate(-45deg);
+  transition: transform 120ms ease-in-out;
+}
+.form-section--foldable[open] > summary::before { transform: rotate(45deg); }
+.form-section--foldable:not([open]) > summary { margin-bottom: -0.2rem; padding-bottom: 0; border-bottom: none; }
+
+/* The automation canvas: dots to drag a wire from, and the drag itself. */
+.automation-diagram__bar { display: flex; justify-content: space-between; align-items: center; gap: 0.75rem; margin-bottom: 0.4rem; }
+.automation-diagram__dot { fill: var(--surface); stroke: var(--text-muted); stroke-width: 1.6; }
+.automation-diagram--live .automation-diagram__dot { cursor: crosshair; }
+.automation-diagram--live .automation-diagram__dot:hover { fill: var(--accent); stroke: var(--accent); }
+.automation-diagram--live .automation-diagram__node { cursor: grab; }
+.automation-diagram__node--dragging { cursor: grabbing; filter: drop-shadow(0 6px 10px rgba(0, 0, 0, 0.25)); }
+.automation-diagram__node--target .automation-diagram__box { stroke: var(--accent); stroke-width: 2.4; }
+.automation-diagram__draft { fill: none; stroke: var(--accent); stroke-width: 1.8; stroke-dasharray: 6 4; pointer-events: none; }
+#diagram { scroll-margin-top: 1rem; }
+
+.task-rules { margin-top: 0.75rem; padding-top: 0.75rem; border-top: 1px solid var(--border); }
+
+/* The automation editor: steps as a short list, settings in a popup. */
+.automation-steps { list-style: none; margin: 0; padding: 0; display: grid; gap: 0.4rem; }
+.automation-steps__item {
+  display: flex; align-items: center; justify-content: space-between; gap: 0.75rem;
+  padding: 0.55rem 0.75rem; border: 1px solid var(--border); border-radius: 8px;
+  background: var(--surface-2); scroll-margin-top: 1rem;
+}
+.automation-steps__item--trigger { border-color: var(--accent); }
+.automation-steps__main { display: flex; flex-wrap: wrap; align-items: center; gap: 0.5rem; min-width: 0; }
+.dialog--wide .dialog__panel { width: min(52rem, calc(100vw - 2rem)); }
+
+/* The canvas's right-click menu. */
+.canvas-menu {
+  position: fixed; z-index: 60; min-width: 14rem; max-height: 70vh; overflow: auto;
+  padding: 0.35rem; background: var(--surface); color: var(--text);
+  border: 1px solid var(--border-strong); border-radius: 8px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.25);
+}
+.canvas-menu__heading { margin: 0.2rem 0.5rem 0.35rem; font-size: 0.78rem; font-weight: 600; color: var(--text-muted); }
+.canvas-menu__branch { display: flex; align-items: center; gap: 0.5rem; margin: 0 0.5rem 0.35rem; font-size: 0.85rem; }
+.canvas-menu__item {
+  display: block; width: 100%; padding: 0.35rem 0.6rem; text-align: left; font: inherit; font-size: 0.9rem;
+  color: inherit; background: none; border: 0; border-radius: 6px; cursor: pointer; text-decoration: none;
+}
+.canvas-menu__item:hover, .canvas-menu__item:focus-visible { background: var(--surface-2); outline: none; }
+.canvas-menu__item--danger { color: var(--danger); }
+.canvas-menu__node { border-top: 1px solid var(--border); margin-top: 0.3rem; padding-top: 0.3rem; }
+
+/* The answer to an HTTP step's "Save and test", in its popup. */
+.http-test { padding: 0.6rem 0.75rem; border-radius: 8px; border: 1px solid var(--border); background: var(--surface-2); }
+.http-test--ok { border-color: var(--success); }
+.http-test--failed { border-color: var(--warning); }
+.http-test__head { display: flex; flex-wrap: wrap; align-items: center; gap: 0.5rem; margin: 0 0 0.3rem; }
+.http-test__body { margin: 0.4rem 0 0; max-height: 14rem; overflow: auto; padding: 0.5rem; font-size: 0.8rem; white-space: pre-wrap; word-break: break-word; background: var(--surface); border: 1px solid var(--border); border-radius: 6px; }
+
+/* The address on the password step: shown, not edited. */
+.signin-email[readonly] { background: var(--surface-2); color: var(--text-muted); }
+
+/* A second row of tabs under the first (Mail - Advanced settings). */
+.subtabs--nested { margin-top: -0.4rem; font-size: 0.9rem; }
+
+/* Several choices on the ticket form. */
+.choice-list { display: grid; gap: 0.25rem; }
+.sla-badge--paused { color: var(--text-muted); font-style: italic; }
+
+/* The answers that show a section, one field per line. */
+.condition-group { display: flex; flex-wrap: wrap; align-items: center; gap: 0.25rem 0.75rem; padding: 0.3rem 0; }
+
+/* The portal editor: the page's own HTML, read-only, under the code. */
+.portal-source { margin-top: 0.75rem; }
+.portal-source > summary { cursor: pointer; }
+.portal-source .portal-editor__frame { margin-top: 0.5rem; min-height: 22rem; }
+
+/* The other dashboards: figures, a short list, and announcements. */
+.dashboard-stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(8rem, 1fr)); gap: 0.6rem; margin-bottom: 0.6rem; }
+.dashboard-stat { display: grid; gap: 0.1rem; padding: 0.5rem 0.7rem; border-radius: 8px; background: var(--surface-2); }
+.dashboard-stat__value { font-size: 1.35rem; font-weight: 650; }
+.dashboard-stat__label { font-size: 0.8rem; color: var(--text-muted); }
+.dashboard-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 0.3rem; }
+.dashboard-list__meta { color: var(--text-muted); font-size: 0.82rem; }
+.dashboard__empty { margin: 0; color: var(--text-muted); font-size: 0.9rem; }
+.announcement { padding: 0.55rem 0.75rem; border-radius: 8px; background: var(--surface-2); margin-bottom: 0.45rem; }
+.announcement--warning { background: var(--warning-soft); }
+.announcement--outage { background: var(--danger-soft); }
+.announcement__title { margin: 0; font-weight: 600; }
+.announcement__severity { font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.04em; color: var(--text-muted); margin-right: 0.3rem; }
+.announcement__body { margin: 0.25rem 0 0; font-size: 0.9rem; }
+
+/* A new API key, shown once. */
+.api-key-created {
+  border-color: var(--text);
+}
+
+.api-key-created__secret {
+  user-select: all;
+  white-space: pre-wrap;
+  word-break: break-all;
+  padding: 0.6rem 0.8rem;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  margin: 0;
+}
+
+/* ---------------------------------------------------------------------------
+   The sign-in code: six boxes drawn behind one input, whose digits are spaced
+   a box apart. Box + gap = one step; each digit advances exactly one step.
+   --------------------------------------------------------------------------- */
+
+/* The sign-in code: one field, centred, with wide tracking.
+ *
+ * It used to draw six boxes behind the input and space the digits to land
+ * in them - which only works while the box pitch and the glyph advance are
+ * the same length. On a phone they were not, three fixes running (reported
+ * 15 and 16 Oct 2026). Nothing here has to line up with anything.
+ */
+.code-entry {
+  position: relative;
+  max-width: 16rem;
+  margin: 0.35rem auto 0;
+}
+
+/* The boxes were removed; any markup still carrying them draws nothing. */
+.code-entry__boxes { display: none; }
+
+.code-entry input {
+  display: block;
+  width: 100%;
+  margin: 0;
+  padding: 0.65rem 0.5rem;
+  text-align: center;
+  font-family: var(--mono, monospace);
+  font-variant-numeric: tabular-nums;
+  font-size: 1.6rem;
+  font-weight: 650;
+  /* Tracking makes the six digits legible as six; the last one's trailing
+     space is balanced by the padding, so the text stays centred. */
+  letter-spacing: 0.45em;
+  text-indent: 0.45em;
+  border: 1px solid var(--border-strong);
+  border-radius: 12px;
+  background: var(--surface);
+  color: var(--text);
+  caret-color: var(--text);
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}
+
+.code-entry input::placeholder { letter-spacing: 0.2em; font-size: 1rem; }
+
+.code-entry:focus-within input {
+  border-color: var(--brand);
+  box-shadow: 0 0 0 3px var(--tint-a);
+}
+
+.code-entry--error input {
+  border-color: var(--danger);
+}
+
+/* The focus ring is drawn on the field above, not removed: a code box
+   with no focus ring is a field nobody can tell they are in. */
+.code-entry input:focus { outline: none; }
+
+/* How to call an API key, on its settings page. */
+.api-guide__steps {
+  margin: 0;
+  padding-left: 1.25rem;
+  display: grid;
+  gap: 0.35rem;
+}
+
+.api-guide__head {
+  font-size: 1rem;
+  margin: 0.75rem 0 0;
+}
+
+.api-guide__code {
+  margin: 0;
+  padding: 0.7rem 0.9rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface-2);
+  white-space: pre-wrap;
+  word-break: break-all;
+  font-size: 0.85rem;
+}
+
+.api-guide th[scope="row"] {
+  white-space: nowrap;
+  width: 1%;
+}
+
+/* The trigger's API key: only while "An HTTP request is received" is the
+   chosen trigger. A select's chosen option matches :checked, so no script. */
+.only-http,
+.only-sla {
+  display: contents;
+}
+
+/* Set status / Set priority: "Read it from" only when the value comes from
+   the request or an earlier step. */
+@supports selector(:has(*)) {
+  .automation-step:not(:has(option[value="variable"]:checked)) .only-variable {
+    display: none;
+  }
+}
+
+@supports selector(:has(*)) {
+  .automation-step:not(:has(select[name="event"] option[value="http.received"]:checked)) .only-http {
+    display: none;
+  }
+
+  .automation-step:not(:has(select[name="event"] option[value="sla.breached"]:checked)) .only-sla {
+    display: none;
+  }
+}
+
+/* An example per action, each folded behind its own chevron. */
+.api-guide__examples {
+  display: grid;
+  gap: 0.4rem;
+}
+
+.api-guide__example {
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface);
+}
+
+.api-guide__example > summary {
+  cursor: pointer;
+  padding: 0.55rem 0.8rem;
+  font-weight: 600;
+  list-style: none;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.api-guide__example > summary::-webkit-details-marker {
+  display: none;
+}
+
+.api-guide__example > summary::before {
+  content: '';
+  width: 0.45rem;
+  height: 0.45rem;
+  border-right: 2px solid var(--text-muted);
+  border-bottom: 2px solid var(--text-muted);
+  transform: rotate(-45deg);
+  transition: transform 0.15s;
+  flex-shrink: 0;
+}
+
+.api-guide__example[open] > summary::before {
+  transform: rotate(45deg);
+}
+
+.api-guide__example > .stack {
+  padding: 0 0.8rem 0.8rem;
+}
+
+/* Row actions sit at the right-hand end of their row, the bin last. */
+td.row-actions { text-align: right; }
+.dialog__actions-end { margin-left: auto; }
+
+/* A plain list of things with a bin at the end of each (a user group's rules). */
+.rule-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 0.35rem;
+}
+
+.rule-list .task-list__item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.45rem 0.7rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface);
+}
+
+/* Appearance - Font: each choice drawn in its own typeface. Classes, not a
+   style attribute, because inline styles are refused by the policy. */
+/* Each sample drawn in the font it names. Generated from FONTS in
+   services/branding.ts: a font added there needs a line here and a file
+   under public/fonts (scripts/get-fonts.cjs). */
+.font-sample--system { font-family: Inter, system-ui, sans-serif; }
+.font-sample--dm-sans { font-family: "DM Sans", system-ui, sans-serif; }
+.font-sample--ibm-plex-sans { font-family: "IBM Plex Sans", system-ui, sans-serif; }
+.font-sample--lato { font-family: Lato, system-ui, sans-serif; }
+.font-sample--montserrat { font-family: Montserrat, system-ui, sans-serif; }
+.font-sample--playfair-display { font-family: "Playfair Display", serif; }
+.font-sample { font-size: 1rem; }
+
+/* The Requester field: who is asking, and the details the template shows. */
+.requester-card {
+  display: grid;
+  gap: 0.15rem;
+  padding: 0.6rem 0.8rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface-2);
+}
+.requester-card--preview { gap: 0.1rem; }
+.requester-card__line .muted { display: inline-block; min-width: 6.5rem; }
+
+.image-row__privacy { display: flex; align-items: center; gap: 0.6rem; flex-wrap: wrap; }
+
+/* The portal preview at computer or phone width. A phone is 390px wide; the
+   frame is narrowed, so the portal's own @media rules apply as on a phone. */
+.preview-size { margin-bottom: 0.5rem; width: fit-content; }
+.preview-size--computer:checked ~ .preview-size .segmented__option--computer,
+.preview-size--phone:checked ~ .preview-size .segmented__option--phone {
+  color: var(--text);
+  background: var(--surface);
+  box-shadow: inset 0 0 0 1px var(--border-strong);
+}
+.preview-size--phone:checked ~ .portal-editor__frame {
+  width: 390px;
+  max-width: 100%;
+  height: 44rem;
+  margin: 0 auto;
+  border-radius: 18px;
+  border-width: 6px;
+  border-color: var(--border-strong);
+}
+
+/* API keys - the language bar: one choice for every example. Tabs like a
+   documentation site; the chosen tab is underlined in the accent. */
+.api-lang-bar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.15rem;
+  border-bottom: 1px solid var(--border);
+}
+
+.api-lang-bar__tab {
+  padding: 0.45rem 0.8rem;
+  font-weight: 550;
+  font-size: 0.9rem;
+  color: var(--text-muted);
+  border-bottom: 2px solid transparent;
+  margin-bottom: -1px;
+  cursor: pointer;
+}
+
+.api-lang-bar__tab:hover { color: var(--text); }
+
+.api-snippet { display: none; }
+
+.api-lang--curl:checked ~ .api-lang-bar .api-lang-bar__tab--curl,
+.api-lang--powershell:checked ~ .api-lang-bar .api-lang-bar__tab--powershell,
+.api-lang--python:checked ~ .api-lang-bar .api-lang-bar__tab--python,
+.api-lang--javascript:checked ~ .api-lang-bar .api-lang-bar__tab--javascript,
+.api-lang--csharp:checked ~ .api-lang-bar .api-lang-bar__tab--csharp,
+.api-lang--java:checked ~ .api-lang-bar .api-lang-bar__tab--java,
+.api-lang--go:checked ~ .api-lang-bar .api-lang-bar__tab--go,
+.api-lang--php:checked ~ .api-lang-bar .api-lang-bar__tab--php {
+  color: var(--text);
+  border-bottom-color: var(--accent);
+}
+
+.api-lang--curl:checked ~ .api-guide__examples .api-snippet--curl,
+.api-lang--powershell:checked ~ .api-guide__examples .api-snippet--powershell,
+.api-lang--python:checked ~ .api-guide__examples .api-snippet--python,
+.api-lang--javascript:checked ~ .api-guide__examples .api-snippet--javascript,
+.api-lang--csharp:checked ~ .api-guide__examples .api-snippet--csharp,
+.api-lang--java:checked ~ .api-guide__examples .api-snippet--java,
+.api-lang--go:checked ~ .api-guide__examples .api-snippet--go,
+.api-lang--php:checked ~ .api-guide__examples .api-snippet--php {
+  display: block;
+}
+
+.api-lang--curl:focus-visible ~ .api-lang-bar .api-lang-bar__tab--curl,
+.api-lang--powershell:focus-visible ~ .api-lang-bar .api-lang-bar__tab--powershell,
+.api-lang--python:focus-visible ~ .api-lang-bar .api-lang-bar__tab--python,
+.api-lang--javascript:focus-visible ~ .api-lang-bar .api-lang-bar__tab--javascript,
+.api-lang--csharp:focus-visible ~ .api-lang-bar .api-lang-bar__tab--csharp,
+.api-lang--java:focus-visible ~ .api-lang-bar .api-lang-bar__tab--java,
+.api-lang--go:focus-visible ~ .api-lang-bar .api-lang-bar__tab--go,
+.api-lang--php:focus-visible ~ .api-lang-bar .api-lang-bar__tab--php {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+/* A plain block, not a grid: the hidden radios keep their place just above
+   the bar, so focusing one does not scroll the page. */
+.api-lang-switch { position: relative; display: block; }
+.api-lang-switch > .api-lang-bar { margin-bottom: 0.6rem; }
+
+/* Postman, added after the first eight. */
+.api-lang--postman:checked ~ .api-lang-bar .api-lang-bar__tab--postman {
+  color: var(--text);
+  border-bottom-color: var(--accent);
+}
+.api-lang--postman:checked ~ .api-guide__examples .api-snippet--postman { display: block; }
+.api-lang--postman:focus-visible ~ .api-lang-bar .api-lang-bar__tab--postman {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+/* /dashboard - My work and Manager. */
+.work-stats { grid-template-columns: repeat(auto-fit, minmax(9.5rem, 1fr)); margin: 0.75rem 0 1rem; }
+.dashboard-stat--alert .dashboard-stat__value { color: var(--danger); }
+.work-filter { align-items: center; gap: 0.6rem; flex-wrap: wrap; }
+.work-filter select { width: auto; min-width: 14rem; }
+.work-row--unassigned td { color: var(--text-muted); font-style: italic; }
+
+/* API keys: the new key and each example with its copy button at the top right. */
+.api-key-created__row { display: flex; align-items: flex-start; gap: 0.5rem; }
+.api-key-created__row .api-key-created__secret { flex: 1; min-width: 0; }
+.api-snippet { position: relative; }
+.api-snippet .copy-btn { position: absolute; top: 0.4rem; right: 0.4rem; }
+.api-snippet pre { padding-right: 2.6rem; }
+
+.api-guide__answer { font-size: 0.8rem; opacity: 0.9; }
+
+/* The guide is a grid; without this its column grew to the widest table or
+   code line, and on a phone the whole page scrolled sideways. */
+.api-guide { grid-template-columns: minmax(0, 1fr); min-width: 0; }
+.api-lang-switch, .api-guide__examples, .api-guide__example { min-width: 0; }
+
+/* An If step's value: the dropdown for the chosen field, or the text box.
+   Without :has() every control shows, and the server still reads only the
+   right one. */
+@supports selector(:has(*)) {
+  .automation-step .if-value { display: none; }
+  .automation-step:not(:has(select[name="field"] option:checked:is([value="priority"], [value="status"], [value="type"], [value="group"], [value="requester_group"], [value="template"]))) .if-value--text { display: grid; }
+  .automation-step:has(select[name="field"] option[value="priority"]:checked) .if-value--priority { display: grid; }
+  .automation-step:has(select[name="field"] option[value="status"]:checked) .if-value--status { display: grid; }
+  .automation-step:has(select[name="field"] option[value="type"]:checked) .if-value--type { display: grid; }
+  .automation-step:has(select[name="field"] option[value="group"]:checked) .if-value--group { display: grid; }
+  .automation-step:has(select[name="field"] option[value="requester_group"]:checked) .if-value--requester_group { display: grid; }
+  .automation-step:has(select[name="field"] option[value="template"]:checked) .if-value--template { display: grid; }
+}
+
+/* An If's "Value from an earlier step": only when that is what it checks. */
+@supports selector(:has(*)) {
+  .automation-step:not(:has(select[name="field"] option[value="variable"]:checked)) .if-variable { display: none; }
+}
+
+/* The automation diagram fits its window by default (the viewBox scales it
+   down; it never grows past its own size), and scrolls both ways once
+   zoomed in. Zoom is the canvas script's; without it, fit is what you get. */
+.automation-viewport {
+  overflow: auto;
+  min-height: min(55vh, 34rem);
+  max-height: 85vh;
+  border-radius: 8px;
+}
+.automation-viewport .automation-diagram {
+  max-width: 100%;
+  height: auto;
+}
+.automation-viewport--zoomed .automation-diagram { max-width: none; }
+.automation-zoom { display: inline-flex; align-items: center; gap: 0.2rem; margin-left: auto; margin-right: 0.5rem; }
+.automation-zoom .icon-btn { font-size: 1.1rem; line-height: 1; width: 1.9rem; height: 1.9rem; }
+
+/* The triage form's notes: the on-hold reason while On hold is chosen, the
+   cancellation note while Cancelled is. Without :has() both show. */
+@supports selector(:has(*)) {
+  form:not(:has(select[name="status"] option[value="pending"]:checked)) .status-note--pending,
+  form:not(:has(select[name="status"] option[value="cancelled"]:checked)) .status-note--cancelled { display: none; }
+  form:not(:has(select[name="status"] option[value="resolved"]:checked)) .status-note--resolved { display: none; }
+}
+
+/* Set status: the note box only while "Add a note" is ticked. */
+@supports selector(:has(*)) {
+  .automation-step:not(:has(input[name="addNote"]:checked)) .only-note { display: none; }
+}
+
+/* The requester's card on a ticket (staff): name opens it. */
+.person-link { font-weight: 600; }
+.person-card { display: grid; grid-template-columns: max-content minmax(0, 1fr); gap: 0.35rem 1rem; margin: 0; }
+.person-card dt { color: var(--text-muted); }
+.person-card dd { margin: 0; overflow-wrap: anywhere; }
+.person-card__tickets { list-style: none; margin: 0; padding: 0; display: grid; gap: 0.4rem; }
+.person-card__tickets li { display: grid; grid-template-columns: max-content minmax(0, 1fr) max-content; gap: 0.6rem; align-items: center; }
+.person-card__tickets li span:nth-child(2) { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.filter-note { display: flex; align-items: center; gap: 0.75rem; flex-wrap: wrap; }
+
+/* A name with its Rename button on one line (dashboard page). */
+.rename-row { display: flex; gap: 0.5rem; align-items: center; }
+.rename-row input { flex: 1; min-width: 0; }
+
+/* A connection panel must not be widened by a long unbroken value (the redirect URI). */
+.conn-panel { grid-template-columns: minmax(0, 1fr); }
+.conn-panel > * { min-width: 0; }
+
+/* A short choice on a wide card: no need to span the page. */
+.field--narrow { max-width: 22rem; }
+
+/* select-search.js: the box it puts above a long dropdown. */
+.select-search { margin-bottom: 0.35rem; }
+
+/* New ticket: kind and form side by side where there is room. */
+.template-picker__row { display: grid; gap: 0.75rem; grid-template-columns: minmax(0, 1fr); }
+@media (min-width: 640px) {
+  .template-picker__row:has(> .field:not([hidden]) + .field) { grid-template-columns: minmax(0, 1fr) minmax(0, 2fr); }
+}
+[data-needs-script][hidden] { display: none; }
+
+/* The error page (404, 403, 500): the number large and centred, nothing else
+   competing with it. */
+.error-page__main {
+  min-height: 100vh;
+  min-height: 100dvh;
+  display: grid;
+  place-items: center;
+  padding: 2rem 1rem;
+  text-align: center;
+}
+.error-page__body { max-width: 36rem; }
+.error-page__code {
+  margin: 0;
+  font-size: clamp(6rem, 22vw, 10rem);
+  font-weight: 800;
+  line-height: 1;
+  letter-spacing: -0.02em;
+  color: var(--text);
+  opacity: 0.85;
+}
+.error-page__title { margin: 1.25rem 0 0.5rem; font-size: clamp(1.6rem, 5vw, 2.1rem); }
+.error-page__message { margin: 0; color: var(--text-muted); }
+.error-page__actions { margin-top: 1.75rem; }
+.error-page .debug { margin-top: 2rem; text-align: left; }
+.error-page__main--inline { min-height: 60vh; min-height: 60dvh; }
+.error-page__message + .error-page__message { margin-top: 0.5rem; }
+
+/* The error page itself (views/error.ejs) is a sign-in card: the classes
+   above stay for the approval page's inline "not yours to answer". */
+.error-card__code { margin: 0.9rem 0 0; }
+.error-card__code .pill { font-variant-numeric: tabular-nums; letter-spacing: 0.02em; }
+.error-card h1 { margin-top: 0.5rem; }
+/* A message may carry an address or a reference: it wraps rather than overflows. */
+.error-card__message { color: var(--text-muted); overflow-wrap: anywhere; margin-bottom: 1.25rem; }
+.error-card__actions { margin-top: 0.25rem; }
+.error-card .debug { margin-top: 1.5rem; text-align: left; max-width: 100%; overflow: auto; }
+
+/* A list's search bar (groups, user groups). */
+.list-search { display: flex; gap: 0.5rem; align-items: center; margin: 0 0 1rem; max-width: 32rem; }
+.list-search input { flex: 1; min-width: 0; }
+.pagination__gap { padding: 0 0.25rem; color: var(--text-muted); }
+
+/* A wire's hit area: invisible, wide, and the wire it covers lights up. */
+.automation-diagram__wire-hit { fill: none; stroke: transparent; stroke-width: 14; pointer-events: stroke; cursor: pointer; }
+.automation-diagram__wire:has(+ .automation-diagram__wire-hit:hover) { stroke: var(--accent); stroke-width: 2.4; }
+.canvas-menu__wire .canvas-menu__heading { max-width: 18rem; }
+/* A step's input dot: where every wire into it ends. Not a handle to drag. */
+.automation-diagram__dot--in { fill: var(--surface); stroke: var(--text-muted); stroke-width: 1.4; pointer-events: none; }
+/* SMTP relays: a save lands on its row, a test on its card - with room above. */
+.table tr[id],
+#relay-test,
+#relay-options { scroll-margin-top: 1.5rem; }
+
+/* ==========================================================================
+   The 2026 design: a sidebar shell, softer cards, pill buttons with a
+   gradient, pastel stat cards. Built only on the theme's own variables
+   (--brand from Customisation - Appearance, --surface, --bg...), so a
+   customer's colours and dark mode keep working: the gradient and every
+   tint are mixed from --brand with color-mix().
+   ========================================================================== */
+
+:root {
+  --radius: 12px;
+  --radius-lg: 18px;
+  --grad: linear-gradient(135deg, var(--brand) 0%, color-mix(in srgb, var(--brand) 55%, #3b82f6) 100%);
+  --glow: 0 10px 24px -10px color-mix(in srgb, var(--brand) 70%, transparent);
+  --shadow: 0 1px 2px rgba(16, 24, 40, 0.05), 0 6px 18px -8px rgba(16, 24, 40, 0.10);
+  --shadow-lg: 0 24px 60px -18px rgba(16, 24, 40, 0.35);
+  --tint-a: color-mix(in srgb, var(--brand) 10%, var(--surface));
+  --tint-b: color-mix(in srgb, #3b82f6 10%, var(--surface));
+  --tint-c: color-mix(in srgb, #12b76a 10%, var(--surface));
+  --tint-d: color-mix(in srgb, #f04438 9%, var(--surface));
+  --tint-e: color-mix(in srgb, #f79009 11%, var(--surface));
+  --tint-f: color-mix(in srgb, #06b6d4 10%, var(--surface));
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme='light']) { --shadow: 0 1px 2px rgba(0, 0, 0, 0.4); --tint-a: color-mix(in srgb, var(--brand) 22%, var(--surface)); --tint-b: color-mix(in srgb, #3b82f6 20%, var(--surface)); --tint-c: color-mix(in srgb, #12b76a 18%, var(--surface)); --tint-d: color-mix(in srgb, #f04438 18%, var(--surface)); --tint-e: color-mix(in srgb, #f79009 18%, var(--surface)); --tint-f: color-mix(in srgb, #06b6d4 18%, var(--surface)); }
+}
+:root[data-theme='dark'] { --shadow: 0 1px 2px rgba(0, 0, 0, 0.4); --tint-a: color-mix(in srgb, var(--brand) 22%, var(--surface)); --tint-b: color-mix(in srgb, #3b82f6 20%, var(--surface)); --tint-c: color-mix(in srgb, #12b76a 18%, var(--surface)); --tint-d: color-mix(in srgb, #f04438 18%, var(--surface)); --tint-e: color-mix(in srgb, #f79009 18%, var(--surface)); --tint-f: color-mix(in srgb, #06b6d4 18%, var(--surface)); }
+
+body { -webkit-font-smoothing: antialiased; }
+h1 { font-size: 1.65rem; font-weight: 750; letter-spacing: -0.02em; }
+.ico { width: 1.1rem; height: 1.1rem; flex: none; display: block; }
+
+/* Cards, buttons, inputs, tables: rounder and softer. */
+.card { border-radius: var(--radius-lg); box-shadow: var(--shadow); }
+.btn { border-radius: 999px; padding: 0.5rem 1rem; transition: transform 0.15s ease, box-shadow 0.2s ease, background 0.2s ease; }
+.btn:hover { transform: translateY(-1px); }
+.btn--small { padding: 0.28rem 0.7rem; }
+.btn--primary { background: var(--brand); background-image: var(--grad); border-color: transparent; color: #fff; box-shadow: var(--glow); }
+.btn--primary:hover { background: var(--brand); background-image: var(--grad); filter: brightness(1.06); box-shadow: 0 14px 28px -10px color-mix(in srgb, var(--brand) 80%, transparent); }
+input[type="text"], input[type="email"], input[type="search"], input[type="password"], input[type="number"],
+input[type="url"], input[type="tel"], input[type="date"], input[type="time"], input[type="datetime-local"],
+select, textarea { border-radius: 10px; }
+.table-scroll { border-radius: 14px; }
+.subtabs { border-radius: 14px; }
+.subtabs a { border-radius: 10px; }
+.flash { border-radius: 12px; }
+
+/* Status pills: a dot and capitals, as in the dashboard. Only the ticket
+   statuses - other pills (On, Off, roles) keep their plain look. */
+.pill--open, .pill--in_progress, .pill--pending, .pill--resolved, .pill--closed, .pill--cancelled {
+  display: inline-flex; align-items: center; gap: 0.35rem;
+  font-size: 0.68rem; font-weight: 750; letter-spacing: 0.04em; text-transform: uppercase;
+  padding: 0.22rem 0.6rem; border-color: transparent;
+}
+.pill--open::before, .pill--in_progress::before, .pill--pending::before, .pill--resolved::before, .pill--closed::before, .pill--cancelled::before {
+  content: ""; width: 0.42rem; height: 0.42rem; border-radius: 50%; background: currentColor;
+}
+.pill--open { background: var(--tint-a); color: var(--accent); }
+.pill--in_progress { background: var(--tint-b); color: #2563eb; }
+.pill--pending { background: var(--tint-e); color: #b54708; }
+.pill--resolved { background: var(--tint-c); color: #027a48; }
+.pill--closed, .pill--cancelled { background: var(--surface-2); color: var(--text-muted); }
+:root[data-theme='dark'] .pill--in_progress { color: #93c5fd; }
+:root[data-theme='dark'] .pill--pending { color: #fdb022; }
+:root[data-theme='dark'] .pill--resolved { color: #6ce9a6; }
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme='light']) .pill--in_progress { color: #93c5fd; }
+  :root:not([data-theme='light']) .pill--pending { color: #fdb022; }
+  :root:not([data-theme='light']) .pill--resolved { color: #6ce9a6; }
+}
+
+/* ------------------------------------------------------------ the shell */
+
+.shell { display: grid; grid-template-columns: 252px minmax(0, 1fr); min-height: 100vh; }
+.sidebar {
+  position: sticky; top: 0; height: 100vh; overflow-y: auto;
+  display: flex; flex-direction: column; gap: 1.1rem;
+  padding: 1.1rem 0.85rem; background: var(--surface); border-right: 1px solid var(--border);
+}
+.sidebar__head { display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; }
+.sidebar__brand { display: flex; align-items: center; gap: 0.65rem; padding: 0.3rem 0.5rem; font-weight: 750; font-size: 1.05rem; letter-spacing: -0.01em; color: var(--text); text-decoration: none !important; min-width: 0; }
+.sidebar__brand .brand__logo { max-width: 100%; }
+.sidebar__mark { width: 2rem; height: 2rem; flex: none; border-radius: 50%; background: var(--brand); background-image: var(--grad); color: #fff; display: grid; place-items: center; font-weight: 800; font-size: 0.95rem; box-shadow: var(--glow); }
+.sidebar__close { display: none; }
+.sidebar__nav { display: grid; gap: 0.2rem; }
+.side-link { display: flex; align-items: center; gap: 0.75rem; padding: 0.62rem 0.85rem; border-radius: 12px; color: var(--text-muted); font-weight: 560; text-decoration: none !important; transition: background 0.15s ease, color 0.15s ease; }
+.side-link .ico { width: 1.15rem; height: 1.15rem; }
+.side-link:hover { background: var(--surface-2); color: var(--text); }
+.side-link[aria-current="page"] { background: var(--brand); background-image: var(--grad); color: #fff; box-shadow: var(--glow); }
+.sidebar__label { margin: 0.9rem 0.85rem 0.3rem; font-size: 0.74rem; font-weight: 700; letter-spacing: 0.02em; color: var(--text-muted); }
+.sidebar__foot { margin-top: auto; display: grid; gap: 0.35rem; padding-top: 0.75rem; border-top: 1px solid var(--border); }
+.sidebar__foot .colour-mode__button { width: 100%; justify-content: flex-start; gap: 0.75rem; padding: 0.55rem 0.85rem; height: auto; border-radius: 12px; font-weight: 560; }
+.colour-mode--up .colour-mode__menu { top: auto; bottom: calc(100% + 0.35rem); left: 0; right: auto; }
+.sidebar__me { display: flex; align-items: center; gap: 0.25rem; }
+.sidebar__person { flex: 1; min-width: 0; display: flex; align-items: center; gap: 0.65rem; padding: 0.45rem 0.55rem; border-radius: 12px; color: var(--text); text-decoration: none !important; }
+.sidebar__person:hover, .sidebar__person[aria-current="page"] { background: var(--surface-2); }
+.sidebar__who { display: grid; min-width: 0; line-height: 1.25; }
+.sidebar__who b { font-size: 0.88rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.sidebar__who small { font-size: 0.75rem; color: var(--text-muted); }
+.avatar { width: 2.1rem; height: 2.1rem; flex: none; border-radius: 50%; display: grid; place-items: center; font-size: 0.78rem; font-weight: 800; color: var(--accent); background: var(--tint-a); border: 1px solid color-mix(in srgb, var(--brand) 25%, var(--surface)); }
+.icon-button { display: grid; place-items: center; padding: 0.5rem; border: 0; border-radius: 10px; background: transparent; color: var(--text-muted); cursor: pointer; }
+.icon-button:hover { background: var(--surface-2); color: var(--text); }
+.sidebar-scrim { display: none; }
+
+.shell__main { min-width: 0; display: flex; flex-direction: column; }
+.app-top {
+  position: sticky; top: 0; z-index: 20; display: flex; align-items: center; gap: 0.75rem;
+  padding: 0.9rem 1.75rem; background: color-mix(in srgb, var(--bg) 82%, transparent);
+  -webkit-backdrop-filter: saturate(1.4) blur(12px); backdrop-filter: saturate(1.4) blur(12px);
+}
+.searchbar { flex: 1; max-width: 680px; display: flex; align-items: center; gap: 0.6rem; padding: 0 0.95rem; background: var(--surface); border: 1px solid var(--border); border-radius: 14px; color: var(--text-muted); box-shadow: 0 1px 2px rgba(16, 24, 40, 0.04); transition: border-color 0.15s ease, box-shadow 0.15s ease; }
+.searchbar:focus-within { border-color: var(--brand); box-shadow: 0 0 0 4px color-mix(in srgb, var(--brand) 16%, transparent); }
+.searchbar input[type="search"] { flex: 1; min-width: 0; border: 0; background: transparent; box-shadow: none; padding: 0.68rem 0; outline: none; }
+.app-top__new { margin-left: auto; display: inline-flex; align-items: center; gap: 0.4rem; }
+.menu-link { display: none; }
+.shell .wrap { width: 100%; max-width: 1320px; margin: 0; padding: 0.6rem 1.75rem 3rem; }
+
+/* Signed out: the masthead keeps the brand mark. */
+.topbar .brand { gap: 0.6rem; font-weight: 750; }
+
+@media (max-width: 900px) {
+  .shell { grid-template-columns: minmax(0, 1fr); }
+  .sidebar { position: fixed; inset: 0 auto 0 0; z-index: 40; width: min(300px, 86vw); height: 100%; transform: translateX(-102%); transition: transform 0.22s ease; box-shadow: var(--shadow-lg); }
+  .sidebar:target { transform: none; }
+  .sidebar:target ~ .sidebar-scrim { display: block; position: fixed; inset: 0; z-index: 35; background: rgba(16, 24, 40, 0.45); }
+  .sidebar__close { display: grid; place-items: center; padding: 0.45rem; border-radius: 10px; color: var(--text-muted); }
+  .menu-link { display: grid; place-items: center; flex: none; width: 2.6rem; height: 2.6rem; border-radius: 12px; background: var(--surface); border: 1px solid var(--border); color: var(--text); }
+  .app-top { padding: 0.75rem 1rem; }
+  .app-top__new span { display: none; }
+  .app-top__new { padding: 0.6rem; }
+  .shell .wrap { padding: 0.5rem 1rem 3rem; }
+}
+
+/* ------------------------------------------------------- the dashboard */
+
+.dash-hello { display: flex; align-items: flex-end; justify-content: space-between; gap: 1rem; flex-wrap: wrap; margin: 0.4rem 0 1.4rem; }
+.dash-hello h1 { font-size: 1.85rem; margin-bottom: 0.15rem; }
+.dash-hello p { margin: 0; }
+.dash-hello__actions { display: flex; gap: 0.5rem; flex-wrap: wrap; }
+
+.dash-stats { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 1rem; margin-bottom: 1.25rem; }
+@media (max-width: 1100px) { .dash-stats { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 520px) { .dash-stats { grid-template-columns: minmax(0, 1fr); } }
+.dash-stat { display: grid; gap: 0.4rem; padding: 1.1rem 1.25rem; border-radius: var(--radius-lg); border: 1px solid color-mix(in srgb, var(--border) 60%, transparent); }
+.dash-stat small { color: var(--text-muted); font-weight: 560; font-size: 0.85rem; }
+.dash-stat b { display: flex; align-items: baseline; gap: 0.6rem; flex-wrap: wrap; font-size: 1.85rem; font-weight: 750; letter-spacing: -0.02em; line-height: 1.1; }
+.dash-stat b span { font-size: 0.72rem; font-weight: 700; letter-spacing: 0; padding: 0.15rem 0.45rem; border-radius: 7px; background: color-mix(in srgb, var(--surface) 75%, transparent); }
+.dash-stat--a { background: var(--tint-a); } .dash-stat--a b span { color: var(--accent); }
+.dash-stat--b { background: var(--tint-b); } .dash-stat--b b span { color: #2563eb; }
+.dash-stat--c { background: var(--tint-c); } .dash-stat--c b span { color: #027a48; }
+.dash-stat--d { background: var(--tint-d); } .dash-stat--d b span { color: #d92d20; }
+
+.dash-cols { display: grid; grid-template-columns: minmax(0, 1fr) 340px; gap: 1.25rem; align-items: start; margin-bottom: 1.25rem; }
+@media (max-width: 1100px) { .dash-cols { grid-template-columns: minmax(0, 1fr); } }
+.dash-panel { display: grid; gap: 0.6rem; padding: 1.2rem; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg); box-shadow: var(--shadow); margin-bottom: 1.25rem; }
+.dash-cols .dash-panel { margin-bottom: 0; }
+.dash-panel__head { display: flex; align-items: baseline; justify-content: space-between; gap: 1rem; margin-bottom: 0.2rem; }
+.dash-panel__head h2 { margin: 0; font-size: 1.05rem; font-weight: 700; }
+.dash-empty { margin: 0; padding: 1.25rem; text-align: center; color: var(--text-muted); background: var(--surface-2); border-radius: 12px; font-size: 0.92rem; }
+.dash-more { justify-self: start; font-weight: 600; font-size: 0.9rem; }
+
+.dash-ticket { display: grid; grid-template-columns: auto minmax(0, 1fr) auto auto; gap: 0.9rem; align-items: center; padding: 0.75rem 0.9rem; border: 1px solid var(--border); border-radius: 14px; color: var(--text); text-decoration: none !important; transition: border-color 0.15s ease, box-shadow 0.2s ease, transform 0.15s ease; }
+.dash-ticket:hover { border-color: color-mix(in srgb, var(--brand) 40%, var(--border)); box-shadow: var(--shadow); transform: translateY(-1px); }
+.dash-ticket__icon { width: 2.3rem; height: 2.3rem; border-radius: 50%; display: grid; place-items: center; background: var(--tint-a); color: var(--accent); }
+.dash-ticket__icon--incident { background: var(--tint-d); color: #d92d20; }
+.dash-ticket__icon--service_request { background: var(--tint-b); color: #2563eb; }
+.dash-ticket__icon--change_request { background: var(--tint-f); color: #0e7490; }
+.dash-ticket__icon--task { background: var(--tint-c); color: #027a48; }
+.dash-ticket__text { display: grid; min-width: 0; }
+.dash-ticket__text b { font-weight: 650; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.dash-ticket__text small, .dash-ticket__when { color: var(--text-muted); font-size: 0.8rem; }
+.dash-ticket__when { text-align: right; white-space: nowrap; }
+@media (max-width: 640px) { .dash-ticket { grid-template-columns: auto minmax(0, 1fr) auto; } .dash-ticket__when { display: none; } }
+
+.dash-activity { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 0.7rem; align-items: start; padding: 0.45rem 0.35rem; border-radius: 12px; color: var(--text); text-decoration: none !important; }
+.dash-activity:hover { background: var(--surface-2); }
+.dash-activity__icon { width: 2rem; height: 2rem; border-radius: 50%; display: grid; place-items: center; }
+.dash-activity__icon .ico { width: 0.95rem; height: 0.95rem; }
+.dash-activity b { display: block; font-weight: 650; font-size: 0.88rem; }
+.dash-activity small { color: var(--text-muted); font-size: 0.78rem; }
+.dash-activity--info .dash-activity__icon { background: var(--tint-b); color: #2563eb; }
+.dash-activity--ok .dash-activity__icon { background: var(--tint-c); color: #027a48; }
+.dash-activity--warn .dash-activity__icon { background: var(--tint-e); color: #b54708; }
+
+.dash-groups { display: grid; grid-template-columns: repeat(auto-fill, minmax(15rem, 1fr)); gap: 0.85rem; }
+.dash-group { display: flex; align-items: center; gap: 0.75rem; padding: 0.9rem 1rem; background: var(--surface); border: 1px solid var(--border); border-radius: 14px; box-shadow: var(--shadow); }
+.dash-group__icon { width: 2.3rem; height: 2.3rem; border-radius: 12px; display: grid; place-items: center; background: var(--tint-a); color: var(--accent); }
+.dash-group b { display: block; }
+.dash-group small { color: var(--text-muted); }
+
+/* The manager's figures (and any other dashboard-stat row): pastel cards in turn. */
+.dashboard-stat { padding: 0.9rem 1rem; border-radius: 14px; gap: 0.25rem; }
+.dashboard-stat__value { font-size: 1.6rem; font-weight: 750; letter-spacing: -0.02em; }
+.work-stats .dashboard-stat:nth-child(6n + 1) { background: var(--tint-a); }
+.work-stats .dashboard-stat:nth-child(6n + 2) { background: var(--tint-b); }
+.work-stats .dashboard-stat:nth-child(6n + 3) { background: var(--tint-e); }
+.work-stats .dashboard-stat:nth-child(6n + 4) { background: var(--tint-d); }
+.work-stats .dashboard-stat:nth-child(6n + 5) { background: var(--tint-c); }
+.work-stats .dashboard-stat:nth-child(6n + 6) { background: var(--tint-f); }
+
+/* --------------------------------------------- a ticket's two SLA clocks */
+
+.sla-clocks { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0.75rem; margin-bottom: 1rem; }
+.sla-clock { display: grid; gap: 0.3rem; padding: 0.95rem 1.05rem; border-radius: 16px; background: var(--tint-a); }
+.sla-clock small { color: var(--text-muted); font-weight: 560; font-size: 0.82rem; }
+.sla-clock b { display: flex; align-items: baseline; gap: 0.5rem; flex-wrap: wrap; font-size: 1.4rem; font-weight: 750; letter-spacing: -0.02em; line-height: 1.15; }
+.sla-clock b span { font-size: 0.72rem; font-weight: 700; letter-spacing: 0; padding: 0.12rem 0.45rem; border-radius: 7px; background: color-mix(in srgb, var(--surface) 75%, transparent); color: var(--accent); }
+.sla-clock__sub { color: var(--text-muted); font-size: 0.78rem; }
+.sla-clock--met { background: var(--tint-c); } .sla-clock--met b span { color: #027a48; }
+.sla-clock--at_risk { background: var(--tint-e); } .sla-clock--at_risk b span { color: #b54708; }
+.sla-clock--breached { background: var(--tint-d); } .sla-clock--breached b span { color: #d92d20; }
+.sla-clock--paused { background: var(--surface-2); }
+
+/* The queue's counters: the same pastel cards as the dashboard. */
+.stats .stat { border-color: transparent; border-radius: 16px; padding: 0.9rem 1.15rem; min-width: 9rem; }
+.stats .stat__value { font-size: 1.6rem; font-weight: 750; letter-spacing: -0.02em; }
+.stats .stat:nth-child(4n + 1) { background: var(--tint-a); }
+.stats .stat:nth-child(4n + 2) { background: var(--tint-b); }
+.stats .stat:nth-child(4n + 3) { background: var(--tint-c); }
+.stats .stat:nth-child(4n + 4) { background: var(--tint-f); }
+
+/* ---------------------------------------------------------------- reports */
+
+.report-filter { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 0.75rem; margin-bottom: 1.25rem; padding: 1rem 1.1rem; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg); box-shadow: var(--shadow); }
+.report-filter .field { margin: 0; min-width: 11rem; }
+.report-filter select { width: auto; min-width: 11rem; }
+/* The two dates only while "Between dates" is chosen - no script. */
+.report-dates { display: none; }
+.report-filter:has(option[value="custom"]:checked) .report-dates { display: grid; }
+.report-chart { width: 100%; height: auto; display: block; }
+.report-chart__axis { stroke: var(--border); stroke-width: 1; }
+.report-chart__raised { fill: var(--brand); }
+.report-chart__resolved { fill: #12b76a; }
+.report-chart__label { fill: var(--text-muted); font-size: 10px; }
+.report-legend { display: inline-flex; align-items: center; gap: 0.4rem; font-size: 0.82rem; color: var(--text-muted); }
+.report-key { display: inline-block; width: 0.7rem; height: 0.7rem; border-radius: 3px; margin-left: 0.6rem; }
+.report-key--raised { background: var(--brand); }
+.report-key--resolved { background: #12b76a; }
+.report-cols { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1.25rem; }
+@media (max-width: 900px) { .report-cols { grid-template-columns: minmax(0, 1fr); } }
+.report-table { width: 100%; border-collapse: collapse; font-size: 0.92rem; }
+.report-table th { text-align: left; font-size: 0.75rem; font-weight: 650; text-transform: uppercase; letter-spacing: 0.04em; color: var(--text-muted); padding: 0.35rem 0.5rem; }
+.report-table td { padding: 0.55rem 0.5rem; border-top: 1px solid var(--border); vertical-align: middle; }
+.report-table__bar { width: 45%; }
+.report-table__bar svg { width: 100%; height: 0.55rem; display: block; }
+.report-meter__track { fill: var(--surface-2); }
+.report-meter { fill: var(--brand); }
+.report-meter--alt { fill: #3b82f6; }
+.report-sla-off b { font-size: 1.4rem; }
+
+/* Users - Other settings: the display name format. */
+.name-block { gap: 0.4rem; }
+.name-variables { display: flex; flex-wrap: wrap; gap: 0.5rem; }
+.name-variable { display: inline-flex; align-items: center; gap: 0.4rem; padding: 0.3rem 0.65rem; border-radius: 999px; background: var(--tint-a); }
+.name-variable code { font-weight: 650; color: var(--accent); }
+.name-examples { margin: 0; padding: 0; list-style: none; display: grid; gap: 0.35rem; }
+.name-examples li { padding: 0.5rem 0.8rem; border-radius: 10px; background: var(--surface-2); font-weight: 600; }
+
+/* The sidebar, as the storefront's mockup draws it: dark, semibold labels,
+   a quiet hover, the gradient pill for the current page, a count on Tickets. */
+.sidebar { width: auto; padding: 1.25rem 0.9rem; gap: 1.25rem; }
+.sidebar__brand { font-size: 1.05rem; font-weight: 750; gap: 0.7rem; padding: 0.2rem 0.55rem 0.4rem; }
+.sidebar__mark { width: 1.9rem; height: 1.9rem; font-size: 0; }
+.sidebar__nav { gap: 0.3rem; }
+.side-link { color: color-mix(in srgb, var(--text) 80%, var(--surface)); font-weight: 620; font-size: 0.95rem; padding: 0.68rem 0.9rem; gap: 0.8rem; border-radius: 12px; }
+.side-link .ico { width: 1.05rem; height: 1.05rem; stroke-width: 2; opacity: 0.9; }
+.side-link:hover { background: var(--surface-2); color: var(--text); }
+.side-link[aria-current="page"] { color: #fff; }
+.side-link[aria-current="page"] .ico { opacity: 1; }
+.side-link__badge {
+  /* A count beside a label: centred in its own pill, on the label's line.
+   * It was a line-height away from the middle - reported 16 Oct 2026 - which
+   * a flex box with both axes centred cannot be. */
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 1.5rem;
+  height: 1.5rem;
+  padding: 0 0.4rem;
+  margin-left: auto;
+  border-radius: 999px;
+  background: var(--tint-a);
+  color: var(--accent);
+  font-size: 0.72rem;
+  font-weight: 750;
+  font-style: normal;
+  line-height: 1;
+}
+.side-link[aria-current="page"] .side-link__badge { background: rgba(255, 255, 255, 0.24); color: #fff; }
+.searchbar { padding-right: 0.45rem; }
+
+/* Appearance - quick colours: buttons drawn as dots, the current one ringed.
+   Colours as classes: the policy allows no inline style. */
+.quick-colours { display: flex; align-items: center; justify-content: space-between; gap: 1rem; flex-wrap: wrap; margin-bottom: 1.25rem; }
+.quick-colours__dots { display: flex; gap: 0.6rem; }
+.quick-colour { width: 2.4rem; height: 2.4rem; padding: 0; border-radius: 50%; border: 3px solid var(--surface); box-shadow: 0 0 0 1px var(--border-strong); cursor: pointer; transition: transform 0.15s ease, box-shadow 0.15s ease; }
+.quick-colour:hover { transform: scale(1.08); }
+.quick-colour[aria-pressed="true"] { box-shadow: 0 0 0 2px var(--text); }
+.quick-colour:focus-visible { outline: 3px solid color-mix(in srgb, var(--brand) 40%, transparent); outline-offset: 2px; }
+.quick-colour--petrol { background: #1a5d74; }
+.quick-colour--forest { background: #2f6b4f; }
+.quick-colour--ochre { background: #8a5a12; }
+.quick-colour--plum { background: #5b4a8c; }
+
+/* The current page keeps its gradient under the pointer: the plain hover
+   rule above sets "background", which would wipe the gradient and leave
+   white text on a pale surface. */
+.side-link[aria-current="page"]:hover { background: var(--brand); background-image: var(--grad); color: #fff; filter: brightness(1.06); }
+
+/* The settings links, apart: below the work, above colour mode, a rule between. */
+.sidebar__nav--setup { padding-bottom: 0.6rem; margin-bottom: 0.25rem; border-bottom: 1px solid var(--border); }
+.sidebar__foot { padding-top: 0.9rem; }
+
+/* ------------------------------------------------- my dashboards and pins */
+
+.sidebar__pins { display: grid; gap: 0.25rem; padding-top: 0.6rem; border-top: 1px solid var(--border); }
+.sidebar__pins-head { display: flex; align-items: center; justify-content: space-between; padding: 0 0.9rem 0.15rem; }
+.sidebar__pins-head .sidebar__label { margin: 0; }
+.sidebar__manage { font-size: 0.75rem; padding: 0.2rem 0.6rem; }
+.sidebar__manage[aria-current="page"] { background: var(--surface-2); color: var(--text); }
+.side-link--hint { color: var(--text-muted); font-weight: 560; }
+.page-head__actions { display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap; }
+.btn .ico { display: inline-block; vertical-align: -0.18em; width: 1rem; height: 1rem; }
+.pin-state { cursor: default; }
+.pin-state:hover { transform: none; }
+
+.board-cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(15rem, 1fr)); gap: 0.85rem; }
+.board-card { display: flex; align-items: center; gap: 0.75rem; padding: 0.9rem 1rem; border: 1px solid var(--border); border-radius: 14px; color: var(--text); text-decoration: none !important; transition: border-color 0.15s ease, box-shadow 0.2s ease, transform 0.15s ease; }
+.board-card:hover { border-color: color-mix(in srgb, var(--brand) 40%, var(--border)); box-shadow: var(--shadow); transform: translateY(-1px); }
+.board-card b { display: block; }
+.board-card small { color: var(--text-muted); }
+.pin-row { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: 0.75rem; align-items: center; padding: 0.6rem 0; border-top: 1px solid var(--border); }
+.pin-row:first-of-type { border-top: 0; }
+.pin-row__form { display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap; }
+.pin-row__form input[type="text"] { width: 16rem; max-width: 100%; }
+.pin-row__form select { width: auto; }
+.pin-row__href { grid-column: 2; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.pin-row__tools { grid-column: 3; grid-row: 1; display: flex; gap: 0.25rem; align-items: center; }
+
+.board-toolbar { display: flex; justify-content: space-between; align-items: center; gap: 0.75rem; margin-bottom: 1rem; padding: 0.75rem 1rem; border: 1px dashed color-mix(in srgb, var(--brand) 45%, var(--border)); border-radius: 14px; background: var(--tint-a); }
+.board-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1.25rem; align-items: start; }
+.board-grid__empty { grid-column: 1 / -1; }
+@media (max-width: 900px) { .board-grid { grid-template-columns: minmax(0, 1fr); } }
+.board-widget { display: grid; gap: 0.6rem; padding: 1.2rem; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg); box-shadow: var(--shadow); scroll-margin-top: 5rem; }
+.board-widget--full { grid-column: 1 / -1; }
+.board-widget .dash-panel__head h2 { margin: 0; font-size: 1rem; font-weight: 700; }
+.board-widget__tools { display: inline-flex; gap: 0.2rem; align-items: center; }
+.board-figure { display: grid; gap: 0.15rem; color: var(--text); text-decoration: none !important; }
+.board-figure b { font-size: 2.4rem; }
+.board-figure small { font-size: 0.85rem; }
+
+.widget-kinds { display: grid; grid-template-columns: repeat(auto-fill, minmax(9.5rem, 1fr)); gap: 0.5rem; }
+.widget-kind { position: relative; display: grid; gap: 0.15rem; padding: 0.7rem 0.8rem 0.7rem 2.2rem; border: 1.5px solid var(--border); border-radius: 12px; cursor: pointer; }
+.widget-kind input { position: absolute; left: 0.75rem; top: 0.85rem; margin: 0; }
+.widget-kind small { color: var(--text-muted); font-size: 0.78rem; }
+.widget-kind:has(input:checked) { border-color: var(--brand); background: var(--tint-a); }
+/* Only the fields the chosen kind uses. */
+.widget-form .only-tickets, .widget-form .only-report, .widget-form .only-list, .widget-form .only-metric { display: none; }
+.widget-form:has(input[name="kind"][value="figure"]:checked) .only-tickets,
+.widget-form:has(input[name="kind"][value="list"]:checked) .only-tickets,
+.widget-form:has(input[name="kind"][value="report"]:checked) .only-report,
+.widget-form:has(input[name="kind"][value="chart"]:checked) .only-report { display: grid; }
+.widget-form:has(input[name="kind"][value="list"]:checked) .only-list,
+.widget-form:has(input[name="kind"][value="report"]:checked) .only-metric { display: grid; }
+.row-choices { display: flex; gap: 1.25rem; }
+
+.report-details { flex-basis: 100%; margin: 0.2rem 0 0; font-size: 0.85rem; color: var(--text-muted); }
+
+/* Sharing a dashboard */
+.board-shared { display: flex; justify-content: space-between; align-items: center; gap: 0.75rem; flex-wrap: wrap; margin-bottom: 1rem; padding: 0.65rem 0.9rem; border-radius: 12px; background: var(--tint-c); font-size: 0.9rem; }
+.board-shared .ico { display: inline-block; vertical-align: -0.18em; }
+.share-link { width: 100%; font-size: 0.85rem; }
+.import-preview { display: grid; gap: 0.5rem; margin: 0; padding: 0; list-style: none; }
+.import-preview li { padding: 0.55rem 0.8rem; border-radius: 10px; background: var(--surface-2); font-weight: 600; }
+
+/* ---- Dashboard: figures that open their tickets, the clock in words, the desk's own activity ---- */
+a.dash-stat { color: var(--text); text-decoration: none; transition: transform .15s ease, box-shadow .15s ease; }
+a.dash-stat:hover { transform: translateY(-1px); box-shadow: 0 6px 18px color-mix(in srgb, var(--brand) 14%, transparent); }
+.dash-ticket__when--at_risk { color: #b54708; font-weight: 650; }
+.dash-ticket__when--breached { color: #d92d20; font-weight: 650; }
+div.dash-activity:hover { background: transparent; }
+.dash-activity--auto .dash-activity__icon { background: var(--tint-a); color: var(--accent); }
+.dash-activity--bad .dash-activity__icon { background: var(--tint-d); color: #d92d20; }
+
+/* ---- Reports: comparisons, lists behind each figure, backlog age, definitions ---- */
+.report-section { font-size: 0.95rem; font-weight: 700; margin: 1.4rem 0 0.6rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.04em; }
+.report-delta { display: inline-flex; align-items: center; gap: 0.25rem; font-size: 0.72rem; font-weight: 700; letter-spacing: 0; padding: 0.15rem 0.45rem; border-radius: 7px; background: color-mix(in srgb, var(--surface) 75%, transparent); white-space: nowrap; }
+.report-delta--good { color: #027a48; }
+.report-delta--bad { color: #b42318; }
+.report-delta--flat { color: var(--text-muted); }
+.dash-stat .report-delta { font-size: 0.72rem; }
+.report-also { margin: 0.6rem 0 0; }
+.report-also a { color: var(--text-muted); }
+.report-timing th[scope="row"] { font-weight: 650; cursor: help; }
+.report-timing .report-delta { margin-left: 0.3rem; }
+.report-aging-flags { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-bottom: 0.8rem; }
+.report-flag { display: inline-flex; gap: 0.35rem; align-items: baseline; padding: 0.35rem 0.75rem; border-radius: 999px; background: var(--surface-2); color: var(--text); text-decoration: none; font-size: 0.85rem; }
+.report-flag:hover { background: var(--tint-a); }
+.report-aging td, .report-aging th { text-align: center; }
+.report-aging th[scope="row"] { text-align: left; }
+.report-aging__total th, .report-aging__total td { border-top: 2px solid var(--border); }
+.report-count { display: inline-block; vertical-align: middle; font-size: 0.95rem; font-weight: 700; padding: 0.15rem 0.6rem; border-radius: 999px; background: var(--tint-a); color: var(--accent); }
+.report-definition { padding: 0.75rem 1rem; border-radius: var(--radius-lg, 14px); background: var(--surface-2); margin: 0 0 1rem; }
+.report-why { margin-top: 0.3rem; color: #b42318; }
+.report-defs > summary { cursor: pointer; list-style: none; }
+.report-defs > summary::-webkit-details-marker { display: none; }
+.report-defs > summary h2 { display: inline; font-size: 1rem; }
+.report-defs > summary::after { content: ' +'; color: var(--text-muted); }
+.report-defs[open] > summary::after { content: ' -'; }
+.report-defs dl { display: grid; grid-template-columns: minmax(9rem, max-content) 1fr; gap: 0.5rem 1.2rem; margin: 1rem 0 0; }
+.report-defs dt { font-weight: 650; }
+.report-defs dd { margin: 0; color: var(--text-muted); font-size: 0.9rem; }
+@media (max-width: 640px) { .report-defs dl { grid-template-columns: 1fr; } .report-defs dd { margin-bottom: 0.5rem; } }
+:root[data-theme="dark"] .report-delta--good { color: #6ce9a6; }
+:root[data-theme="dark"] .report-delta--bad, :root[data-theme="dark"] .report-why { color: #fda29b; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .report-delta--good { color: #6ce9a6; } :root:not([data-theme="light"]) .report-delta--bad, :root:not([data-theme="light"]) .report-why { color: #fda29b; } }
+@media print {
+  .sidebar, .app-top, .report-filter, .dash-hello__actions, .back-link { display: none !important; }
+  .report-defs { display: block; }
+  .dash-panel, .dash-stat { break-inside: avoid; }
+}
+
+/* ---- Sign in: a compact card, the address as a chip, the password sliding in ---- */
+/* Nothing sits above it, so the card is centred in the window itself. */
+.signin { min-height: 100vh; display: grid; place-items: center; padding: 2rem 1rem; }
+.signin-card { width: 100%; max-width: 24rem; padding: 2rem 1.75rem 1.6rem; text-align: center; border-radius: 22px; box-shadow: 0 20px 50px -24px color-mix(in srgb, var(--brand) 35%, transparent), 0 1px 2px rgba(16, 24, 40, 0.06); animation: signin-rise 0.4s cubic-bezier(0.2, 0.8, 0.2, 1) both; }
+.signin-card h1 { font-size: 1.45rem; margin: 0.75rem 0 0.4rem; letter-spacing: -0.02em; }
+.signin-card .lede { font-size: 0.92rem; margin-bottom: 1.25rem; }
+.signin-card .stack { gap: 0.85rem; text-align: left; }
+.signin-card .field label { font-size: 0.82rem; font-weight: 600; }
+.signin-card input[type='email'], .signin-card input[type='password'], .signin-card input[type='text'] { padding: 0.6rem 0.8rem; font-size: 0.95rem; border-radius: 12px; min-height: 0; }
+.signin-card .btn--block { padding: 0.65rem 1rem; border-radius: 999px; }
+/* A soft ring that follows the field's own corners, rather than an outline 2px outside it. */
+.signin-card input:not([readonly]):focus-visible { outline: none; border-color: var(--accent); box-shadow: 0 0 0 4px color-mix(in srgb, var(--accent) 18%, transparent); }
+.signin-identity:focus-within { border-color: var(--accent); }
+.signin-card .signin-logo { max-height: 3rem; }
+.signin-mark { display: inline-block; width: 2.6rem; height: 2.6rem; border-radius: 14px; background: var(--grad); box-shadow: 0 8px 20px -8px color-mix(in srgb, var(--brand) 60%, transparent); }
+.signin-identity { display: flex; align-items: center; gap: 0.6rem; padding: 0.4rem 0.4rem 0.4rem 0.45rem; border-radius: 999px; background: var(--surface-2); border: 1px solid var(--border); animation: signin-settle 0.35s cubic-bezier(0.2, 0.8, 0.2, 1) both; }
+.signin-identity .avatar { width: 1.9rem; height: 1.9rem; font-size: 0.7rem; }
+.signin-card .signin-identity__email { flex: 1; min-width: 0; border: 0; background: transparent; padding: 0; font-size: 0.92rem; font-weight: 600; color: var(--text); text-overflow: ellipsis; box-shadow: none; outline: none; }
+.signin-change { flex: none; font-size: 0.8rem; font-weight: 650; padding: 0.35rem 0.8rem; border-radius: 999px; background: var(--surface); border: 1px solid var(--border); color: var(--text); text-decoration: none; transition: background 0.15s ease, border-color 0.15s ease; }
+.signin-change:hover { background: var(--tint-a); border-color: color-mix(in srgb, var(--brand) 35%, var(--border)); text-decoration: none; }
+.signin-card .label-row { display: flex; justify-content: space-between; align-items: baseline; gap: 0.5rem; }
+.signin-forgot { font-size: 0.8rem; font-weight: 600; color: var(--accent); text-decoration: none; }
+.signin-forgot:hover { text-decoration: underline; }
+.signin-back { display: inline-block; margin-top: 1rem; font-size: 0.85rem; font-weight: 600; color: var(--text-muted); text-decoration: none; padding: 0.3rem 0.8rem; border-radius: 999px; }
+.signin-back:hover { background: var(--surface-2); color: var(--text); text-decoration: none; }
+.signin-back::before { content: '\2039'; margin-right: 0.4rem; font-weight: 700; }
+.signin-reveal { animation: signin-reveal 0.5s cubic-bezier(0.2, 0.8, 0.2, 1) 0.12s both; }
+.signin-reveal--late { animation-delay: 0.22s; }
+@keyframes signin-rise { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
+@keyframes signin-settle { from { opacity: 0.4; transform: translateY(14px) scale(0.98); } to { opacity: 1; transform: none; } }
+@keyframes signin-reveal { from { opacity: 0; transform: translateY(-12px); } to { opacity: 1; transform: none; } }
+@media (prefers-reduced-motion: reduce) { .signin-card, .signin-identity, .signin-reveal { animation: none; } }
+
+/* ---- Appearance: light and dark mode, each behind a chevron ---- */
+.mode-panel { margin-top: 0.75rem; border: 1px solid var(--border); border-radius: 14px; background: var(--surface); }
+.mode-panel > summary { display: flex; align-items: center; gap: 0.75rem; padding: 0.75rem 1rem; cursor: pointer; list-style: none; }
+.mode-panel > summary::-webkit-details-marker { display: none; }
+.mode-panel > summary::after { content: ''; margin-left: auto; width: 0.55rem; height: 0.55rem; border-right: 2px solid var(--text-muted); border-bottom: 2px solid var(--text-muted); transform: rotate(-45deg); transition: transform 0.2s ease; }
+.mode-panel[open] > summary::after { transform: rotate(45deg); }
+.mode-panel > summary:hover { background: var(--surface-2); border-radius: 14px; }
+.mode-panel__swatches { width: 3.25rem; height: 1.25rem; flex: none; color: var(--text); }
+.mode-panel__title { font-weight: 650; }
+.mode-panel__body { display: grid; gap: 0.85rem; padding: 0.25rem 1rem 1rem; }
+.mode-panel__colours { display: grid; grid-template-columns: repeat(auto-fit, minmax(10rem, 1fr)); gap: 0.6rem; }
+.mode-colour { display: flex; align-items: center; gap: 0.6rem; padding: 0.5rem 0.6rem; border: 1px solid var(--border); border-radius: 12px; cursor: pointer; }
+.mode-colour b { display: block; font-size: 0.85rem; }
+.mode-colour small { color: var(--text-muted); font-size: 0.75rem; }
+/* Without "Use my own colours" the pickers are shown, dimmed: they say what is drawn now. */
+.mode-panel__body:has(input[type='checkbox']:not(:checked)) .mode-panel__colours { opacity: 0.55; }
+.signin-card .local-signin { margin-top: 1rem; padding-top: 0; border-top: 0; }
+
+/* ---- Template builder: where a drop lands, what just moved, saving in place ---- */
+.widget--over { box-shadow: inset 0 3px 0 var(--accent); }
+.widget--over-after { border-color: var(--accent); box-shadow: inset 0 -3px 0 var(--accent); }
+.widget--half.widget--over { box-shadow: inset 3px 0 0 var(--accent); }
+.widget--half.widget--over-after { box-shadow: inset -3px 0 0 var(--accent); }
+.widget--moved { animation: widget-moved 0.9s ease-out; }
+@keyframes widget-moved { from { background: var(--tint-a); box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent) 45%, transparent); } to { background: transparent; box-shadow: none; } }
+.builder-saving .canvas { opacity: 0.75; transition: opacity 0.15s ease 0.1s; cursor: progress; }
+@media (prefers-reduced-motion: reduce) { .widget--moved { animation: none; } }
+
+/* ---- Ticket list: the same layout on every row ---- */
+.ticket-title-cell { display: flex; align-items: flex-start; gap: 0.45rem; }
+.ticket-title-cell > a { min-width: 0; }
+.ticket-comments { flex: none; display: inline-flex; align-items: center; gap: 0.25rem; margin-top: 0.05rem; }
+.ticket-comments .ico { width: 0.75rem; height: 0.75rem; }
+/* The status pill, and the SLA badge under it - never beside it on one row and under it on the next. */
+td.ticket-status-cell .sla-badge { display: flex; margin-top: 0.3rem; white-space: nowrap; }
+td.ticket-status-cell .pill { white-space: nowrap; }
+/* A short value - a date, a type, a priority - stays on one line; the table scrolls on a narrow screen. */
+td.cell-nowrap { white-space: nowrap; }
+/* One line per title, cut with an ellipsis (the whole title is its tooltip); names likewise. */
+.ticket-title-cell > a { display: block; max-width: 22rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+td.cell-name { max-width: 12rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+/* ---- Ticket list: a row needing attention carries a bar, and says why ----
+   One treatment, not three. The bar is what makes it findable when scanning;
+   the flag beside the status is what says which, in words. */
+tr.ticket-row--breached > td:first-child { box-shadow: inset 3px 0 0 var(--danger); }
+tr.ticket-row--at_risk > td:first-child { box-shadow: inset 3px 0 0 var(--warning); }
+td.ticket-status-cell { white-space: nowrap; }
+.sla-flag { display: inline-flex; align-items: center; gap: 0.25rem; margin-left: 0.35rem; font-size: 0.75rem; font-weight: 650; vertical-align: middle; }
+.sla-flag .ico { width: 0.85rem; height: 0.85rem; }
+.sla-flag--breached { color: var(--danger); }
+.sla-flag--at_risk { color: var(--warning); }
+/* A name in the ticket list opens the person; quiet until pointed at. */
+.person-cell-link { color: inherit; text-decoration: none; }
+.person-cell-link:hover, .person-cell-link:focus-visible { color: var(--accent); text-decoration: underline; }
+/* Users list: two group names, then "+N more" (the rest in the tooltip). */
+.group-names { white-space: nowrap; }
+.group-names__more { display: inline-block; margin-left: 0.2rem; padding: 0.05rem 0.45rem; border-radius: 999px; background: var(--surface-2); border: 1px solid var(--border); color: var(--text-muted); font-size: 0.75rem; font-weight: 600; }
+/* Settings behind a chevron (Users - Other settings): the colour-mode panel's look. */
+.settings-panel { margin-top: 1rem; }
+.settings-panel > summary { flex-wrap: wrap; row-gap: 0.15rem; }
+.check-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(12rem, 1fr)); gap: 0.4rem 1rem; }
+/* A password box with an eye (password-reveal.js); the eye sits inside the box. */
+.password-reveal { position: relative; display: block; max-width: 24rem; }
+.password-reveal > input { width: 100%; }
+.password-reveal--ready > input { padding-right: 2.6rem; }
+.password-reveal__toggle { position: absolute; top: 50%; right: 0.35rem; transform: translateY(-50%); display: grid; place-items: center; width: 2rem; height: 2rem; border: 0; border-radius: 8px; background: transparent; color: var(--text-muted); cursor: pointer; }
+.password-reveal__toggle:hover { background: var(--surface-2); color: var(--text); }
+.password-reveal__toggle .ico { width: 1.05rem; height: 1.05rem; }
+.password-reveal__hide, .password-reveal--shown .password-reveal__show { display: none; }
+.password-reveal--shown .password-reveal__hide { display: inline; }
+.check-list { display: grid; gap: 0.45rem; justify-items: start; }
+/* Edge draws its own eye in a password box; with ours working, only ours. */
+.password-reveal--ready > input::-ms-reveal, .password-reveal--ready > input::-ms-clear { display: none; }
+.signin-register { text-align: center; margin: 1rem 0 0; color: var(--text-muted); }
+
+/* ---- A long dropdown's search panel (select-search.js) ---- */
+.combo-host { position: relative; }
+.combo-panel { position: absolute; z-index: 60; max-width: min(32rem, calc(100vw - 2rem)); background: var(--surface); border: 1px solid var(--border-strong); border-radius: 12px; box-shadow: 0 14px 34px -12px rgba(16, 24, 40, 0.28); padding: 0.4rem; display: grid; gap: 0.35rem; }
+.combo-panel__search { width: 100%; padding: 0.45rem 0.65rem; border-radius: 8px; font-size: 0.9rem; }
+/* About eight rows in view; the rest scroll. */
+.combo-panel__list { list-style: none; margin: 0; padding: 0; max-height: 17rem; overflow-y: auto; }
+.combo-panel__option { padding: 0.4rem 0.6rem; border-radius: 7px; cursor: pointer; font-size: 0.9rem; line-height: 1.3; }
+.combo-panel__option:hover, .combo-panel__option.is-active { background: var(--tint-a); }
+.combo-panel__option[aria-selected="true"] { font-weight: 650; color: var(--accent); }
+.combo-panel__group { padding: 0.5rem 0.6rem 0.2rem; font-size: 0.72rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; color: var(--text-muted); }
+.combo-panel__none { padding: 0.5rem 0.6rem; color: var(--text-muted); font-size: 0.88rem; }
+
+/* ------------------------------------------------- password rules and width */
+
+/* A password box is a short value: full card width makes it look like a
+   place to write a sentence. Asked for 15 Oct 2026. */
+.field--half {
+  max-width: 24rem;
+}
+
+/* The rules sit *beside* the boxes, not under them: the three fields run
+   down the left column and the box stands in the right one, from the New
+   password row to the bottom. In a row of its own it made that row as tall
+   as itself, and left a gap of the same height below. */
+.pw-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 24rem) minmax(0, 17rem);
+  gap: 0.85rem 1.25rem;
+  align-items: start;
+}
+
+.pw-grid > .field {
+  grid-column: 1;
+}
+
+.pw-grid > .pw-rules {
+  grid-column: 2;
+  /* span, not `2 / -1`: with no explicit rows, -1 resolves to the start of
+     the grid and the box fell back to row one, beside Current password. */
+  grid-row: 2 / span 2;
+  /* Top level with the box beside it rather than with its label, and the
+     bottom level with the last box: a short list of rules left the box
+     floating against nothing - reported 15 Oct 2026. */
+  align-self: stretch;
+  margin: 1.5rem 0 0;
+}
+
+/* On the sign-in card the two boxes are full width, as the password box on
+   the step before it is: a half-width box hid the end of a long password -
+   reported 15 Oct 2026. The rules sit under them rather than beside.  */
+.pw-grid--signin { grid-template-columns: minmax(0, 1fr); text-align: left; }
+.pw-grid--signin > .pw-rules { grid-column: 1; grid-row: auto; margin: 0; }
+
+/* Under the boxes on a narrow screen, where there is no room beside them. */
+@media (max-width: 760px) {
+  .pw-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .pw-grid > .pw-rules {
+    grid-column: 1;
+    grid-row: auto;
+    margin-top: 0;
+  }
+}
+
+/* What the password has to be, ticked as it is typed. A plain list without
+   the script, which is why the mark is drawn by CSS from the row's state
+   rather than written into the markup. */
+.pw-rules {
+  list-style: none;
+  margin: 0.5rem 0 0;
+  padding: 0.7rem 0.85rem;
+  display: grid;
+  gap: 0.4rem;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  box-shadow: 0 1px 2px rgb(0 0 0 / 5%);
+  font-size: 0.82rem;
+  line-height: 1.3;
+}
+
+.pw-rule {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  color: var(--text-muted);
+  transition: color 140ms ease;
+}
+
+/* The mark: an empty ring until the rule is met, then a filled tick. */
+.pw-rule__mark {
+  flex: none;
+  width: 1.1rem;
+  height: 1.1rem;
+  border: 1.5px solid var(--border-strong);
+  border-radius: 50%;
+  position: relative;
+  transition:
+    background 140ms ease,
+    border-color 140ms ease,
+    transform 140ms ease;
+}
+
+.pw-rule--met {
+  color: var(--text);
+}
+
+.pw-rule--met .pw-rule__mark {
+  background: var(--success);
+  border-color: var(--success);
+  transform: scale(1.06);
+}
+
+.pw-rule--met .pw-rule__mark::after {
+  content: "";
+  position: absolute;
+  left: 0.33rem;
+  top: 0.14rem;
+  width: 0.28rem;
+  height: 0.55rem;
+  border: solid #fff;
+  border-width: 0 2px 2px 0;
+  transform: rotate(45deg);
+}
+
+/* Every rule met: the box says so without a word. */
+.pw-rules--all {
+  border-color: var(--success);
+  background: var(--success-soft);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pw-rule,
+  .pw-rule__mark {
+    transition: none;
+  }
+
+  .pw-rule--met .pw-rule__mark {
+    transform: none;
+  }
+}
+
+/* ------------------------------------------------- the ticket table (2026) */
+
+/* Rows are read across, so everything in one sits on the same line and the
+   dividers stay faint. Scoped to this table: other lists have cells with two
+   or three lines, where top alignment is right. */
+.ticket-table td {
+  vertical-align: middle;
+  border-bottom: 1px solid color-mix(in srgb, var(--border) 65%, transparent);
+}
+
+.ticket-table tbody tr:hover > td {
+  background: color-mix(in srgb, var(--text) 4%, transparent);
+}
+
+/* A sortable header. The caret is drawn only for the column in use, so seven
+   carets do not compete with the data. */
+.th-sort {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  color: inherit;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.th-sort:hover {
+  color: var(--text);
+  text-decoration: none;
+}
+
+.th-sort__mark {
+  width: 0.55rem;
+  height: 0.55rem;
+  opacity: 0;
+  background: currentColor;
+  /* A caret, as a mask, so it follows the text colour in both themes. */
+  mask: var(--caret-up) center / contain no-repeat;
+  -webkit-mask: var(--caret-up) center / contain no-repeat;
+}
+
+.th-sort:hover .th-sort__mark { opacity: 0.45; }
+.th-sort--on { color: var(--text); font-weight: 650; }
+.th-sort--on .th-sort__mark { opacity: 1; }
+
+[aria-sort="descending"] .th-sort__mark {
+  mask-image: var(--caret-down);
+  -webkit-mask-image: var(--caret-down);
+}
+
+:root {
+  --caret-up: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 10 10'%3E%3Cpath d='M5 2.5 9 7.5H1z'/%3E%3C/svg%3E");
+  --caret-down: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 10 10'%3E%3Cpath d='M5 7.5 1 2.5h8z'/%3E%3C/svg%3E");
+}
+
+/* A reference or a title is a link, but a table of coloured underlined text
+   is unreadable: they take the text colour and show they are links on hover
+   and on focus, like the names beside them. */
+.ticket-table tbody a {
+  color: inherit;
+  text-decoration: none;
+}
+
+.ticket-table tbody a:hover,
+.ticket-table tbody a:focus-visible {
+  color: var(--accent);
+  text-decoration: underline;
+}
+
+.ticket-table td.mono a { font-weight: 550; }
+.ticket-title-cell > a { font-weight: 550; }
+
+/* The person: the name, and the company under it in a quieter line. */
+.cell-person { max-width: 14rem; }
+
+.cell-person__name,
+.cell-person__org,
+.cell-person__none {
+  display: block;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.cell-person__org {
+  font-size: 0.78rem;
+  color: var(--text-muted);
+}
+
+.cell-person__none { color: var(--text-muted); }
+
+/* Priority: the same geometry as a status pill so a row reads as one set of
+   badges, but no dot and no capitals - that is what tells the two columns
+   apart without relying on their colours. */
+.ticket-table .pill[class*="pill--p-"] {
+  font-size: 0.72rem;
+  font-weight: 600;
+  padding: 0.22rem 0.6rem;
+}
+
+/* SLA: one treatment, a bar down the left of the row. The whole row used to
+   be tinted as well, which put the tint, the bar and the red flag against a
+   green status badge all on one line. */
+.ticket-table .sla-flag {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  margin-left: 0.4rem;
+  padding: 0.15rem 0.45rem;
+  border-radius: 999px;
+  font-size: 0.7rem;
+  font-weight: 650;
+  letter-spacing: 0;
+}
+
+.ticket-table .sla-flag--breached {
+  background: var(--danger-soft);
+  color: var(--danger);
+}
+
+.ticket-table .sla-flag--at_risk {
+  background: var(--warning-soft);
+  color: var(--warning);
+}
+
+/* Soft lines between the columns, asked for 15 Oct 2026. Fainter than the
+   row dividers, so the eye still reads across a row first and the grid is
+   only there to keep the columns apart. Not on the last column: a line
+   against the edge of the table reads as a border. */
+.ticket-table th:not(:last-child),
+.ticket-table td:not(:last-child) {
+  border-right: 1px solid color-mix(in srgb, var(--border) 45%, transparent);
+}
+
+/* The figures and the one action on the same line, feet level: the button
+   belongs with the numbers it acts on rather than floating above them.
+   Asked for 15 Oct 2026. Wraps to its own line when there is no room. */
+.stats-row {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
+  margin-bottom: 1.25rem;
+}
+
+.stats-row .stats {
+  margin-bottom: 0;
+  flex: 1 1 auto;
+}
+
+/* The service catalogue.
+ *
+ * Tiles flow in one grid in the order they are listed - no coordinates - so
+ * a tile a reader may not use is left out and the rest close the gap. The
+ * grid is auto-fill, which is also what keeps a short catalogue from
+ * stretching three tiles across a wide screen.
+ */
+.catalogue-grid {
+  display: grid;
+  /* The service desk says how many across; the tile keeps a minimum width,
+     so a narrow screen shows fewer rather than squashing them. */
+  grid-template-columns: repeat(auto-fill, minmax(min(15rem, 100%), 1fr));
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+
+
+.catalogue-tile {
+  display: flex;
+  gap: 0.85rem;
+  align-items: flex-start;
+  padding: 1.1rem 1.15rem;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--surface);
+  color: inherit;
+  text-decoration: none;
+  transition: border-color 0.15s ease, transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.catalogue-tile:hover,
+.catalogue-tile:focus-visible {
+  border-color: var(--brand);
+  box-shadow: 0 6px 18px -12px rgb(0 0 0 / 35%);
+  transform: translateY(-1px);
+  text-decoration: none;
+}
+
+.catalogue-tile__icon {
+  display: grid;
+  place-items: center;
+  width: 2.5rem;
+  height: 2.5rem;
+  flex: 0 0 auto;
+  border-radius: 0.7rem;
+  background: var(--tint-a);
+  color: var(--brand);
+}
+
+.catalogue-tile__icon svg { width: 1.3rem; height: 1.3rem; }
+.catalogue-tile__text { min-width: 0; }
+.catalogue-tile__text b { display: block; font-weight: 650; }
+.catalogue-tile__text span { display: block; margin-top: 0.15rem; }
+
+/* The administrator's list: the same icon, at row size. */
+.catalogue-row { display: flex; align-items: center; gap: 0.7rem; min-width: 0; }
+.catalogue-row__icon {
+  display: grid;
+  place-items: center;
+  width: 2rem;
+  height: 2rem;
+  flex: 0 0 auto;
+  border-radius: 0.55rem;
+  background: var(--tint-a);
+  color: var(--brand);
+}
+.catalogue-row__icon svg { width: 1.05rem; height: 1.05rem; }
+.catalogue-row .one-line { display: block; max-width: 22rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+/* Choosing a tile's icon: radios dressed as a grid of shapes. The input is
+   visually hidden rather than display:none, so it stays focusable. */
+.icon-picker { display: flex; flex-wrap: wrap; gap: 0.4rem; }
+.icon-picker__choice { cursor: pointer; }
+.icon-picker__choice input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+  pointer-events: none;
+}
+.icon-picker__box {
+  display: grid;
+  place-items: center;
+  width: 2.3rem;
+  height: 2.3rem;
+  border: 1px solid var(--line);
+  border-radius: 0.6rem;
+  color: var(--muted);
+}
+.icon-picker__choice input:checked + .icon-picker__box {
+  border-color: var(--brand);
+  background: var(--tint-a);
+  color: var(--brand);
+}
+.icon-picker__choice input:focus-visible + .icon-picker__box {
+  outline: 2px solid var(--brand);
+  outline-offset: 2px;
+}
+.icon-picker__box svg { width: 1.15rem; height: 1.15rem; }
+
+.nowrap { white-space: nowrap; }
+
+/* The two picker fields are the same width: one holds a kind, the other a
+   template name, and a 1fr/2fr split made them look like a field and its
+   afterthought - reported 15 Oct 2026. The option text is cut instead. */
+@media (min-width: 640px) {
+  .template-picker__row:has(> .field:not([hidden]) + .field) {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  }
+}
+
+/* A switch that applies to the whole card, under the grid rather than in a
+   cell of it: in the grid it had no control where its neighbours had one,
+   and the row read as broken. */
+.field--switch { margin-top: 0.85rem; }
+.field--switch .hint { margin-top: 0.2rem; }
+
+/* Save at one end, the destructive action at the other: a row where the two
+   sit side by side invites the wrong one. Asked for 15 Oct 2026. */
+.actions--spread { display: flex; align-items: center; justify-content: space-between; gap: 1rem; flex-wrap: wrap; }
+
+/* A pin's address and the button that copies it, on one line. */
+.pin-row__link { display: inline-flex; align-items: center; gap: 0.35rem; min-width: 0; }
+
+/* The catalogue editor: the grid is the preview, and the preview is the
+   editor - what is drawn is what a requester sees, with each tile's tools
+   under it. Asked for 15 Oct 2026 ("like in ticket template"). */
+/* The editor grid is the requester's grid: as many columns as the layout
+   says, at every width, so a 5 x 5 reads as a 5 x 5. The cells shrink
+   instead of wrapping, which is the whole point of setting a size. */
+.catalogue-preview {
+  display: grid;
+  /* The count comes from .catalogue-preview--cols-N below. */
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+}
+
+/* An empty cell: a dashed box with a + that adds a tile in that position. */
+.catalogue-slot {
+  display: grid;
+  place-items: center;
+  min-height: 5.5rem;
+  border: 1px dashed var(--border-strong);
+  border-radius: var(--radius);
+  color: var(--text-muted);
+  text-decoration: none;
+  transition: border-color 0.15s ease, background 0.15s ease;
+}
+.catalogue-slot:hover, .catalogue-slot:focus-visible {
+  border-color: var(--brand);
+  background: var(--tint-a);
+  color: var(--brand);
+  text-decoration: none;
+}
+.catalogue-slot__plus { font-size: 1.5rem; line-height: 1; font-weight: 500; }
+.catalogue-page-label { margin: 0 0 0.35rem; }
+
+/* Four or more across, and the tile has to say less: the icon and the name. */
+
+
+/* Cards side by side start at the top: the Heading card is short, and
+   stretching it left its field at the bottom of a tall box - reported. */
+.grid-2 > .card { align-content: start; }
+
+.catalogue-tile--editing { flex-wrap: wrap; cursor: default; }
+.catalogue-preview--draggable .catalogue-tile--editing { cursor: grab; }
+.catalogue-tile--editing.is-dragging { opacity: 0.45; }
+.catalogue-tile--editing.is-over { border-color: var(--brand); box-shadow: 0 0 0 2px var(--tint-a); }
+.catalogue-tile--broken { border-style: dashed; }
+.catalogue-tile__warn { color: var(--warning); display: block; margin-top: 0.2rem; }
+.catalogue-tile__tools {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  flex-wrap: wrap;
+  width: 100%;
+  margin-top: 0.6rem;
+  padding-top: 0.6rem;
+  border-top: 1px solid var(--border);
+}
+.catalogue-tile__tools form { margin: 0; }
+
+/* A field and the button that saves it, on one row. */
+.field-row { display: flex; align-items: flex-end; gap: 0.6rem; }
+.field-row .field { flex: 1 1 auto; margin: 0; }
+
+/* A button with a word beside it: the words sit on the button's centre line,
+   not on its top edge. */
+.actions--middle { align-items: center; }
+
+/* How many tiles across. A class, not an inline style: the policy is
+   style-src 'self', so a style attribute is dropped and the grid kept the
+   stylesheet's three columns - reported 15 Oct 2026. */
+.catalogue-preview--cols-1 { grid-template-columns: repeat(1, minmax(0, 1fr)); }
+.catalogue-preview--cols-2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.catalogue-preview--cols-3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.catalogue-preview--cols-4 { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+.catalogue-preview--cols-5 { grid-template-columns: repeat(5, minmax(0, 1fr)); }
+
+@media (min-width: 52rem) {
+  .catalogue-grid--cols-1 { grid-template-columns: repeat(1, minmax(0, 1fr)); }
+  .catalogue-grid--cols-2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .catalogue-grid--cols-3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .catalogue-grid--cols-4 { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+  .catalogue-grid--cols-5 { grid-template-columns: repeat(5, minmax(0, 1fr)); }
+}
+
+/* Four or more across, and a tile has room for its name only. */
+.catalogue-preview--cols-4 .catalogue-tile__text span,
+.catalogue-preview--cols-5 .catalogue-tile__text span { display: none; }
+
+/* ------------------------------------------------- the queue's columns */
+
+/* Widths by what the column is worth, not by what its content happens to
+   be: the title is the only one anybody reads to decide what a row is, so
+   it gets what is left. The rest are hints, not a fixed layout - a short
+   title should not be padded and a long name should not be cut early. */
+.ticket-table th:nth-child(1), .ticket-table td:nth-child(1) { width: 8.5rem; white-space: nowrap; }
+.ticket-table th:nth-child(2), .ticket-table td:nth-child(2) { width: auto; min-width: 14rem; }
+.ticket-table th:nth-child(3), .ticket-table td:nth-child(3) { width: 8rem; }
+.ticket-table th:nth-child(4), .ticket-table td:nth-child(4) { width: 9rem; }
+.ticket-table th:nth-child(5), .ticket-table td:nth-child(5) { width: 7rem; }
+.ticket-table .cell-person { max-width: 12rem; }
+.ticket-table th:last-child, .ticket-table td:last-child { width: 7.5rem; white-space: nowrap; }
+
+/* Under 56rem the table still scrolls, but two columns earn their room
+   least: Type repeats what the reference prefix says, and Updated is the
+   sort order rather than something read per row. */
+@media (max-width: 56rem) {
+  .ticket-table th.col-type, .ticket-table td.col-type,
+  .ticket-table th.col-updated, .ticket-table td.col-updated { display: none; }
+}
+
+/* The filter bar on a narrow screen.
+ *
+ * It is a flex row of labels and controls, which wraps into pairs that do
+ * not belong together - "Show [All tickets] Team" on one line, "[Any] Type"
+ * on the next - seen at 375px while checking the queue against the table
+ * brief. Below 48rem it becomes a two-column grid instead: every label in
+ * the first column, its control in the second, so a pair is a row.
+ */
+@media (max-width: 48rem) {
+  /* Each pair on its own line, the label above its control: side by side
+     there is no width left for either. */
+  .filters { display: grid; gap: 0.6rem; }
+
+  .filters__field {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 0.2rem;
+  }
+
+  .filters input, .filters select { width: 100%; min-width: 0; }
+  .filters button, .filters .btn { justify-self: start; }
+}
+
+/* The row that holds them keeps its room under it. */
+.catalogue-filters { margin-bottom: 1.25rem; }
+
+/* A tile sits in the column it was placed in. A class, not an inline
+   style: style-src 'self' drops a style attribute. */
+.catalogue-grid .catalogue-tile--col-1 { grid-column: 1; }
+.catalogue-grid .catalogue-tile--col-2 { grid-column: 2; }
+.catalogue-grid .catalogue-tile--col-3 { grid-column: 3; }
+.catalogue-grid .catalogue-tile--col-4 { grid-column: 4; }
+.catalogue-grid .catalogue-tile--col-5 { grid-column: 5; }
+
+/* A cell being dragged over, whether a tile is in it or not. */
+.catalogue-slot.is-over { border-color: var(--brand); background: var(--tint-a); border-style: solid; }
+/* The form behind a tile is offered to some groups only, so not everybody
+   is shown it: said on the tile, because a missing tile explains nothing. */
+.catalogue-tile__note { color: var(--text-muted); display: block; margin-top: 0.2rem; }
+
+/* The kinds on the left, the one action they feed on the right. */
+.catalogue-filters { display: flex; align-items: center; justify-content: space-between; gap: 1rem; flex-wrap: wrap; }
+.catalogue-filters__kinds { display: flex; flex-wrap: wrap; gap: 0.4rem; }
+
+/* A list of things to pick one of, five rows tall and scrolled - the room a
+   popup has, and enough to choose from without hiding the rest behind a
+   fold. The search box select-search.js puts above it stays in view. */
+.pick-list--five {
+  max-height: 13.5rem;
+  overflow-y: auto;
+  padding-right: 0.2rem;
+}
+
+.pick-list--five .select-search { position: sticky; top: 0; z-index: 1; }
+
+/* The dashboard widget's one field, shown for that kind only. */
+.widget-form .only-dashboard { display: none; }
+.widget-form:has(input[name="kind"][value="dashboard"]:checked) .only-dashboard { display: grid; }
+
+/* ==========================================================================
+   Linen and petrol (18 Oct 2026), over the 2026 layer: one accent that says
+   something, one 6px radius, hairline borders, no gradients, glows or
+   shadows. Still only the theme's variables, so Appearance and dark mode
+   keep working: --grad is the brand itself now, not a blend.
+   ========================================================================== */
+:root {
+  --radius: 6px;
+  --radius-lg: 8px;
+  --grad: var(--brand);
+  --glow: none;
+  --shadow: none;
+  --shadow-lg: 0 12px 32px -16px rgba(22, 24, 29, 0.28);
+  --mark: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 40 40'%3E%3Cdefs%3E%3Cmask id='m'%3E%3Cpath d='M11 5h18a7 7 0 0 1 7 7v10a7 7 0 0 1-7 7H17l-6.4 5.4A1 1 0 0 1 9 33.6V28.6A7 7 0 0 1 4 22V12a7 7 0 0 1 7-7z' fill='white'/%3E%3Cpath d='M13 17.5l4.6 4.6L27.2 12.5' fill='none' stroke='black' stroke-width='3.4' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/mask%3E%3C/defs%3E%3Crect width='40' height='40' fill='black' mask='url(%23m)'/%3E%3C/svg%3E");
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme='light']) { --shadow: none; }
+}
+:root[data-theme='dark'] { --shadow: none; }
+.card { box-shadow: none; }
+.btn { border-radius: var(--radius); }
+.btn--primary, .btn--primary:hover { background-image: none; box-shadow: none; }
+.btn--primary:hover { filter: none; background: color-mix(in srgb, var(--brand) 86%, #000); }
+.side-link[aria-current="page"], .side-link[aria-current="page"]:hover { background-image: none; box-shadow: none; }
+h1 { font-weight: 700; letter-spacing: -0.015em; }
+
+/* The mark without an uploaded logo: logo A, the bubble with the tick, in the brand colour. */
+.sidebar__mark, .signin-mark { background: var(--brand); background-image: none; border-radius: 0; box-shadow: none; -webkit-mask: var(--mark) center / contain no-repeat; mask: var(--mark) center / contain no-repeat; }
+
+/* The uploaded logo at one size (18 Oct 2026): a fixed height, so a small
+   file is drawn up to it and a large one down to it, never wider than its
+   place and never stretched (object-fit). A wide wordmark stops at the
+   width and keeps its shape. */
+.sidebar__brand .brand__logo { height: 2.25rem; width: auto; max-width: 100%; object-fit: contain; object-position: left center; }
+.signin-card .signin-logo { height: 3rem; max-height: none; width: auto; max-width: min(15rem, 100%); object-fit: contain; }
+
+/* Settings search (18 Oct 2026): the bar above the sections, in the same
+   shape as the search bar above every page, and the list it lands on. */
+.settings-side { display: grid; gap: 0.75rem; align-content: start; min-width: 0; }
+.settings-search { display: flex; align-items: center; gap: 0.5rem; padding: 0 0.75rem; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); color: var(--text-muted); transition: border-color 0.15s ease, box-shadow 0.15s ease; }
+.settings-search:focus-within { border-color: var(--brand); box-shadow: 0 0 0 3px color-mix(in srgb, var(--brand) 16%, transparent); }
+.settings-search .ico { width: 1rem; height: 1rem; }
+.settings-search input[type="search"] { flex: 1; min-width: 0; border: 0; background: transparent; box-shadow: none; padding: 0.6rem 0; font-size: 0.92rem; outline: none; }
+.settings-results { list-style: none; margin: 0.75rem 0 0; padding: 0; display: grid; gap: 0.5rem; }
+.settings-result { display: grid; gap: 0.15rem; padding: 0.8rem 1rem; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); color: var(--text); text-decoration: none !important; transition: border-color 0.15s ease; }
+.settings-result:hover, .settings-result:focus-visible { border-color: var(--brand); }
+.settings-result__trail { font-size: 0.78rem; color: var(--text-muted); }
+.settings-result__title { font-weight: 600; }
+.searchbar { border-radius: var(--radius); }
+
+/* The AGPL-3.0's offer of the source, at the foot of every page (partials/footer.ejs): quiet, never in the way. */
+.source-link { margin: 2.5rem 0 1rem; text-align: center; font-size: 0.78rem; }
+.source-link a { color: inherit; text-decoration: underline; text-underline-offset: 2px; }

@@ -1,0 +1,50 @@
+<%- include('partials/header') %>
+
+<div class="signin">
+  <div class="card signin-card">
+    <%- include("partials/signin-mark") %>
+    <% if (sent) { %>
+      <h1>Check your email</h1>
+      <p class="lede signin-reveal">If the address can have an account, a link to confirm it is on its way. It works once, for 24 hours - nothing is created until it is used.</p>
+      <a class="btn btn--primary btn--block" href="/login">Back to sign in</a>
+    <% } else { %>
+      <h1>Create an account</h1>
+      <p class="lede">We will email you a link to confirm the address.</p>
+      <form method="post" action="/auth/register" class="stack local-signin" novalidate>
+        <input type="hidden" name="_csrf" value="<%= locals.csrfToken %>">
+        <div class="grid-2">
+          <div class="field">
+            <label for="firstName">First name</label>
+            <input id="firstName" name="firstName" type="text" maxlength="100" required autocomplete="given-name" value="<%= values.firstName || '' %>" autofocus>
+            <% if (errors.firstName) { %><p class="field-error" role="alert"><%= errors.firstName %></p><% } %>
+          </div>
+          <div class="field">
+            <label for="lastName">Last name</label>
+            <input id="lastName" name="lastName" type="text" maxlength="100" required autocomplete="family-name" value="<%= values.lastName || '' %>">
+            <% if (errors.lastName) { %><p class="field-error" role="alert"><%= errors.lastName %></p><% } %>
+          </div>
+        </div>
+        <div class="field">
+          <label for="email">Email</label>
+          <input id="email" name="email" type="email" inputmode="email" maxlength="320" required autocomplete="username" spellcheck="false"
+                 value="<%= values.email || '' %>" placeholder="<%= domains.length ? 'name@' + domains[0] : 'name@example.com' %>">
+          <% if (errors.email) { %><p class="field-error" role="alert"><%= errors.email %></p><% } %>
+        </div>
+        <div class="field">
+          <label for="password">Password</label>
+          <input id="password" name="password" type="password" maxlength="200" required autocomplete="new-password" placeholder="At least <%= minLength %> characters">
+          <% if (errors.password) { %><p class="field-error" role="alert"><%= errors.password %></p><% } %>
+        </div>
+        <div class="field">
+          <label for="confirm">Confirm password</label>
+          <input id="confirm" name="confirm" type="password" maxlength="200" required autocomplete="new-password">
+          <% if (errors.confirm) { %><p class="field-error" role="alert"><%= errors.confirm %></p><% } %>
+        </div>
+        <button type="submit" class="btn btn--primary btn--block">Create account</button>
+      </form>
+      <a class="signin-back" href="/login">Back to sign in</a>
+    <% } %>
+  </div>
+</div>
+
+<%- include('partials/footer') %>

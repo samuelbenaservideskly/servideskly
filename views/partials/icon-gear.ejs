@@ -1,0 +1,11 @@
+<%# The one gear, used everywhere a gear means "settings" or "configure":
+    the masthead, the template builder's rows, the catalogue. An outline, not
+    a filled shape - the old filled one drew its hole and its rim as two
+    overlapping contours, which rendered smudged at small sizes. `size` in
+    pixels, default 16. %>
+<% var px = locals.size || 16; %>
+<svg class="icon-gear" viewBox="0 0 24 24" width="<%= px %>" height="<%= px %>" fill="none"
+     stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" aria-hidden="true" focusable="false">
+  <path d="M19.18 10.22L21.86 10.36L21.86 13.64L19.18 13.78L18.34 15.82L20.14 17.81L17.81 20.14L15.82 18.34L13.78 19.18L13.64 21.86L10.36 21.86L10.22 19.18L8.18 18.34L6.19 20.14L3.86 17.81L5.66 15.82L4.82 13.78L2.14 13.64L2.14 10.36L4.82 10.22L5.66 8.18L3.86 6.19L6.19 3.86L8.18 5.66L10.22 4.82L10.36 2.14L13.64 2.14L13.78 4.82L15.82 5.66L17.81 3.86L20.14 6.19L18.34 8.18Z"/>
+  <circle cx="12" cy="12" r="3.2"/>
+</svg>

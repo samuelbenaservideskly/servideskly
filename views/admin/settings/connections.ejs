@@ -1,0 +1,282 @@
+<%- include('_layout') %>
+
+<%- include('_advanced-tabs', { tab: 'connections' }) %>
+
+<div class="toolbar">
+  <a class="btn btn--primary" href="#new-connection">
+    <span aria-hidden="true">+</span> New connection
+  </a>
+</div>
+
+<% if (connections.length === 0) { %>
+  <div class="card">
+    <p><strong>No connections yet.</strong></p>
+    <p class="small muted">Add one with <a href="#new-connection">New connection</a> to use "Send authenticated HTTP request" in an automation.</p>
+  </div>
+<% } else { %>
+  <div class="table-scroll">
+    <table class="table">
+      <thead>
+        <tr>
+          <th scope="col">Name</th>
+          <th scope="col">Type</th>
+          <th scope="col">Signs in as</th>
+          <th scope="col">Used by</th>
+          <th scope="col"><span class="visually-hidden">Actions</span></th>
+        </tr>
+      </thead>
+      <tbody>
+        <% connections.forEach(function (x) { %>
+          <tr id="row-<%= x.id %>">
+            <td>
+              <%= x.name %>
+              <% (locals.flashMessages || []).filter(function (m) { return m.where === 'connection-' + x.id; }).forEach(function (m) { %>
+                <div class="flash flash--<%= m.type %>" role="status"><%= m.message %></div>
+              <% }); %>
+            </td>
+            <td class="small"><%= x.typeLabel %></td>
+            <td class="small">
+              <% if (x.auth_type === 'mtls') { %>
+                <span class="mono"><%= x.certSubject || '-' %></span><% if (x.certExpires) { %> <span class="muted">until <%= x.certExpires %></span><% } %>
+              <% } else if (x.auth_type === 'oauth2_user') { %>
+                <% if (x.signedIn) { %><%= x.signed_in_by %> <span class="muted"><%= x.signed_in_at ? formatDateTime(x.signed_in_at) : '' %></span><% } else { %><span class="pill pill--warn">Not signed in</span><% } %>
+              <% } else { %>
+                <span class="mono"><%= x.auth_type === 'api_key' ? x.header_name : x.client_id %></span>
+              <% } %>
+            </td>
+            <td class="small"><%= x.usedBy.length ? x.usedBy.join(', ') : '-' %></td>
+            <td class="row-actions">
+              <% if (x.auth_type === 'oauth2_user') { %>
+                <form method="post" action="/admin/settings/advanced/connections/<%= x.id %>/authorize" class="inline-form">
+                  <input type="hidden" name="_csrf" value="<%= locals.csrfToken %>">
+                  <button type="submit" class="btn btn--small"><%= x.signedIn ? 'Sign in again' : 'Sign in' %></button>
+                </form>
+              <% } %>
+              <form method="post" action="/admin/settings/advanced/connections/<%= x.id %>/test" class="inline-form">
+                <input type="hidden" name="_csrf" value="<%= locals.csrfToken %>">
+                <button type="submit" class="btn btn--quiet btn--small">Test</button>
+              </form>
+              <a class="btn btn--quiet btn--small" href="#connection-<%= x.id %>">Edit</a>
+              <form method="post" action="/admin/settings/advanced/connections/<%= x.id %>/delete" class="inline-form">
+                <input type="hidden" name="_csrf" value="<%= locals.csrfToken %>">
+                <%- include('../../partials/bin-button', { label: 'Remove ' + x.name, refused: x.usedBy.length ? 'Used by ' + x.usedBy.join(', ') : '' }) %>
+              </form>
+            </td>
+          </tr>
+        <% }); %>
+      </tbody>
+    </table>
+  </div>
+<% } %>
+
+<%
+  var dialogs = [{ id: 'new-connection', title: 'New connection', action: '/admin/settings/advanced/connections', button: 'Add connection', x: null, closeTo: '#top' }]
+    .concat(connections.map(function (x) {
+      return { id: 'connection-' + x.id, title: 'Edit ' + x.name, action: '/admin/settings/advanced/connections/' + x.id, button: 'Save connection', x: x, closeTo: '#row-' + x.id };
+    }));
+%>
+<% dialogs.forEach(function (d) {
+     var reopened = openDialog === d.id;
+     var v = function (field, stored) { return reopened ? (values[field] || '') : (d.x ? stored : ''); };
+     var auth = reopened ? values.clientAuth : (d.x ? d.x.client_auth : 'body');
+     var type = reopened ? (values.authType || 'oauth2') : (d.x ? d.x.auth_type : 'oauth2');
+%>
+  <div class="dialog<%= reopened ? ' dialog--open' : '' %>" id="<%= d.id %>">
+    <a class="dialog__backdrop" href="<%= d.closeTo %>" aria-label="Close"></a>
+    <div class="dialog__panel" role="dialog" aria-modal="true" aria-labelledby="<%= d.id %>-title">
+      <div class="dialog__head">
+        <h2 id="<%= d.id %>-title"><%= d.title %></h2>
+        <a class="dialog__close" href="<%= d.closeTo %>" aria-label="Close">&times;</a>
+      </div>
+      <form method="post" action="<%= d.action %>" class="stack" autocomplete="off">
+        <input type="hidden" name="_csrf" value="<%= locals.csrfToken %>">
+        <%# The type first, as radios, so CSS can show only that type's fields
+            (the same technique as the mailbox dialog). %>
+        <% authTypes.forEach(function (t) { %>
+          <input class="kind-radio auth-radio--<%= t.key %>" type="radio" name="authType" value="<%= t.key %>" id="<%= d.id %>-t-<%= t.key %>"<%= type === t.key ? ' checked' : '' %>>
+        <% }); %>
+        <% if (reopened && errors.form) { %><p class="field-error" role="alert"><%= errors.form %></p><% } %>
+
+        <div class="field">
+          <span class="field-label">Type</span>
+          <div class="segmented segmented--wrap">
+            <% authTypes.forEach(function (t) { %>
+              <label for="<%= d.id %>-t-<%= t.key %>" class="segmented__option segmented__option--<%= t.key %>"><%= t.label %></label>
+            <% }); %>
+          </div>
+        </div>
+
+        <div class="field">
+          <label for="<%= d.id %>-name">Name <span class="required">*</span></label>
+          <input id="<%= d.id %>-name" name="name" type="text" required maxlength="80" value="<%= v('name', d.x && d.x.name) %>" placeholder="Jira">
+          <% if (reopened && errors.name) { %><p class="field-error" role="alert"><%= errors.name %></p><% } %>
+        </div>
+
+        <%# ------------------------------------------------ OAuth 2.0 client credentials %>
+        <div class="stack conn-panel only-oauth2">
+          <div class="field">
+            <label for="<%= d.id %>-url">Token endpoint <span class="required">*</span></label>
+            <input id="<%= d.id %>-url" name="tokenUrl" type="url" maxlength="2000" class="mono" value="<%= v('tokenUrl', d.x && d.x.token_url) %>" placeholder="https://login.example.com/oauth2/token">
+            <% if (reopened && errors.tokenUrl) { %><p class="field-error" role="alert"><%= errors.tokenUrl %></p><% } %>
+          </div>
+          <div class="field">
+            <label for="<%= d.id %>-cid">Client id <span class="required">*</span></label>
+            <input id="<%= d.id %>-cid" name="clientId" type="text" maxlength="500" class="mono" value="<%= v('clientId', d.x && d.x.auth_type === 'oauth2' ? d.x.client_id : '') %>">
+            <% if (reopened && errors.clientId && type === 'oauth2') { %><p class="field-error" role="alert"><%= errors.clientId %></p><% } %>
+          </div>
+          <div class="field">
+            <div class="label-row">
+              <label for="<%= d.id %>-secret">Client secret<% if (!d.x) { %> <span class="required">*</span><% } %></label>
+              <%- include('../../partials/info', { text: 'Stored encrypted and never shown again.' + (d.x ? ' Leave empty to keep the current one.' : '') }) %>
+            </div>
+            <input id="<%= d.id %>-secret" name="clientSecret" type="password" maxlength="2000" autocomplete="new-password"<%- d.x ? ' placeholder="Unchanged"' : '' %>>
+            <% if (reopened && errors.clientSecret && type === 'oauth2') { %><p class="field-error" role="alert"><%= errors.clientSecret %></p><% } %>
+          </div>
+          <div class="field">
+            <label for="<%= d.id %>-scope">Scope</label>
+            <input id="<%= d.id %>-scope" name="scope" type="text" maxlength="1000" class="mono" value="<%= v('scope', d.x && d.x.scope) %>" placeholder="api://example/.default">
+            <% if (reopened && errors.scope) { %><p class="field-error" role="alert"><%= errors.scope %></p><% } %>
+          </div>
+          <div class="field">
+            <div class="label-row">
+              <label for="<%= d.id %>-aud">Audience</label>
+              <%- include('../../partials/info', { text: 'Only for providers that ask for one, such as Auth0. Leave empty otherwise.' }) %>
+            </div>
+            <input id="<%= d.id %>-aud" name="audience" type="text" maxlength="500" class="mono" value="<%= v('audience', d.x && d.x.audience) %>">
+          </div>
+          <fieldset class="field">
+            <legend>Send the client credentials</legend>
+            <label class="check"><input type="radio" name="clientAuth" value="body"<%= auth !== 'basic' ? ' checked' : '' %>> In the request body</label>
+            <label class="check"><input type="radio" name="clientAuth" value="basic"<%= auth === 'basic' ? ' checked' : '' %>> As a Basic authorization header</label>
+          </fieldset>
+        </div>
+
+        <%# ------------------------------------------------ API key in a header %>
+        <div class="stack conn-panel only-api_key">
+          <div class="grid-2">
+            <div class="field">
+              <label for="<%= d.id %>-header">Header <span class="required">*</span></label>
+              <input id="<%= d.id %>-header" name="headerName" type="text" maxlength="100" class="mono" value="<%= v('headerName', d.x && d.x.header_name) %>" placeholder="X-API-Key">
+              <% if (reopened && errors.headerName) { %><p class="field-error" role="alert"><%= errors.headerName %></p><% } %>
+            </div>
+            <div class="field">
+              <div class="label-row">
+                <label for="<%= d.id %>-prefix">Before the key</label>
+                <%#
+                  The space after Bearer is part of the value and has to be
+                  typed, but quoting it as "Bearer " read as a stray space -
+                  reported 15 Oct 2026. Say so in words instead.
+                %>
+                <%- include('../../partials/info', { text: 'Written before the key, for an API that wants Bearer or Token in front. Include the space that follows it. Usually empty.' }) %>
+              </div>
+              <input id="<%= d.id %>-prefix" name="valuePrefix" type="text" maxlength="40" class="mono" value="<%= v('valuePrefix', d.x && d.x.value_prefix) %>">
+              <% if (reopened && errors.valuePrefix) { %><p class="field-error" role="alert"><%= errors.valuePrefix %></p><% } %>
+            </div>
+          </div>
+          <div class="field">
+            <div class="label-row">
+              <label for="<%= d.id %>-key">Key<% if (!d.x) { %> <span class="required">*</span><% } %></label>
+              <%- include('../../partials/info', { text: 'Stored encrypted and never shown again.' + (d.x ? ' Leave empty to keep the current one.' : '') }) %>
+            </div>
+            <input id="<%= d.id %>-key" name="apiKey" type="password" maxlength="2000" autocomplete="new-password"<%- d.x ? ' placeholder="Unchanged"' : '' %>>
+            <% if (reopened && errors.clientSecret && type === 'api_key') { %><p class="field-error" role="alert"><%= errors.clientSecret %></p><% } %>
+          </div>
+        </div>
+
+        <%# ------------------------------------------------ Basic %>
+        <div class="grid-2 conn-panel only-basic">
+          <div class="field">
+            <label for="<%= d.id %>-user">Username <span class="required">*</span></label>
+            <input id="<%= d.id %>-user" name="username" type="text" maxlength="500" autocomplete="off" value="<%= v('username', d.x && d.x.auth_type === 'basic' ? d.x.client_id : '') %>">
+            <% if (reopened && errors.clientId && type === 'basic') { %><p class="field-error" role="alert"><%= errors.clientId %></p><% } %>
+          </div>
+          <div class="field">
+            <div class="label-row">
+              <label for="<%= d.id %>-pass">Password<% if (!d.x) { %> <span class="required">*</span><% } %></label>
+              <%- include('../../partials/info', { text: 'Stored encrypted and never shown again.' + (d.x ? ' Leave empty to keep the current one.' : '') }) %>
+            </div>
+            <input id="<%= d.id %>-pass" name="password" type="password" maxlength="2000" autocomplete="new-password"<%- d.x ? ' placeholder="Unchanged"' : '' %>>
+            <% if (reopened && errors.clientSecret && type === 'basic') { %><p class="field-error" role="alert"><%= errors.clientSecret %></p><% } %>
+          </div>
+        </div>
+
+        <%# ------------------------------------------------ OAuth 2.0 as a person %>
+        <div class="stack conn-panel only-oauth2_user">
+          <div class="field">
+            <div class="label-row">
+              <span class="field-label">Redirect URI</span>
+              <%- include('../../partials/info', { text: 'Register this with the provider exactly as shown. After saving, press Sign in on the connection; steps then act as the person who signed in.' }) %>
+            </div>
+            <span class="mono small copyable"><%= redirectUri %></span>
+          </div>
+          <div class="field">
+            <label for="<%= d.id %>-authz">Authorization endpoint <span class="required">*</span></label>
+            <input id="<%= d.id %>-authz" name="authorizeUrl" type="url" maxlength="2000" class="mono" value="<%= v('authorizeUrl', d.x && d.x.authorize_url) %>" placeholder="https://login.example.com/oauth2/authorize">
+            <% if (reopened && errors.authorizeUrl) { %><p class="field-error" role="alert"><%= errors.authorizeUrl %></p><% } %>
+          </div>
+          <div class="field">
+            <label for="<%= d.id %>-uurl">Token endpoint <span class="required">*</span></label>
+            <input id="<%= d.id %>-uurl" name="userTokenUrl" type="url" maxlength="2000" class="mono" value="<%= v('userTokenUrl', d.x && d.x.auth_type === 'oauth2_user' ? d.x.token_url : '') %>" placeholder="https://login.example.com/oauth2/token">
+            <% if (reopened && errors.tokenUrl && type === 'oauth2_user') { %><p class="field-error" role="alert"><%= errors.tokenUrl %></p><% } %>
+          </div>
+          <div class="field">
+            <label for="<%= d.id %>-ucid">Client id <span class="required">*</span></label>
+            <input id="<%= d.id %>-ucid" name="userClientId" type="text" maxlength="500" class="mono" value="<%= v('userClientId', d.x && d.x.auth_type === 'oauth2_user' ? d.x.client_id : '') %>">
+            <% if (reopened && errors.clientId && type === 'oauth2_user') { %><p class="field-error" role="alert"><%= errors.clientId %></p><% } %>
+          </div>
+          <div class="field">
+            <div class="label-row">
+              <label for="<%= d.id %>-usecret">Client secret<% if (!d.x) { %> <span class="required">*</span><% } %></label>
+              <%- include('../../partials/info', { text: 'Stored encrypted and never shown again.' + (d.x ? ' Leave empty to keep the current one.' : '') }) %>
+            </div>
+            <input id="<%= d.id %>-usecret" name="userClientSecret" type="password" maxlength="2000" autocomplete="new-password"<%- d.x ? ' placeholder="Unchanged"' : '' %>>
+            <% if (reopened && errors.clientSecret && type === 'oauth2_user') { %><p class="field-error" role="alert"><%= errors.clientSecret %></p><% } %>
+          </div>
+          <div class="field">
+            <div class="label-row">
+              <label for="<%= d.id %>-uscope">Scope</label>
+              <%- include('../../partials/info', { text: 'Include the provider\'s scope for a refresh token - offline_access for Microsoft and most others - or the connection stops working after the first hour.' }) %>
+            </div>
+            <input id="<%= d.id %>-uscope" name="userScope" type="text" maxlength="1000" class="mono" value="<%= v('userScope', d.x && d.x.auth_type === 'oauth2_user' ? d.x.scope : '') %>" placeholder="offline_access https://graph.microsoft.com/Mail.Send">
+          </div>
+          <fieldset class="field">
+            <legend>Send the client credentials</legend>
+            <label class="check"><input type="radio" name="userClientAuth" value="body"<%= auth !== 'basic' ? ' checked' : '' %>> In the request body</label>
+            <label class="check"><input type="radio" name="userClientAuth" value="basic"<%= auth === 'basic' ? ' checked' : '' %>> As a Basic authorization header</label>
+          </fieldset>
+        </div>
+
+        <%# ------------------------------------------------ Client certificate (mTLS) %>
+        <div class="stack conn-panel only-mtls">
+          <% if (d.x && d.x.auth_type === 'mtls' && d.x.certSubject) { %>
+            <p class="small">Stored: <span class="mono"><%= d.x.certSubject %></span>, valid until <%= d.x.certExpires %>. Leave both boxes empty to keep it.</p>
+          <% } %>
+          <div class="field">
+            <label for="<%= d.id %>-cert">Certificate (PEM)<% if (!d.x) { %> <span class="required">*</span><% } %></label>
+            <textarea id="<%= d.id %>-cert" name="clientCert" rows="4" maxlength="20000" spellcheck="false" class="conn-pem" placeholder="-----BEGIN CERTIFICATE-----"></textarea>
+            <% if (reopened && errors.clientCert) { %><p class="field-error" role="alert"><%= errors.clientCert %></p><% } %>
+          </div>
+          <div class="field">
+            <div class="label-row">
+              <label for="<%= d.id %>-pkey">Private key (PEM)<% if (!d.x) { %> <span class="required">*</span><% } %></label>
+              <%- include('../../partials/info', { text: 'Stored encrypted and never shown again. It is checked to belong to the certificate when saved.' }) %>
+            </div>
+            <textarea id="<%= d.id %>-pkey" name="clientKey" rows="4" maxlength="20000" spellcheck="false" autocomplete="off" class="conn-pem" placeholder="-----BEGIN PRIVATE KEY-----"></textarea>
+            <% if (reopened && errors.clientKey) { %><p class="field-error" role="alert"><%= errors.clientKey %></p><% } %>
+          </div>
+          <div class="field">
+            <label for="<%= d.id %>-pass2">Key passphrase</label>
+            <input id="<%= d.id %>-pass2" name="keyPassphrase" type="password" maxlength="500" autocomplete="new-password" placeholder="Only if the key is protected">
+          </div>
+        </div>
+
+        <div class="dialog__actions">
+          <button type="submit" class="btn btn--primary"><%= d.button %></button>
+          <a class="btn btn--quiet" href="<%= d.closeTo %>">Cancel</a>
+        </div>
+      </form>
+    </div>
+  </div>
+<% }); %>
+
+<%- include('_layout_end') %>

@@ -1,0 +1,38 @@
+<%- include('partials/header') %>
+
+<div class="signin">
+  <div class="card signin-card">
+    <%- include("partials/signin-mark") %>
+    <h1>Enter your code</h1>
+    <p class="lede">A code has been sent to <strong><%= email %></strong>. It will expire in 5 minutes.</p>
+
+    <form method="post" action="/auth/local/code/verify" class="stack local-signin">
+      <input type="hidden" name="_csrf" value="<%= locals.csrfToken %>">
+
+      <%# One field, wide tracking: paste and the browser's one-time-code
+          autofill keep working, with no script on this page. The six drawn
+          boxes went because the digits and the boxes would not stay in step
+          on a phone - see .code-entry in app.css. %>
+      <div class="field">
+        <label for="code" class="visually-hidden">Sign-in code</label>
+        <div class="code-entry<%= error ? ' code-entry--error' : '' %>">
+          <input id="code" name="code" type="text" inputmode="numeric" required maxlength="6" pattern="[0-9]{6}"
+                 autocomplete="one-time-code" spellcheck="false" autofocus title="The six digits from the email"
+                 <%- error ? 'aria-describedby="code-error"' : '' %>>
+        </div>
+        <% if (error) { %><p class="field-error" id="code-error" role="alert"><%= error %></p><% } %>
+      </div>
+
+      <button type="submit" class="btn btn--primary btn--block">Sign in</button>
+    </form>
+
+    <form method="post" action="/auth/local/code" class="stack">
+      <input type="hidden" name="_csrf" value="<%= locals.csrfToken %>">
+      <input type="hidden" name="email" value="<%= email %>">
+      <button type="submit" class="btn btn--quiet btn--block">Send a new code</button>
+    </form>
+    <a class="signin-back" href="/login?change=1">Use a different address</a>
+  </div>
+</div>
+
+<%- include('partials/footer') %>

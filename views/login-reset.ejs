@@ -1,0 +1,38 @@
+<%- include('partials/header') %>
+
+<div class="signin">
+  <div class="card signin-card">
+    <%- include("partials/signin-mark") %>
+    <h1>Choose a new password</h1>
+
+    <% if (!valid) { %>
+      <p class="lede">This link has expired or was already used.</p>
+      <a class="btn btn--primary btn--block" href="/login/forgot">Send a new link</a>
+      <a class="signin-back" href="/login">Back to sign in</a>
+    <% } else { %>
+      <form method="post" action="/login/reset/<%= token %>" class="stack local-signin">
+        <input type="hidden" name="_csrf" value="<%= locals.csrfToken %>">
+        <%# For the password manager: which account the new password is for. %>
+        <div class="signin-identity">
+          <span class="avatar" aria-hidden="true"><%= email.slice(0, 2).toUpperCase() %></span>
+          <label for="username" class="visually-hidden">Email</label>
+          <input id="username" type="email" readonly value="<%= email %>" autocomplete="username" class="signin-identity__email">
+        </div>
+        <div class="field signin-reveal">
+          <label for="password">New password</label>
+          <input id="password" name="password" type="password" required maxlength="200" minlength="<%= minLength %>"
+                 autocomplete="new-password" autofocus placeholder="At least <%= minLength %> characters"
+                 <%- error ? 'aria-describedby="reset-error"' : '' %>>
+        </div>
+        <div class="field signin-reveal signin-reveal--late">
+          <label for="confirm">Confirm password</label>
+          <input id="confirm" name="confirm" type="password" required maxlength="200" autocomplete="new-password">
+          <% if (error) { %><p class="field-error" id="reset-error" role="alert"><%= error %></p><% } %>
+        </div>
+        <button type="submit" class="btn btn--primary btn--block">Change password</button>
+      </form>
+    <% } %>
+  </div>
+</div>
+
+<%- include('partials/footer') %>

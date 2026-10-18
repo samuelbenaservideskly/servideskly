@@ -1,0 +1,219 @@
+<%#
+  Two tables, not one list.
+
+  **Members** says who is in the group. **Find people** is where somebody is
+  added. They were one list of ticked boxes, which answered "who is in this
+  group?" only by reading every row and looking at the ticks - fine for four
+  people, useless for four hundred.
+
+  Both page, at ten by default, and on separate query parameters, so
+  searching for somebody to add does not move the list of who is already in.
+
+  What keeps this safe to submit a page at a time: every row posts the one id
+  it acts on, and the save changes membership only for the ids it was sent.
+  Nobody on another page is touched - which is exactly what the old
+  whole-list form would have got wrong the moment it was paged.
+
+  Locals: action, members, candidates, memberIds, total, q, size, page,
+  memberPage (from pageOf), and optionally manualIds for a group with rules.
+-%>
+<% var sizes = [10, 25, 50, 100]; %>
+<% var pages = size === 'all' ? 1 : Math.max(1, Math.ceil(total / size)); %>
+<%
+  function link(overrides) {
+    var state = { q: q, size: size, page: page, msize: memberPage.size, mpage: memberPage.page };
+    for (var key in overrides) state[key] = overrides[key];
+    var parts = [];
+    for (var name in state) {
+      if (state[name] !== '' && state[name] !== undefined && state[name] !== null) {
+        parts.push(name + '=' + encodeURIComponent(state[name]));
+      }
+    }
+    return action + '?' + parts.join('&') + '#members';
+  }
+%>
+
+<%# --------------------------------------------------------------- members %>
+<div class="stack">
+  <div class="picker-head">
+    <h3 class="section-title">In the group<% if (memberPage.total > 0) { %>
+      <span class="pill pill--muted"><%= memberPage.total %></span>
+    <% } %></h3>
+
+    <form method="get" action="<%= action %>" class="picker-bar">
+      <input type="hidden" name="q" value="<%= q %>">
+      <input type="hidden" name="size" value="<%= size %>">
+      <label class="sr-only" for="msize">Members per page</label>
+      <select id="msize" name="msize">
+        <% sizes.forEach(function (option) { %>
+          <option value="<%= option %>" <%= String(memberPage.size) === String(option) ? 'selected' : '' %>>
+            <%= option %> per page
+          </option>
+        <% }); %>
+        <option value="all" <%= memberPage.size === 'all' ? 'selected' : '' %>>Show all</option>
+      </select>
+      <button type="submit" class="btn btn--small">Apply</button>
+    </form>
+  </div>
+
+  <% if (memberPage.total === 0) { %>
+    <p class="small muted">Nobody is in this group yet. Add somebody below.</p>
+  <% } else { %>
+    <div class="table-scroll">
+      <table class="table">
+        <thead>
+          <tr>
+            <th scope="col">Name</th>
+            <th scope="col">Email</th>
+            <th scope="col">Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          <% memberPage.rows.forEach(function (person) { %>
+            <% var byRule = locals.manualIds && manualIds.indexOf(person.id) === -1; %>
+            <tr>
+              <td>
+                <strong><%= person.display_name %></strong>
+                <% if (person.department) { %>
+                  <span class="pill pill--muted"><%= person.department %></span>
+                <% } %>
+                <% if (byRule) { %>
+                  <span class="pill pill--ok">by rule</span>
+                <% } %>
+              </td>
+              <td class="mono small"><%= person.email %></td>
+              <td class="row-actions">
+                <% if (byRule) { %>
+                  <span class="muted small">Change the rule to remove</span>
+                <% } else { %>
+                  <form method="post" action="<%= action %>/members" class="inline-form">
+                    <input type="hidden" name="_csrf" value="<%= locals.csrfToken %>">
+                    <input type="hidden" name="shown" value="<%= person.id %>">
+                    <input type="hidden" name="q" value="<%= q %>">
+                    <input type="hidden" name="size" value="<%= size %>">
+                    <input type="hidden" name="page" value="<%= page %>">
+                    <input type="hidden" name="msize" value="<%= memberPage.size %>">
+                    <input type="hidden" name="mpage" value="<%= memberPage.page %>">
+                    <%- include('../../partials/bin-button', { label: 'Remove ' + person.display_name }) %>
+                  </form>
+                <% } %>
+              </td>
+            </tr>
+          <% }); %>
+        </tbody>
+      </table>
+    </div>
+
+    <% if (memberPage.pages > 1) { %>
+      <nav class="pager" aria-label="Pages of members">
+        <% if (memberPage.page > 1) { %>
+          <a class="btn btn--small" href="<%= link({ mpage: memberPage.page - 1 }) %>">Previous</a>
+        <% } %>
+        <span class="small muted">Page <%= memberPage.page %> of <%= memberPage.pages %></span>
+        <% if (memberPage.page < memberPage.pages) { %>
+          <a class="btn btn--small" href="<%= link({ mpage: memberPage.page + 1 }) %>">Next</a>
+        <% } %>
+      </nav>
+    <% } %>
+  <% } %>
+</div>
+
+<%# ---------------------------------------------------------- find people %>
+<div class="stack">
+  <h3 class="section-title">Find people to add</h3>
+
+  <%# live-search.js searches as you type and swaps the results below in;
+      without it, Enter or Search does the same. %>
+  <form method="get" action="<%= action %>" class="picker-bar" data-live-search="people-results">
+    <input type="hidden" name="msize" value="<%= memberPage.size %>">
+    <input type="hidden" name="mpage" value="<%= memberPage.page %>">
+    <div class="field">
+      <label class="sr-only" for="q">Search people</label>
+      <input id="q" name="q" type="search" value="<%= q %>"
+             placeholder="Search by name or email" maxlength="100">
+    </div>
+    <div class="field">
+      <label class="sr-only" for="size">Results per page</label>
+      <select id="size" name="size">
+        <% sizes.forEach(function (option) { %>
+          <option value="<%= option %>" <%= String(size) === String(option) ? 'selected' : '' %>>
+            <%= option %> per page
+          </option>
+        <% }); %>
+        <option value="all" <%= size === 'all' ? 'selected' : '' %>>Show all</option>
+      </select>
+    </div>
+    <button type="submit" class="btn" data-live-hide>Search</button>
+    <% if (q) { %>
+      <a class="btn btn--quiet" href="<%= link({ q: '', page: 1 }) %>">Clear</a>
+    <% } %>
+  </form>
+
+  <div id="people-results" aria-live="polite">
+  <% if (total === 0) { %>
+    <p class="small muted">
+      <%= q ? 'Nobody matches "' + q + '".' : 'There is nobody to add yet.' %>
+    </p>
+  <% } else { %>
+    <p class="small muted">
+      Showing <%= candidates.length %> of <%= total %><%= q ? ' matching' : '' %>.
+    </p>
+
+    <div class="table-scroll">
+      <table class="table">
+        <thead>
+          <tr>
+            <th scope="col">Name</th>
+            <th scope="col">Email</th>
+            <th scope="col">Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          <% candidates.forEach(function (person) { %>
+            <% var already = memberIds.indexOf(person.id) !== -1; %>
+            <tr>
+              <td>
+                <%= person.display_name %>
+                <% if (person.department) { %>
+                  <span class="pill pill--muted"><%= person.department %></span>
+                <% } %>
+              </td>
+              <td class="mono small"><%= person.email %></td>
+              <td>
+                <% if (already) { %>
+                  <span class="muted small">Already a member</span>
+                <% } else { %>
+                  <form method="post" action="<%= action %>/members" class="inline-form">
+                    <input type="hidden" name="_csrf" value="<%= locals.csrfToken %>">
+                    <input type="hidden" name="shown" value="<%= person.id %>">
+                    <input type="hidden" name="members" value="<%= person.id %>">
+                    <input type="hidden" name="q" value="<%= q %>">
+                    <input type="hidden" name="size" value="<%= size %>">
+                    <input type="hidden" name="page" value="<%= page %>">
+                    <input type="hidden" name="msize" value="<%= memberPage.size %>">
+                    <input type="hidden" name="mpage" value="<%= memberPage.page %>">
+                    <button type="submit" class="btn btn--small">Add</button>
+                  </form>
+                <% } %>
+              </td>
+            </tr>
+          <% }); %>
+        </tbody>
+      </table>
+    </div>
+
+    <% if (pages > 1) { %>
+      <nav class="pager" aria-label="Pages of people">
+        <% if (page > 1) { %>
+          <a class="btn btn--small" href="<%= link({ page: page - 1 }) %>">Previous</a>
+        <% } %>
+        <span class="small muted">Page <%= page %> of <%= pages %></span>
+        <% if (page < pages) { %>
+          <a class="btn btn--small" href="<%= link({ page: page + 1 }) %>">Next</a>
+        <% } %>
+      </nav>
+    <% } %>
+  <% } %>
+  </div>
+</div>
+<script src="/assets/js/live-search.js?v=<%= locals.assetVersion %>" defer></script>

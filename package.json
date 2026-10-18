@@ -1,0 +1,67 @@
+{
+  "name": "helpdesk-ticketing",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Secure ticketing system with Microsoft Entra ID (OIDC/OAuth2 + SAML) SSO, JIT provisioning and directory sync.",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "dev": "cross-env NODE_ENV=development tsx watch src/server.ts",
+    "build": "tsc -p tsconfig.json",
+    "start": "node dist/server.js",
+    "typecheck": "tsc -p tsconfig.json --noEmit && tsc -p tsconfig.test.json",
+    "migrate": "tsx src/db/migrate-cli.ts",
+    "sync:users": "tsx src/sync/sync-cli.ts",
+    "test": "tsx --test \"tests/**/*.test.ts\"",
+    "test:coverage": "tsx --test --experimental-test-coverage \"tests/**/*.test.ts\"",
+    "verify": "npm run typecheck && npm test && npm audit --audit-level=moderate",
+    "demo:seed": "cross-env NODE_ENV=development DATABASE_PATH=./data/demo.sqlite UPLOAD_DIR=./data/demo-uploads tsx scripts/demo-data.ts",
+    "dev:demo": "cross-env NODE_ENV=development DATABASE_PATH=./data/demo.sqlite UPLOAD_DIR=./data/demo-uploads PORT=3001 APP_BASE_URL=http://localhost:3001 tsx watch src/server.ts",
+    "strings": "tsx scripts/strings.ts",
+    "setup-link": "tsx src/auth/setup-link-cli.ts"
+  },
+  "dependencies": {
+    "better-sqlite3": "^12.11.1",
+    "cookie": "^1.1.1",
+    "dotenv": "^16.4.7",
+    "ejs": "^3.1.10",
+    "express": "^4.21.2",
+    "express-rate-limit": "^7.5.0",
+    "express-session": "^1.18.1",
+    "helmet": "^8.1.0",
+    "imapflow": "^2.3.0",
+    "jose": "^5.10.0",
+    "mailparser": "^3.9.37",
+    "multer": "^2.3.0",
+    "pg": "^8.23.1",
+    "pino": "^9.6.0",
+    "pino-http": "^10.4.0",
+    "sharp": "^0.35.5",
+    "zod": "^3.24.2"
+  },
+  "devDependencies": {
+    "@types/better-sqlite3": "^9.6.0",
+    "@types/cookie-signature": "^1.1.2",
+    "@types/ejs": "^3.1.5",
+    "@types/express": "^4.17.21",
+    "@types/express-session": "^1.18.1",
+    "@types/mailparser": "^3.9.0",
+    "@types/multer": "^2.2.0",
+    "@types/node": "^22.13.5",
+    "@types/pg": "^8.23.1",
+    "@types/supertest": "^6.0.3",
+    "cross-env": "^7.0.3",
+    "supertest": "^7.2.2",
+    "tsx": "^4.19.3",
+    "typescript": "^5.7.3"
+  },
+  "overrides": {
+    "qs": "^6.16.0"
+  },
+  "allowScripts": {
+    "better-sqlite3@12.11.1": true,
+    "esbuild@0.28.2": true
+  }
+}

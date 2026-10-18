@@ -1,0 +1,143 @@
+<%#
+  Adding or editing a widget, in a :target dialog. `w` is null when adding.
+  The kind is a row of radio cards; the fields below follow it with :has()
+  (.widget-form:has(...)), so only the ones that apply show - no script.
+%>
+<% var editing = !!w; var id = editing ? 'edit-' + w.id : 'add-widget'; %>
+<% var f = editing && w.filter ? w.filter : { scope: 'assigned', status: 'active', priority: 'any', type: 'any', group: '', q: '' }; %>
+<% var rp = editing && w.report ? w.report : { group: 'all', company: '', period: '30', metric: 'sla_resolution' }; %>
+<% var close = editing ? '#w-' + w.id : '#widgets'; %>
+<div class="dialog<%= openDialog === id ? ' dialog--open' : '' %>" id="<%= id %>">
+  <a class="dialog__backdrop" href="<%= close %>" aria-label="Close"></a>
+  <div class="dialog__panel" role="dialog" aria-modal="true">
+    <div class="dialog__head"><h2><%= editing ? 'Widget settings' : 'Add a widget' %></h2><a class="dialog__close" href="<%= close %>" aria-label="Close">&times;</a></div>
+    <form method="post" action="/boards/<%= board.id %>/widgets<%= editing ? '/' + w.id : '' %>" class="stack widget-form">
+      <input type="hidden" name="_csrf" value="<%= locals.csrfToken %>">
+      <% if (openDialog === id && error) { %><p class="field-error" role="alert"><%= error %></p><% } %>
+
+      <fieldset class="field">
+        <legend>What to show</legend>
+        <div class="widget-kinds">
+          <% widgetKinds.forEach(function (k, i) { %>
+            <label class="widget-kind">
+              <input type="radio" name="kind" value="<%= k.key %>"<%= (editing ? w.kind === k.key : i === 0) ? ' checked' : '' %>>
+              <b><%= k.label %></b><small><%= k.hint %></small>
+            </label>
+          <% }); %>
+        </div>
+      </fieldset>
+
+      <div class="field">
+        <label for="<%= id %>-title">Title</label>
+        <input id="<%= id %>-title" name="title" type="text" maxlength="80" value="<%= editing ? w.title : '' %>" placeholder="Leave empty to describe it from its settings">
+      </div>
+
+      <div class="field only-dashboard">
+        <label for="<%= id %>-dashboard">Dashboard</label>
+        <select id="<%= id %>-dashboard" name="dashboardId">
+          <% (locals.dashboards || []).forEach(function (d) { %>
+            <option value="<%= d.id %>"<%= editing && w.dashboardId === d.id ? ' selected' : '' %>>
+              <%= d.name %><%= d.is_enabled ? '' : ' (switched off)' %>
+            </option>
+          <% }); %>
+        </select>
+        <%# A fact the control cannot show: a dashboard that is off draws
+            nothing at all, here as anywhere else. %>
+        <% if (!(locals.dashboards || []).length) { %>
+          <p class="hint">No dashboards exist yet. An administrator adds them under Settings - Dashboards.</p>
+        <% } %>
+      </div>
+
+      <div class="grid-2 only-tickets">
+        <div class="field">
+          <label for="<%= id %>-scope">Tickets</label>
+          <select id="<%= id %>-scope" name="scope" data-no-search>
+            <% scopes.forEach(function (s) { %><option value="<%= s.key %>"<%= f.scope === s.key ? ' selected' : '' %>><%= s.label %></option><% }); %>
+          </select>
+        </div>
+        <div class="field">
+          <label for="<%= id %>-status">Status</label>
+          <select id="<%= id %>-status" name="status" data-no-search>
+            <option value="active"<%= f.status === 'active' ? ' selected' : '' %>>Active (open, in progress, on hold)</option>
+            <option value="any"<%= f.status === 'any' ? ' selected' : '' %>>Any</option>
+            <% statuses.forEach(function (s) { %><option value="<%= s %>"<%= f.status === s ? ' selected' : '' %>><%= statusLabels[s] %></option><% }); %>
+          </select>
+        </div>
+        <div class="field">
+          <label for="<%= id %>-priority">Priority</label>
+          <select id="<%= id %>-priority" name="priority" data-no-search>
+            <option value="any">Any</option>
+            <% priorities.forEach(function (p) { %><option value="<%= p %>"<%= f.priority === p ? ' selected' : '' %>><%= priorityLabels[p] %></option><% }); %>
+          </select>
+        </div>
+        <div class="field">
+          <label for="<%= id %>-type">Type</label>
+          <select id="<%= id %>-type" name="type" data-no-search>
+            <option value="any">Any</option>
+            <% types.forEach(function (t) { %><option value="<%= t %>"<%= f.type === t ? ' selected' : '' %>><%= typeLabels[t] %></option><% }); %>
+          </select>
+        </div>
+        <div class="field">
+          <label for="<%= id %>-group">Group</label>
+          <select id="<%= id %>-group" name="group">
+            <option value="">Any group</option>
+            <% groups.forEach(function (g) { %><option value="<%= g.id %>"<%= f.group === g.id ? ' selected' : '' %>><%= g.name %></option><% }); %>
+          </select>
+        </div>
+        <div class="field">
+          <label for="<%= id %>-q">Containing</label>
+          <input id="<%= id %>-q" name="q" type="text" maxlength="100" value="<%= f.q %>" placeholder="Words in the title or description">
+        </div>
+        <div class="field only-list">
+          <label for="<%= id %>-limit">How many</label>
+          <select id="<%= id %>-limit" name="limit" data-no-search>
+            <option value="5"<%= editing && w.limit === 10 ? '' : ' selected' %>>5</option>
+            <option value="10"<%= editing && w.limit === 10 ? ' selected' : '' %>>10</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="grid-2 only-report">
+        <div class="field">
+          <label for="<%= id %>-rgroup">Group</label>
+          <select id="<%= id %>-rgroup" name="reportGroup">
+            <option value="all">All my groups</option>
+            <% reportGroups.forEach(function (g) { %><option value="<%= g.id %>"<%= rp.group === g.id ? ' selected' : '' %>><%= g.name %></option><% }); %>
+          </select>
+        </div>
+        <div class="field">
+          <label for="<%= id %>-company">Company</label>
+          <select id="<%= id %>-company" name="company">
+            <option value="">All companies</option>
+            <% companies.forEach(function (c) { %><option value="<%= c %>"<%= rp.company === c ? ' selected' : '' %>><%= c %></option><% }); %>
+          </select>
+        </div>
+        <div class="field">
+          <label for="<%= id %>-period">Period</label>
+          <select id="<%= id %>-period" name="period" data-no-search>
+            <% periods.forEach(function (p) { %><option value="<%= p.key %>"<%= rp.period === p.key ? ' selected' : '' %>><%= p.label %></option><% }); %>
+          </select>
+        </div>
+        <div class="field only-metric">
+          <label for="<%= id %>-metric">Figure</label>
+          <select id="<%= id %>-metric" name="metric" data-no-search>
+            <% metrics.forEach(function (m) { %><option value="<%= m.key %>"<%= rp.metric === m.key ? ' selected' : '' %>><%= m.label %></option><% }); %>
+          </select>
+        </div>
+      </div>
+
+      <fieldset class="field">
+        <legend>Width</legend>
+        <div class="row-choices">
+          <label class="check"><input type="radio" name="width" value="half"<%= editing && w.width === 'full' ? '' : ' checked' %>> Half</label>
+          <label class="check"><input type="radio" name="width" value="full"<%= editing && w.width === 'full' ? ' checked' : '' %>> Full width</label>
+        </div>
+      </fieldset>
+
+      <div class="dialog__actions">
+        <button type="submit" class="btn btn--primary"><%= editing ? 'Save widget' : 'Add widget' %></button>
+        <a class="btn btn--quiet" href="<%= close %>">Cancel</a>
+      </div>
+    </form>
+  </div>
+</div>

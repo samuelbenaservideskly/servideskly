@@ -1,0 +1,31 @@
+<%- include('partials/header') %>
+
+<%# A provider sign-in whose address belongs to a password account here
+    (routes/auth.ts, /login/link): its password, once, proves the two are the
+    same person; then the account signs in with the provider only. %>
+<div class="signin">
+  <div class="card signin-card">
+    <%- include("partials/signin-mark") %>
+    <h1>Connect your account</h1>
+    <p class="lede">This address already has an account here that signs in with a password. Enter that password once to connect it to <%= provider %>. From then on you sign in with <%= provider %>, and the password is removed.</p>
+
+    <form method="post" action="/login/link" class="stack local-signin">
+      <input type="hidden" name="_csrf" value="<%= locals.csrfToken %>">
+      <div class="signin-identity">
+        <span class="avatar" aria-hidden="true"><%= (email || '?').slice(0, 2).toUpperCase() %></span>
+        <label for="email" class="visually-hidden">Email</label>
+        <input id="email" type="email" readonly value="<%= email %>" autocomplete="username" class="signin-identity__email">
+      </div>
+      <div class="field signin-reveal">
+        <label for="password">Password of the existing account</label>
+        <input id="password" name="password" type="password" required maxlength="200" autocomplete="current-password" autofocus
+               <%- error ? 'aria-describedby="link-error"' : '' %>>
+        <% if (error) { %><p class="field-error" id="link-error" role="alert"><%= error %></p><% } %>
+      </div>
+      <button type="submit" class="btn btn--primary btn--block signin-reveal signin-reveal--late">Connect and sign in</button>
+      <a class="btn btn--quiet btn--block" href="/login">Cancel</a>
+    </form>
+  </div>
+</div>
+
+<%- include('partials/footer') %>

@@ -1,0 +1,247 @@
+<%- include('_layout') %>
+
+<%#
+  No Customisation (or Mail) tabs here. Once you are editing one portal the
+  way out is All portals, which is the back link below; the tab row above a
+  portal's own header was a second navigation for a page that is not a tab -
+  reported 15 Oct 2026. The list page keeps the tabs: that page is a tab.
+%>
+
+<div class="portal-editor-head">
+  <%- include('../../partials/back-link', { href: base, label: kind === 'approval' ? 'All approval pages' : 'All portals' }) %>
+
+  <form method="post" action="<%= base %>/<%= portal.id %>/rename?part=<%= part %>"
+        class="portal-editor-head__name">
+    <input type="hidden" name="_csrf" value="<%= locals.csrfToken %>">
+    <label class="visually-hidden" for="portal-name">Name</label>
+    <input id="portal-name" name="name" type="text" maxlength="80" required value="<%= nameValue %>">
+    <button type="submit" class="btn btn--small">Rename</button>
+    <% if (portal.is_active) { %>
+      <span class="pill pill--ok">&#9733; Default</span>
+    <% } %>
+    <% if (groupCount > 0) { %>
+      <span class="pill pill--ok"><%= groupCount %> group<%= groupCount === 1 ? '' : 's' %></span>
+    <% } %>
+    <% if (!portal.is_active && groupCount === 0) { %>
+      <span class="pill pill--muted">Not in use</span>
+    <% } %>
+  </form>
+
+  <div class="portal-editor-head__actions">
+    <form method="post" action="<%= base %>/<%= portal.id %>/preview" class="inline">
+      <input type="hidden" name="_csrf" value="<%= locals.csrfToken %>">
+      <button type="submit" class="btn">Full-screen preview</button>
+    </form>
+    <% if (withGroups) { %>
+      <a class="btn" href="<%= base %>#groups-<%= portal.id %>">Assign to groups</a>
+    <% } %>
+    <% if (!portal.is_active) { %>
+      <form method="post" action="<%= base %>/<%= portal.id %>/default" class="inline">
+        <input type="hidden" name="_csrf" value="<%= locals.csrfToken %>">
+        <button type="submit" class="btn">Set default</button>
+      </form>
+    <% } %>
+    <%#
+      A portal keeps its own design for ever, which is right - and means one
+      written before the current design has no way to it but copying the
+      starter by hand. This is that way, behind a confirmation because it
+      replaces work.
+    %>
+    <a class="btn btn--quiet" href="#reset-design">Start again from the current design</a>
+  </div>
+</div>
+
+<div class="dialog" id="reset-design">
+  <a class="dialog__backdrop" href="#top" aria-label="Close"></a>
+  <div class="dialog__panel" role="dialog" aria-modal="true" aria-labelledby="reset-design-title">
+    <div class="dialog__head">
+      <h2 id="reset-design-title">Start again from the current design?</h2>
+      <a class="dialog__close" href="#top" aria-label="Close">&times;</a>
+    </div>
+    <form method="post" action="<%= base %>/<%= portal.id %>/reset-design?part=<%= part %>" class="stack">
+      <input type="hidden" name="_csrf" value="<%= locals.csrfToken %>">
+      <p class="small">
+        The layout, the CSS<%= kind === 'approval' ? '' : ' and the Home page' %> of
+        <strong><%= portal.name %></strong> are replaced with what a new
+        <%= kind === 'approval' ? 'approval page' : 'portal' %> starts from.
+        <%= kind === 'approval' ? 'Nothing else changes.' : 'Your other pages are left as they are.' %>
+      </p>
+      <p class="hint">This cannot be undone.</p>
+      <div class="dialog__actions">
+        <button type="submit" class="btn btn--danger">Replace the design</button>
+        <a class="btn btn--quiet" href="#top">Cancel</a>
+      </div>
+    </form>
+  </div>
+</div>
+<% if (nameError) { %>
+  <p class="field-error" role="alert"><%= nameError %></p>
+<% } %>
+
+<% if (portal.is_active || groupCount > 0) { %>
+  <div class="flash flash--info"><%= kind === 'approval' ? 'Approvers see this page' : 'Requesters are using this portal' %>: a change reaches them as soon as it is saved.</div>
+<% } %>
+
+<nav class="subtabs" aria-label="Parts of the <%= noun %>">
+  <% parts.forEach(function (item) { %>
+    <a href="<%= base %>/<%= portal.id %>?part=<%= item.key %>#editor"
+       class="<%= item.key === part ? 'subtabs__item--current' : '' %>"
+       <%- item.key === part ? 'aria-current="page"' : '' %>><%= item.label %></a>
+  <% }); %>
+</nav>
+
+<div class="portal-editor" id="editor">
+  <form method="post" action="<%= base %>/<%= portal.id %>/parts/<%= part %>"
+        class="portal-editor__code card stack">
+    <input type="hidden" name="_csrf" value="<%= locals.csrfToken %>">
+
+    <div class="label-row">
+      <label for="portal-code"><%= part === 'css' ? 'CSS' : partLabel + ' HTML' %></label>
+      <% if (part === 'layout' && kind === 'approval') { %>
+        <%- include('../../partials/info', { text: 'The complete approval page, including header, text and footer. {{content}} marks where the request details and the Approve / Decline form appear.' }) %>
+      <% } else if (part === 'layout') { %>
+        <%- include('../../partials/info', { text: 'The frame around every requester page, such as the header, navigation and footer. {{page}} marks where the content of each page appears.' }) %>
+      <% } else if (part === 'css') { %>
+        <%- include('../../partials/info', { text: 'Defines the appearance of the elements named by classes in the HTML, such as colours, sizes and spacing. It is loaded after the standard stylesheet, so its rules take precedence.' }) %>
+      <% } else { %>
+        <%- include('../../partials/info', { text: 'Inserted where the layout contains {{page}}. {{content}} marks where the standard page content appears.' }) %>
+      <% } %>
+    </div>
+
+    <% if (codeProblems.length > 0) { %>
+      <div class="flash flash--error" role="alert">
+        <strong>Not saved.</strong>
+        <ul class="tight-list">
+          <% codeProblems.forEach(function (problem) { %>
+            <li><%= problem %></li>
+          <% }); %>
+        </ul>
+      </div>
+    <% } %>
+
+    <textarea id="portal-code" name="code" class="portal-code" spellcheck="false" wrap="off"
+              autocomplete="off" rows="28"
+              placeholder="<%= part === 'layout' || part === 'css' || part === 'home' ? '' : 'Empty: the standard page is shown inside the layout' %>"><%= code %></textarea>
+
+    <div class="actions">
+      <button type="submit" class="btn btn--primary">Save <%= part === 'css' ? 'CSS' : partLabel.toLowerCase() %></button>
+      <span class="hint">The preview shows what is saved.</span>
+    </div>
+
+    <% if (previewSrc && part !== 'css' && part !== 'js') { %>
+      <%# What the page itself is made of - the markup {{content}} stands for,
+          inside everything else - as text: which elements and classes there
+          are to style. Read-only, and loaded only when opened. %>
+      <details class="portal-source">
+        <summary><strong>The page's HTML</strong> <span class="small muted">- read-only, as a requester receives it; <code>{{content}}</code> is the part inside <code>&lt;main&gt;</code></span></summary>
+        <iframe class="portal-editor__frame portal-editor__frame--source" title="HTML of <%= partLabel %>"
+                src="<%= previewSrc + (previewSrc.includes('?') ? '&' : '?') + 'source=1' %>" sandbox="allow-same-origin" loading="lazy"></iframe>
+      </details>
+    <% } %>
+  </form>
+
+  <div class="portal-editor__preview card">
+    <p class="small muted portal-editor__preview-title">Preview - <%= kind === 'approval' ? 'with a sample request' : part === 'layout' || part === 'css' ? 'how every page looks' : partLabel %></p>
+    <% if (previewNote) { %>
+      <p class="hint"><%= previewNote %></p>
+    <% } %>
+    <% if (previewSrc) { %>
+      <%#
+        A real requester page drawn in this portal. sandbox without
+        allow-scripts or allow-forms: nothing in it can run or submit, and
+        allow-same-origin only so its stylesheets and session still load.
+      %>
+      <%# Computer or phone width: radios before the frame, so CSS narrows it
+          (the radio-sibling technique - no script). The page is the same; a
+          portal adapts to a phone with @media rules in its CSS. %>
+      <input class="kind-radio preview-size--computer" type="radio" name="previewSize" id="preview-computer" checked>
+      <input class="kind-radio preview-size--phone" type="radio" name="previewSize" id="preview-phone">
+      <div class="segmented preview-size">
+        <label for="preview-computer" class="segmented__option segmented__option--computer">Computer</label>
+        <label for="preview-phone" class="segmented__option segmented__option--phone">Phone</label>
+      </div>
+      <iframe class="portal-editor__frame" title="Preview of <%= partLabel %>"
+              src="<%= previewSrc %>" sandbox="allow-same-origin"></iframe>
+    <% } %>
+  </div>
+</div>
+
+<% if (locals.dashboards && dashboards.length) { %>
+  <%#
+    What this portal shows above My tickets, and what it could. The design
+    of each lives under Settings - Dashboards; this says which are here and
+    gives the way to it, which the editor had no sign of at all.
+  %>
+  <details class="card portal-variables">
+    <summary><strong>Dashboards</strong></summary>
+    <div class="table-scroll">
+      <table class="table">
+        <thead>
+          <tr>
+            <th scope="col">Dashboard</th>
+            <th scope="col">On this portal</th>
+            <th scope="col">Variable</th>
+          </tr>
+        </thead>
+        <tbody>
+          <% dashboards.forEach(function (dashboard) { %>
+            <tr>
+              <td>
+                <a href="/admin/settings/dashboards/user/<%= dashboard.id %>?from=<%= portal.id %>"><%= dashboard.name %></a>
+                <% if (!dashboard.enabled) { %><span class="pill pill--muted">Off</span><% } %>
+              </td>
+              <td class="small">
+                <% if (dashboard.used) { %>Yes<% } else { %><span class="muted">No</span><% } %>
+              </td>
+              <td><code class="copyable">{{dashboard:<%= dashboard.id %>}}</code></td>
+            </tr>
+          <% }); %>
+        </tbody>
+      </table>
+    </div>
+    <p class="hint">A dashboard that is switched off renders nothing, wherever it is written.</p>
+  </details>
+<% } %>
+
+<details class="card portal-variables">
+  <summary><strong>Variables</strong></summary>
+  <div class="table-scroll">
+    <table class="table">
+      <thead>
+        <tr>
+          <th scope="col">Variable</th>
+          <th scope="col">Gives</th>
+          <th scope="col">Use in</th>
+        </tr>
+      </thead>
+      <tbody>
+        <% variables.forEach(function (variable) { %>
+          <% if (variable.arg) { %>
+            <% if (templates.length === 0) { %>
+              <tr>
+                <td><code class="copyable">{{<%= variable.name %>:id}}</code></td>
+                <td class="small"><%= variable.gives %> No templates are offered yet.</td>
+                <td class="small">Anywhere</td>
+              </tr>
+            <% } %>
+            <% templates.forEach(function (template) { %>
+              <tr>
+                <td><code class="copyable">{{<%= variable.name %>:<%= template.id %>}}</code></td>
+                <td class="small"><%= variable.gives %> <span class="muted">(<%= template.name %>)</span></td>
+                <td class="small">Anywhere</td>
+              </tr>
+            <% }); %>
+          <% } else { %>
+            <tr>
+              <td><code class="copyable">{{<%= variable.name %>}}</code></td>
+              <td class="small"><%= variable.gives %></td>
+              <td class="small"><%= variable.where === 'layout' ? 'Layout' : variable.where === 'page' ? 'Pages' : 'Anywhere' %></td>
+            </tr>
+          <% } %>
+        <% }); %>
+      </tbody>
+    </table>
+  </div>
+</details>
+
+<%- include('_layout_end') %>

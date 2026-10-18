@@ -1,0 +1,17 @@
+<nav class="subtabs" aria-label="Advanced settings">
+  <a href="/admin/settings/advanced/javascript"
+     class="<%= locals.tab === 'javascript' ? 'subtabs__item--current' : '' %>"
+     <%- locals.tab === 'javascript' ? 'aria-current="page"' : '' %>>JavaScript</a>
+  <a href="/admin/settings/advanced/automation"
+     class="<%= locals.tab === 'automation' ? 'subtabs__item--current' : '' %>"
+     <%- locals.tab === 'automation' ? 'aria-current="page"' : '' %>>Automation</a>
+  <a href="/admin/settings/advanced/connections"
+     class="<%= locals.tab === 'connections' ? 'subtabs__item--current' : '' %>"
+     <%- locals.tab === 'connections' ? 'aria-current="page"' : '' %>>Connections</a>
+  <a href="/admin/settings/advanced/api-keys"
+     class="<%= locals.tab === 'api-keys' ? 'subtabs__item--current' : '' %>"
+     <%- locals.tab === 'api-keys' ? 'aria-current="page"' : '' %>>API keys</a>
+  <a href="/admin/settings/advanced/data"
+     class="<%= locals.tab === 'data' ? 'subtabs__item--current' : '' %>"
+     <%- locals.tab === 'data' ? 'aria-current="page"' : '' %>>Data</a>
+</nav>

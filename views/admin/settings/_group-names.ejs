@@ -1,0 +1,7 @@
+<%# A short list of group names: the first two, then "+N more" - the whole
+    list in the tooltip, and read out in full by a screen reader. A long
+    comma list wrapped over several lines and made the row tall. %>
+<% var shown = names.slice(0, 2), rest = names.length - shown.length; %>
+<span class="group-names" title="<%= names.join(', ') %>">
+  <%= shown.join(', ') %><% if (rest > 0) { %><span aria-hidden="true"> </span><span class="group-names__more" aria-hidden="true">+<%= rest %> more</span><span class="visually-hidden">, <%= names.slice(2).join(', ') %></span><% } %>
+</span>

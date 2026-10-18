@@ -1,0 +1,233 @@
+<%#
+  Adding and editing a mailbox.
+
+  One partial for both, because the form is long and two copies of it drift:
+  a field added to one and forgotten in the other is a setting that silently
+  cannot be changed.
+
+  **The form changes with the kind, without any JavaScript.** The two choices
+  are radio buttons at the top of the form, and the panels below are their
+  later siblings - so `:checked ~ .only-...` can hide the one that does not
+  apply. A select could not do this: CSS cannot see which option is chosen.
+
+  That matters beyond tidiness. Graph signs in with OAuth2 client credentials
+  and IMAP/SMTP with a username and password, so showing both at once asks
+  every administrator for four things they do not have.
+
+  `mailbox` is null when adding. On a refused submission the posted values
+  come back in `values`, so nothing has to be retyped - except the secrets,
+  which are never echoed into a page.
+%>
+<% var editing = mailbox !== null; %>
+<% var open = openDialog === dialogId; %>
+<% var current = editing ? mailbox : {}; %>
+<% function field(name, fallback) {
+     if (open && values[name] !== undefined) return values[name];
+     return current[name] !== undefined && current[name] !== null ? current[name] : fallback;
+   } %>
+<% var kind = open && values.kind ? values.kind : (current.kind || 'graph'); %>
+
+<div class="dialog<%= open ? ' dialog--open' : '' %>" id="<%= dialogId %>">
+  <a class="dialog__backdrop" href="#top" aria-label="Close"></a>
+  <div class="dialog__panel" role="dialog" aria-modal="true">
+    <div class="dialog__head">
+      <h2><%= editing ? mailbox.address : 'New mailbox' %></h2>
+      <a class="dialog__close" href="#top" aria-label="Close">&times;</a>
+    </div>
+
+    <form method="post" class="stack kinded"
+          action="/admin/settings/mail/mailboxes<%= editing ? '/' + mailbox.id : '' %>">
+      <input type="hidden" name="_csrf" value="<%= locals.csrfToken %>">
+
+      <%#
+        First in the form, so everything that depends on them comes after.
+        Visually hidden rather than display:none - a hidden input is not
+        focusable, and these have to be reachable with a keyboard.
+      %>
+      <input class="kind-radio kind-radio--graph" type="radio" name="kind" value="graph"
+             id="kind-graph-<%= dialogId %>"<%= kind === 'graph' ? ' checked' : '' %>>
+      <input class="kind-radio kind-radio--imap" type="radio" name="kind" value="imap_smtp"
+             id="kind-imap-<%= dialogId %>"<%= kind === 'imap_smtp' ? ' checked' : '' %>>
+
+      <% if (open && errors.form) { %>
+        <p class="field-error" role="alert"><%= errors.form %></p>
+      <% } %>
+
+      <div class="field">
+        <span class="label">Connects by</span>
+        <div class="segmented">
+          <label for="kind-graph-<%= dialogId %>" class="segmented__option segmented__option--graph">
+            Microsoft Graph
+          </label>
+          <label for="kind-imap-<%= dialogId %>" class="segmented__option segmented__option--imap">
+            IMAP and SMTP
+          </label>
+        </div>
+      </div>
+
+      <div class="grid-2">
+        <div class="field">
+          <label for="name-<%= dialogId %>">Name <span class="required">*</span></label>
+          <input id="name-<%= dialogId %>" name="name" type="text" required maxlength="80"
+                 value="<%= field('name', '') %>" placeholder="e.g. Service desk">
+          <% if (open && errors.name) { %><p class="field-error" role="alert"><%= errors.name %></p><% } %>
+        </div>
+
+        <div class="field">
+          <label for="address-<%= dialogId %>">Address <span class="required">*</span></label>
+          <input id="address-<%= dialogId %>" name="address" type="email" required maxlength="200"
+                 value="<%= field('address', '') %>" placeholder="help@example.com">
+          <% if (open && errors.address) { %><p class="field-error" role="alert"><%= errors.address %></p><% } %>
+        </div>
+      </div>
+
+      <div class="field">
+        <div class="label-row">
+          <label for="group-<%= dialogId %>">Handles tickets for</label>
+          <%- include('../../partials/info', { text: 'Tickets routed to this group are answered from this mailbox. If not set, the mailbox is used only when it is the default.' }) %>
+        </div>
+        <select id="group-<%= dialogId %>" name="groupId">
+          <option value=""<%= field('group_id', '') ? '' : ' selected' %>>No particular group</option>
+          <% groups.forEach(function (group) { %>
+            <option value="<%= group.id %>"<%= field('group_id', '') === group.id ? ' selected' : '' %>><%= group.name %></option>
+          <% }); %>
+        </select>
+      </div>
+
+      <%# ------------------------------------------------ Microsoft Graph %>
+      <fieldset class="fieldset only-graph">
+        <legend>Microsoft Graph</legend>
+        <p class="hint">
+          OAuth2 client credentials, so no password is stored. Grant the
+          application <code>Mail.ReadWrite</code> and <code>Mail.Send</code> as
+          <em>application</em> permissions, and restrict it to this mailbox with
+          an application access policy.
+        </p>
+
+        <div class="grid-2">
+          <div class="field">
+            <label for="tenant-<%= dialogId %>">Directory (tenant) ID</label>
+            <input id="tenant-<%= dialogId %>" name="tenantId" type="text" maxlength="100"
+                   value="<%= field('tenant_id', '') %>" autocomplete="off">
+          </div>
+
+          <div class="field">
+            <label for="client-<%= dialogId %>">Application (client) ID</label>
+            <input id="client-<%= dialogId %>" name="clientId" type="text" maxlength="100"
+                   value="<%= field('client_id', '') %>" autocomplete="off">
+          </div>
+        </div>
+
+        <div class="field">
+          <div class="label-row">
+            <label for="graph-<%= dialogId %>">Mailbox in Graph</label>
+            <%- include('../../partials/info', { text: 'The mailbox address or object ID that the application accesses.' }) %>
+          </div>
+          <input id="graph-<%= dialogId %>" name="graphUserId" type="text" maxlength="200"
+                 value="<%= field('graph_user_id', '') %>" placeholder="help@example.com">
+        </div>
+
+        <div class="field">
+          <div class="label-row">
+            <label for="secret-<%= dialogId %>">Client secret</label>
+            <span class="info" tabindex="0"><span class="info__mark" aria-hidden="true">i</span><span class="info__bubble" role="note">Stored encrypted and never displayed again. <%= editing ? 'Leave empty to keep the current value.' : '' %></span></span>
+          </div>
+          <input id="secret-<%= dialogId %>" name="clientSecret" type="password" maxlength="500"
+                 autocomplete="off"
+                 placeholder="<%= editing ? 'Leave empty to keep the stored one' : '' %>">
+        </div>
+      </fieldset>
+
+      <%# ------------------------------------------------- IMAP and SMTP %>
+      <fieldset class="fieldset only-imap">
+        <legend>IMAP and SMTP</legend>
+        <p class="hint">
+          A username and a password - these protocols have no notion of a
+          tenant or a client secret. Note that Microsoft 365 has turned basic
+          authentication off, so a Microsoft mailbox wants Graph instead.
+        </p>
+
+        <div class="grid-2">
+          <div class="field">
+            <label for="imap-<%= dialogId %>">IMAP host</label>
+            <input id="imap-<%= dialogId %>" name="imapHost" type="text" maxlength="200"
+                   value="<%= field('imap_host', '') %>" placeholder="imap.example.com">
+          </div>
+
+          <div class="field">
+            <label for="imapport-<%= dialogId %>">IMAP port</label>
+            <input id="imapport-<%= dialogId %>" name="imapPort" type="number" min="1" max="65535"
+                   value="<%= field('imap_port', 993) %>" class="input--short">
+            <label class="checkbox">
+              <input type="checkbox" name="imapTls" value="1"
+                     <%= field('imap_tls', true) ? 'checked' : '' %>>
+              TLS from the start (993)
+            </label>
+          </div>
+
+          <div class="field">
+            <label for="smtp-<%= dialogId %>">SMTP host</label>
+            <input id="smtp-<%= dialogId %>" name="smtpHost" type="text" maxlength="200"
+                   value="<%= field('smtp_host', '') %>" placeholder="smtp.example.com">
+          </div>
+
+          <div class="field">
+            <label for="smtpport-<%= dialogId %>">SMTP port</label>
+            <input id="smtpport-<%= dialogId %>" name="smtpPort" type="number" min="1" max="65535"
+                   value="<%= field('smtp_port', 587) %>" class="input--short">
+            <label class="checkbox">
+              <input type="checkbox" name="smtpTls" value="1"
+                     <%= field('smtp_tls', false) ? 'checked' : '' %>>
+              TLS from the start (465)
+            </label>
+          </div>
+        </div>
+
+        <div class="grid-2">
+          <div class="field">
+            <label for="username-<%= dialogId %>">Username</label>
+            <input id="username-<%= dialogId %>" name="username" type="text" maxlength="200"
+                   value="<%= field('username', '') %>" autocomplete="off"
+                   placeholder="usually the full address">
+          </div>
+
+          <div class="field">
+            <div class="label-row">
+              <label for="password-<%= dialogId %>">Password</label>
+              <%- include('../../partials/info', { text: 'Stored encrypted and never displayed again.' }) %>
+            </div>
+            <input id="password-<%= dialogId %>" name="password" type="password" maxlength="500"
+                   autocomplete="off"
+                   placeholder="<%= editing ? 'Leave empty to keep the stored one' : '' %>">
+          </div>
+        </div>
+      </fieldset>
+
+      <div class="field">
+        <div class="label-row">
+          <label class="checkbox">
+            <input type="checkbox" name="receiveEnabled" value="1"
+                   <%= field('receive_enabled', true) ? 'checked' : '' %>>
+            Read replies from this mailbox and add them to tickets
+          </label>
+          <%- include('../../partials/info', { text: 'Clear to use this mailbox for sending only, for example as a no-reply address.' }) %>
+        </div>
+      </div>
+
+      <div class="field">
+        <label class="checkbox">
+          <input type="checkbox" name="isActive" value="1"
+                 <%= field('is_active', true) ? 'checked' : '' %>>
+          Use this mailbox
+        </label>
+      </div>
+
+      <div class="dialog__actions">
+        <button type="submit" class="btn btn--primary">
+          <%= editing ? 'Save mailbox' : 'Add mailbox' %>
+        </button>
+        <a class="btn btn--quiet" href="#top">Cancel</a>
+      </div>
+    </form>
+  </div>
+</div>

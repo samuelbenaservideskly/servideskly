@@ -1,0 +1,250 @@
+<%- include('_layout') %>
+
+<p class="breadcrumb">
+  <%# Opened from a portal: back to it, rather than to a list they did not
+      come from. The portal's own back link is All portals. %>
+  <% if (locals.fromPortal) { %>
+    <%- include('../../partials/back-link', { href: fromPortal.href, label: fromPortal.label }) %>
+  <% } else { %>
+    <%- include('../../partials/back-link', { href: '/admin/settings/dashboards/user', label: 'All dashboards' }) %>
+  <% } %>
+</p>
+
+<form method="post" action="/admin/settings/dashboards/user/<%= dashboard.id %>/name" class="card stack">
+  <input type="hidden" name="_csrf" value="<%= locals.csrfToken %>">
+  <div class="field">
+    <div class="label-row">
+      <label for="dashboard-name">Name</label>
+      <%- include('../../partials/info', { text: 'Shown to requesters as the dashboard\'s title. The portal variable does not change, so pages that use it keep working.' }) %>
+    </div>
+    <div class="rename-row">
+      <input id="dashboard-name" name="name" type="text" required maxlength="80"
+             value="<%= errors.name ? (values.name || '') : dashboard.name %>">
+      <button type="submit" class="btn">Rename</button>
+    </div>
+    <% if (errors.name) { %><p class="field-error" role="alert"><%= errors.name %></p><% } %>
+  </div>
+</form>
+
+<section class="card stack">
+  <div class="local-signin-card__row">
+    <div>
+      <strong>Shown to requesters</strong>
+      <span class="pill pill--<%= dashboard.is_enabled ? 'ok' : 'muted' %>"><%= dashboard.is_enabled ? 'On' : 'Off' %></span>
+      <p class="hint">Portal variable: <code>{{dashboard:<%= dashboard.id %>}}</code></p>
+    </div>
+    <form method="post" action="/admin/settings/dashboards/user/<%= dashboard.id %>/enabled" class="inline-form">
+      <input type="hidden" name="_csrf" value="<%= locals.csrfToken %>">
+      <input type="hidden" name="back" value="edit">
+      <% if (dashboard.is_enabled) { %>
+        <button type="submit" class="btn btn--small">Turn off</button>
+      <% } else { %>
+        <input type="hidden" name="enabled" value="on">
+        <button type="submit" class="btn btn--small">Turn on</button>
+      <% } %>
+    </form>
+  </div>
+</section>
+
+<% if (dashboard.kind === 'technician_availability') { %>
+<form method="post" action="/admin/settings/dashboards/user/<%= dashboard.id %>/options" class="card stack">
+  <input type="hidden" name="_csrf" value="<%= locals.csrfToken %>">
+  <h2 class="section-title">What it shows</h2>
+
+  <fieldset class="field">
+    <legend>Period</legend>
+    <label class="check"><input type="radio" name="view" value="today"<%= options.view === 'today' ? ' checked' : '' %>> Today</label>
+    <label class="check"><input type="radio" name="view" value="week"<%= options.view === 'week' ? ' checked' : '' %>> This week, Monday to Friday</label>
+  </fieldset>
+
+  <fieldset class="field">
+    <legend class="label-row">Statuses shown by name
+      <%- include('../../partials/info', { text: 'A status left unticked is shown only as Available or Not available, so requesters see whether somebody can help without learning why.' }) %>
+    </legend>
+    <% statuses.forEach(function (s) { %>
+      <label class="check">
+        <input type="checkbox" name="statuses" value="<%= s.key %>"<%= options.statuses.indexOf(s.key) >= 0 ? ' checked' : '' %>>
+        <%= s.label %>
+      </label>
+    <% }); %>
+  </fieldset>
+
+  <fieldset class="field">
+    <legend class="label-row">Location
+      <%- include('../../partials/info', { text: 'Each location is shown only to the user groups chosen under Locations. A requester who may not see one sees the status without it.' }) %>
+    </legend>
+    <label class="check">
+      <input type="checkbox" name="showLocation" value="on"<%= options.showLocation ? ' checked' : '' %>>
+      Show where technicians are
+    </label>
+  </fieldset>
+
+  <fieldset class="field">
+    <legend>Technicians</legend>
+    <% if (technicianGroups.length === 0) { %>
+      <p class="hint">Every agent is listed. Add technician groups under Groups to list only some.</p>
+    <% } else { %>
+      <p class="hint">Leave all unticked to list every technician.</p>
+      <% technicianGroups.forEach(function (g) { %>
+        <label class="check">
+          <input type="checkbox" name="groupIds" value="<%= g.id %>"<%= options.groupIds.indexOf(g.id) >= 0 ? ' checked' : '' %>>
+          <%= g.name %>
+        </label>
+      <% }); %>
+    <% } %>
+  </fieldset>
+
+  <div class="actions">
+    <button type="submit" class="btn btn--primary">Save options</button>
+  </div>
+</form>
+<% } %>
+
+<% if (dashboard.kind === 'service_desk') { %>
+<form method="post" action="/admin/settings/dashboards/user/<%= dashboard.id %>/options" class="card stack">
+  <input type="hidden" name="_csrf" value="<%= locals.csrfToken %>">
+  <h2 class="section-title">What it counts</h2>
+  <fieldset class="field">
+    <legend>Technician groups</legend>
+    <% if (technicianGroups.length === 0) { %>
+      <p class="hint">Every ticket is counted. Add technician groups under Groups to count only some.</p>
+    <% } else { %>
+      <p class="hint">Leave all unticked to count every ticket.</p>
+      <% technicianGroups.forEach(function (g) { %>
+        <label class="check">
+          <input type="checkbox" name="groupIds" value="<%= g.id %>"<%= scopedGroups.indexOf(g.id) >= 0 ? ' checked' : '' %>>
+          <%= g.name %>
+        </label>
+      <% }); %>
+    <% } %>
+  </fieldset>
+  <div class="actions">
+    <button type="submit" class="btn btn--primary">Save options</button>
+  </div>
+</form>
+<% } %>
+
+<% if (dashboard.kind === 'announcements') { %>
+<section class="card stack" id="announcements">
+  <div class="builder__head">
+    <h2 class="section-title">Announcements</h2>
+    <a class="btn btn--primary btn--small" href="#new-announcement"><span aria-hidden="true">+</span> New announcement</a>
+  </div>
+  <% if (announcements.length === 0) { %>
+    <p class="small muted">None yet. While there is nothing current, the dashboard shows nothing.</p>
+  <% } else { %>
+    <div class="table-scroll">
+      <table class="table">
+        <thead><tr><th scope="col">Announcement</th><th scope="col">Severity</th><th scope="col">Shown</th><th scope="col"><span class="visually-hidden">Actions</span></th></tr></thead>
+        <tbody>
+          <% announcements.forEach(function (n) { var current = n.starts_on <= today && (!n.ends_on || n.ends_on >= today); %>
+            <tr>
+              <td><strong><%= n.title %></strong><% if (n.body) { %><div class="small muted"><%= n.body.length > 120 ? n.body.slice(0, 120) + '...' : n.body %></div><% } %></td>
+              <td><span class="pill pill--<%= n.severity === 'outage' ? 'warn' : n.severity === 'warning' ? 'warn' : 'muted' %>"><%= severities.filter(function (s) { return s.key === n.severity; })[0].label %></span></td>
+              <td class="small"><%= n.starts_on %><%= n.ends_on ? ' - ' + n.ends_on : ' onwards' %><% if (current) { %> <span class="pill pill--ok">Now</span><% } %></td>
+              <td class="row-actions">
+                <form method="post" action="/admin/settings/dashboards/user/<%= dashboard.id %>/announcements/<%= n.id %>/delete" class="inline-form">
+                  <input type="hidden" name="_csrf" value="<%= locals.csrfToken %>">
+                  <%- include('../../partials/bin-button', { label: 'Remove ' + n.title }) %>
+                </form>
+              </td>
+            </tr>
+          <% }); %>
+        </tbody>
+      </table>
+    </div>
+  <% } %>
+</section>
+
+<div class="dialog<%= openDialog === 'new-announcement' ? ' dialog--open' : '' %>" id="new-announcement">
+  <a class="dialog__backdrop" href="#announcements" aria-label="Close"></a>
+  <div class="dialog__panel" role="dialog" aria-modal="true" aria-labelledby="new-announcement-title">
+    <div class="dialog__head">
+      <h2 id="new-announcement-title">New announcement</h2>
+      <a class="dialog__close" href="#announcements" aria-label="Close">&times;</a>
+    </div>
+    <form method="post" action="/admin/settings/dashboards/user/<%= dashboard.id %>/announcements" class="stack">
+      <input type="hidden" name="_csrf" value="<%= locals.csrfToken %>">
+      <div class="field">
+        <label for="a-title">Title <span class="required">*</span></label>
+        <input id="a-title" name="title" type="text" required maxlength="120" value="<%= values.title || '' %>" placeholder="Email is down in the Brno office">
+        <% if (errors.title) { %><p class="field-error" role="alert"><%= errors.title %></p><% } %>
+      </div>
+      <div class="field">
+        <label for="a-body">Details</label>
+        <textarea id="a-body" name="body" rows="3" maxlength="2000" placeholder="We are working on it. Next update at 14:00."><%= values.body || '' %></textarea>
+        <% if (errors.body) { %><p class="field-error" role="alert"><%= errors.body %></p><% } %>
+      </div>
+      <fieldset class="field">
+        <legend>Severity</legend>
+        <% severities.forEach(function (s) { %>
+          <label class="check"><input type="radio" name="severity" value="<%= s.key %>"<%= (values.severity || 'info') === s.key ? ' checked' : '' %>> <%= s.label %></label>
+        <% }); %>
+      </fieldset>
+      <div class="grid-2">
+        <div class="field">
+          <label for="a-from">From <span class="required">*</span></label>
+          <input id="a-from" name="startsOn" type="date" required value="<%= values.startsOn || today %>">
+          <% if (errors.startsOn) { %><p class="field-error" role="alert"><%= errors.startsOn %></p><% } %>
+        </div>
+        <div class="field">
+          <div class="label-row">
+            <label for="a-to">Until</label>
+            <%- include('../../partials/info', { text: 'The last day it shows. Leave empty to show it until it is removed.' }) %>
+          </div>
+          <input id="a-to" name="endsOn" type="date" value="<%= values.endsOn || '' %>">
+          <% if (errors.endsOn) { %><p class="field-error" role="alert"><%= errors.endsOn %></p><% } %>
+        </div>
+      </div>
+      <div class="dialog__actions">
+        <button type="submit" class="btn btn--primary">Add announcement</button>
+        <a class="btn btn--quiet" href="#announcements">Cancel</a>
+      </div>
+    </form>
+  </div>
+</div>
+<% } %>
+
+<form method="post" action="/admin/settings/dashboards/user/<%= dashboard.id %>/design#design" class="card stack" id="design">
+  <input type="hidden" name="_csrf" value="<%= locals.csrfToken %>">
+  <h2 class="section-title">Design</h2>
+
+  <% if (designErrors.length > 0) { %>
+    <div class="flash flash--error" role="alert">
+      <% designErrors.forEach(function (p) { %><div><%= p %></div><% }); %>
+    </div>
+  <% } %>
+
+  <fieldset class="field">
+    <legend>Drawn with</legend>
+    <label class="check"><input type="radio" name="design" value="standard"<%= typedDesign === 'standard' ? ' checked' : '' %>> The standard design</label>
+    <label class="check"><input type="radio" name="design" value="custom"<%= typedDesign === 'custom' ? ' checked' : '' %>> My own HTML</label>
+  </fieldset>
+
+  <div class="field">
+    <div class="label-row">
+      <label for="html">HTML</label>
+      <span class="info" tabindex="0"><span class="info__mark" aria-hidden="true">i</span><span class="info__bubble" role="note">
+        Used with "My own HTML". Variables:
+        <% variables.forEach(function (v) { %><br><code>{{<%= v.name %>}}</code> - <%= v.gives %><% }); %>
+        <br>Style it in the requester portal's CSS.
+      </span></span>
+    </div>
+    <textarea id="html" name="html" rows="10" spellcheck="false" class="mono"
+              placeholder="<h2>{{title}}</h2>&#10;<%= variables.filter(function (x) { return x.name !== 'title' && x.name.indexOf(':') < 0; }).map(function (x) { return '{{' + x.name + '}}'; }).join('&#10;') %>"><%= typedHtml %></textarea>
+  </div>
+
+  <div class="actions">
+    <button type="submit" class="btn">Save design</button>
+  </div>
+</form>
+
+<section class="card stack">
+  <div class="label-row">
+    <h2 class="section-title">Preview</h2>
+    <%- include('../../partials/info', { text: 'As a requester in no user group sees it, with what is saved. Shown here even while the dashboard is off.' }) %>
+  </div>
+  <iframe class="dashboard-preview" title="Preview of <%= dashboard.name %>" src="<%= previewUrl %>" sandbox="allow-same-origin"></iframe>
+</section>
+
+<%- include('_layout_end') %>

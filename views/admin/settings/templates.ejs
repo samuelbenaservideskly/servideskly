@@ -1,0 +1,269 @@
+<%- include('_layout') %>
+
+<%- include('_template-tabs', { tab: 'templates' }) %>
+
+<%# One tab per ticket type. Task and Change task are task templates: they
+    hang off a parent template and are added there, not here. %>
+<nav class="subtabs subtabs--secondary" aria-label="Template types">
+  <a href="/admin/settings/templates"
+     class="<%= !kind ? 'subtabs__item--current' : '' %>"
+     <%- !kind ? 'aria-current="page"' : '' %>>All</a>
+  <% kinds.forEach(function (k) { %>
+    <a href="/admin/settings/templates?type=<%= k.key %>"
+       class="<%= kind === k.key ? 'subtabs__item--current' : '' %>"
+       <%- kind === k.key ? 'aria-current="page"' : '' %>><%= k.label %></a>
+  <% }); %>
+</nav>
+
+<% if (kind === 'task' || kind === 'change_task') { %>
+  <div class="toolbar">
+    <h2 class="section-title"><%= kind === 'task' ? 'Task' : 'Change task' %> templates</h2>
+    <% if (parents.length) { %>
+      <a class="btn btn--primary" href="#new-task-template"><span aria-hidden="true">+</span> New task template</a>
+    <% } %>
+  </div>
+
+  <% if (tasks.length === 0) { %>
+    <div class="card">
+      <p><strong>No <%= kind === 'task' ? 'task' : 'change task' %> templates yet.</strong></p>
+      <p class="small muted">
+        <% if (parents.length) { %>
+          A task template belongs to the template it is raised with. Press New task template and choose that template, or open it and add one under Tasks.
+        <% } else { %>
+          Create a <%= kind === 'task' ? 'service request or incident' : 'change request' %> template first - a task is raised with one.
+        <% } %>
+      </p>
+    </div>
+  <% } else { %>
+    <div class="table-scroll">
+      <table class="table">
+        <thead>
+          <tr>
+            <th scope="col">Name</th>
+            <th scope="col">Raised with</th>
+            <th scope="col">Form</th>
+            <th scope="col">Status</th>
+            <th scope="col">Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          <% tasks.forEach(function (task) { %>
+            <tr>
+              <td>
+                <a class="link-strong" href="/admin/settings/templates/<%= task.id %>"><%= task.name %></a>
+                <% if (task.summary) { %><div class="small muted"><%= task.summary %></div><% } %>
+              </td>
+              <td class="small">
+                <a href="/admin/settings/templates/<%= task.parent_template_id %>#tasks"><%= task.parent_name %></a>
+                <div class="muted"><%= typeLabels[task.parent_type] %></div>
+              </td>
+              <td class="small">
+                <% if (!task.usable) { %>
+                  <span class="pill pill--warn">Unfinished</span>
+                <% } else { %>
+                  <%= task.fieldCount %> field<%= task.fieldCount === 1 ? '' : 's' %>
+                <% } %>
+              </td>
+              <td>
+                <% if (task.is_active) { %>
+                  <span class="pill pill--ok">Active</span>
+                <% } else { %>
+                  <span class="pill pill--muted">Retired</span>
+                <% } %>
+              </td>
+              <td class="row-actions">
+                <a class="btn btn--quiet btn--small" href="/admin/settings/templates/<%= task.id %>">Edit</a>
+              </td>
+            </tr>
+          <% }); %>
+        </tbody>
+      </table>
+    </div>
+  <% } %>
+
+  <% if (parents.length) { %>
+    <div class="dialog<%= locals.openDialog === 'new-task-template' ? ' dialog--open' : '' %>" id="new-task-template">
+      <a class="dialog__backdrop" href="#top" aria-label="Close"></a>
+      <div class="dialog__panel" role="dialog" aria-modal="true" aria-labelledby="new-task-template-title">
+        <div class="dialog__head">
+          <h2 id="new-task-template-title">New task template</h2>
+          <a class="dialog__close" href="#top" aria-label="Close">&times;</a>
+        </div>
+
+        <%#
+          It posts to the first eligible template and names the real one in
+          the body - the endpoint takes the parent from the dialog, exactly
+          as the one on a template's own page does.
+        %>
+        <form method="post" action="/admin/settings/templates/<%= parents[0].id %>/tasks" class="stack">
+          <input type="hidden" name="_csrf" value="<%= locals.csrfToken %>">
+
+          <div class="field">
+            <label for="task-parent">Raised with <span class="required">*</span></label>
+            <select id="task-parent" name="parentId" required>
+              <% parents.forEach(function (p) { %>
+                <option value="<%= p.id %>"><%= p.name %></option>
+              <% }); %>
+            </select>
+          </div>
+
+          <div class="field">
+            <label for="task-name">Name <span class="required">*</span></label>
+            <input id="task-name" name="name" type="text" required maxlength="80" placeholder="e.g. Prepare the laptop">
+          </div>
+
+          <div class="field">
+            <label for="task-summary">Summary</label>
+            <input id="task-summary" name="summary" type="text" maxlength="200">
+          </div>
+
+          <div class="grid-2">
+            <div class="field">
+              <label for="task-priority">Priority</label>
+              <select id="task-priority" name="priority">
+                <option value="">Same as the template it is raised with</option>
+                <% priorities.forEach(function (p) { %>
+                  <option value="<%= p %>"><%= priorityLabels[p] %></option>
+                <% }); %>
+              </select>
+            </div>
+            <div class="field">
+              <label for="task-group">Technician group</label>
+              <select id="task-group" name="groupId">
+                <option value="">Nobody in particular</option>
+                <% groups.forEach(function (g) { %>
+                  <option value="<%= g.id %>"><%= g.name %></option>
+                <% }); %>
+              </select>
+            </div>
+          </div>
+
+          <label class="check">
+            <input type="checkbox" name="mandatory" value="on">
+            <span>The ticket cannot be resolved until this task is done</span>
+          </label>
+
+          <div class="dialog__actions">
+            <button type="submit" class="btn btn--primary">Add task template</button>
+            <a class="btn btn--quiet" href="#top">Cancel</a>
+          </div>
+        </form>
+      </div>
+    </div>
+  <% } %>
+<% } else { %>
+
+<div class="toolbar">
+  <a class="btn btn--primary" href="/admin/settings/templates/new<%= kind ? '?type=' + kind : '' %>">
+    <span aria-hidden="true">+</span> New template
+  </a>
+</div>
+
+<% if (templates.length === 0) { %>
+  <div class="card">
+    <p><strong>No templates yet.</strong></p>
+    <p class="small muted">
+      <a href="/admin/settings/templates/new">Create the first one.</a>
+    </p>
+  </div>
+<% } else { %>
+  <div class="table-scroll">
+    <table class="table">
+      <thead>
+        <tr>
+          <th scope="col">Name</th>
+          <th scope="col">Raises</th>
+          <th scope="col">Filed under</th>
+          <th scope="col">Priority</th>
+          <th scope="col">Form</th>
+          <th scope="col">Status</th>
+          <th scope="col">Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        <% templates.forEach(function (template) { %>
+          <tr>
+            <td>
+              <a class="link-strong" href="/admin/settings/templates/<%= template.id %>"><%= template.name %></a>
+              <% if (template.is_default) { %>
+                <span class="pill pill--ok" title="New ticket opens with this">&#9733; Default</span>
+              <% } %>
+              <% if (template.summary) { %>
+                <div class="small muted"><%= template.summary %></div>
+              <% } %>
+            </td>
+            <td class="small"><%= typeLabels[template.type] %></td>
+            <td class="small">
+              <% if (template.categoryPath) { %>
+                <%= template.categoryPath %>
+              <% } else { %>
+                <span class="muted"> - </span>
+              <% } %>
+            </td>
+            <td class="small"><%= priorityLabels[template.priority] %></td>
+            <td class="small">
+              <% if (!template.usable) { %>
+                <span class="pill pill--warn" title="Add a Title field before this can be offered">Unfinished</span>
+              <% } else { %>
+                <%= template.fieldCount %> field<%= template.fieldCount === 1 ? '' : 's' %>
+              <% } %>
+            </td>
+            <td>
+              <% if (template.is_active) { %>
+                <span class="pill pill--ok">Active</span>
+              <% } else { %>
+                <span class="pill pill--muted">Retired</span>
+              <% } %>
+            </td>
+            <td class="row-actions">
+              <a class="btn btn--quiet btn--small" href="/admin/settings/templates/<%= template.id %>">Edit</a>
+
+              <%# Most templates are a variation of one that already works. %>
+              <form method="post" action="/admin/settings/templates/<%= template.id %>/duplicate" class="inline">
+                <input type="hidden" name="_csrf" value="<%= locals.csrfToken %>">
+                <button type="submit" class="btn btn--quiet btn--small">Duplicate</button>
+              </form>
+
+              <%#
+                The default lives here rather than inside a template, because
+                it is a choice *between* templates: you pick it by looking at
+                the list, not by opening one and trying to remember the rest.
+              %>
+              <%#
+                One template is always the default, so there is nothing to
+                clear - only somewhere else to move it to. The current one
+                therefore has no button, just the badge beside its name.
+              %>
+              <% if (!template.is_default) { %>
+                <form method="post" action="/admin/settings/templates/<%= template.id %>/default" class="inline">
+                  <input type="hidden" name="_csrf" value="<%= locals.csrfToken %>">
+                  <button type="submit" class="btn btn--quiet btn--small"
+                          title="<%= template.is_active && template.usable
+                                   ? 'Make New ticket open with this template'
+                                   : 'A retired or unfinished template cannot be the default' %>"
+                          <%= template.is_active && template.usable ? '' : 'disabled' %>>
+                    Make default
+                  </button>
+                </form>
+
+                <form method="post" action="/admin/settings/templates/<%= template.id %>/delete" class="inline">
+                  <input type="hidden" name="_csrf" value="<%= locals.csrfToken %>">
+                  <%- include('../../partials/bin-button', { label: 'Remove ' + template.name }) %>
+                </form>
+              <% } else { %>
+                <%- include('../../partials/bin-button', {
+                      label: 'Remove ' + template.name,
+                      refused: 'Make another template the default first.',
+                    }) %>
+              <% } %>
+            </td>
+          </tr>
+        <% }); %>
+      </tbody>
+    </table>
+  </div>
+<% } %>
+
+<% } %>
+
+<%- include('_layout_end') %>
