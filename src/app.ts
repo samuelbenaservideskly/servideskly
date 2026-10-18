@@ -186,7 +186,7 @@ export function createApp(): Express {
   // before. Hashed once at start-up: the file cannot change under a running
   // process, and this is cheaper than stat-ing it per request.
   app.locals.assetVersion = assetVersion();
-  // The AGPL-3.0's offer of the source, at the foot of every page (partials/footer.ejs).
+  // Where the source and its license are, at the foot of every page (partials/footer.ejs).
   app.locals.sourceUrl = config.sourceUrl;
 
   // Every render has t(), including the error page, which is drawn outside

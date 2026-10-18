@@ -2,6 +2,7 @@
   "name": "helpdesk-ticketing",
   "version": "1.0.0",
   "private": true,
+  "license": "PolyForm-Shield-1.0.0",
   "type": "module",
   "description": "Secure ticketing system with Microsoft Entra ID (OIDC/OAuth2 + SAML) SSO, JIT provisioning and directory sync.",
   "engines": {

@@ -98,9 +98,9 @@ const schema = z.object({
   LOG_LEVEL: z
     .enum(['fatal', 'error', 'warn', 'info', 'debug', 'trace', 'silent'])
     .default('info'),
-  // Where this copy's source code is published. The AGPL-3.0 requires a
-  // modified copy run as a network service to offer its users the source:
-  // whoever changes the code points this at their own repository.
+  // Where this copy's source code and license are published, linked from
+  // the foot of every page; whoever runs a changed copy points this at
+  // their own repository.
   SOURCE_URL: z.string().url().default('https://github.com/servideskly/servideskly'),
 });
 

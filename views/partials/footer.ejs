@@ -1,9 +1,9 @@
 <%# The same test as header.ejs: the app shell is open, so close it too. %>
 <% var dressed = !!(locals.portal && typeof locals.portal.stylesheet === 'string'); %>
 <% var shell = !!locals.currentUser && !dressed && !locals.portalFrame; %>
-<%# The AGPL-3.0 offers every user of a running copy its source (config SOURCE_URL). Not in the portal editor's framed preview. %>
+<%# Where the source and its license are (config SOURCE_URL). Not in the portal editor's framed preview. %>
 <% if (!locals.portalFrame && locals.sourceUrl) { %>
-  <p class="source-link small muted"><a href="<%= locals.sourceUrl %>" rel="noopener">Source code</a> - ServiDeskly, AGPL-3.0</p>
+  <p class="source-link small muted"><a href="<%= locals.sourceUrl %>" rel="noopener">Source code</a> - ServiDeskly, PolyForm Shield 1.0.0</p>
 <% } %>
 </main>
 <% if (shell) { %>

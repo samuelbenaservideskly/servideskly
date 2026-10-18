@@ -124,8 +124,9 @@ Vault settings show a green tick. A red cross is almost always the role
 assignment or a secret name; set the setting again once it is fixed.
 
 If you run a **modified** copy, also set `SOURCE_URL` to your own repository:
-the AGPL-3.0 requires offering your users the source of what they use, and
-every page links to it.
+every page links to the source it runs. Remember the license (PolyForm Shield
+1.0.0): running it for your own organisation is fine; hosting it for others
+is not.
 
 ## 6. Deploy
 

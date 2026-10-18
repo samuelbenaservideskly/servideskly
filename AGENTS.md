@@ -21,7 +21,7 @@ to 49. A working local proof of concept.
 ## 0. Repositories
 
 - This repository: https://github.com/servideskly/servideskly
-  (public, AGPL-3.0). Branch `main` is where work lands; branch `production`
+  (public, source-available under PolyForm Shield 1.0.0). Branch `main` is where work lands; branch `production`
   is the released version, moved forward along `main` by "Promote to
   production". Workflows: **CI** (push to main, pull requests), **Deploy to
   a customer**, **Promote to production**, **Customer log**, **Customer

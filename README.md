@@ -1,7 +1,7 @@
 # ServiDeskly
 
-**An open-source service desk: tickets, request forms, email, service levels
-and automation - in one self-hosted web application.**
+**A source-available service desk: tickets, request forms, email, service
+levels and automation - in one self-hosted web application.**
 
 ServiDeskly is a helpdesk for IT and service teams. Requesters raise tickets
 through forms you design or by email; technicians work them in a queue with
@@ -120,15 +120,25 @@ ServiDeskly is written and maintained by the ServiDeskly authors.
 
 Copyright (C) 2026 the ServiDeskly authors.
 
-ServiDeskly is free software: you can redistribute it and/or modify it under
-the terms of the **GNU Affero General Public License** as published by the
-Free Software Foundation, either version 3 of the License, or (at your
-option) any later version. See [LICENSE](LICENSE).
+ServiDeskly is **source-available** under the
+**[PolyForm Shield License 1.0.0](https://polyformproject.org/licenses/shield/1.0.0)**
+- see [LICENSE](LICENSE).
 
-In short: you may use, change and host it, including commercially. If you
-run a **modified** version as a service for others, you must offer them the
-source of your version - set `SOURCE_URL` to your repository, and the link at
-the foot of every page points there.
+In short:
+
+- **You may** read, use and change it, and run it for yourself or your own
+  organisation - companies included - free of charge.
+- **You may not** use it to provide a product that competes with
+  ServiDeskly: selling it, hosting it for others, offering it as a service,
+  or building a rival helpdesk product from it - paid or free.
+- Anyone you share it with must get the license and its `Required Notice`
+  line too.
+
+For anything the license does not allow - hosting it for customers, say -
+ask: **[support@servideskly.com](mailto:support@servideskly.com)**.
+
+Versions published before 18 October 2026 were briefly under the GNU AGPL
+3.0; every version since is under PolyForm Shield 1.0.0.
 
 The six bundled fonts are under the SIL Open Font License 1.1
 ([public/fonts/NOTICES.md](public/fonts/NOTICES.md)).

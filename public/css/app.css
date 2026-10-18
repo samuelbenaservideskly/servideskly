@@ -4488,6 +4488,6 @@ h1 { font-weight: 700; letter-spacing: -0.015em; }
 .settings-result__title { font-weight: 600; }
 .searchbar { border-radius: var(--radius); }
 
-/* The AGPL-3.0's offer of the source, at the foot of every page (partials/footer.ejs): quiet, never in the way. */
+/* Where the source is, at the foot of every page (partials/footer.ejs): quiet, never in the way. */
 .source-link { margin: 2.5rem 0 1rem; text-align: center; font-size: 0.78rem; }
 .source-link a { color: inherit; text-decoration: underline; text-underline-offset: 2px; }
