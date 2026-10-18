@@ -141,11 +141,11 @@ npm ci && npm run build && npm ci --omit=dev && zip -qr helpdesk.zip dist node_m
 az webapp deploy --resource-group <rg> --name <app> --src-path helpdesk.zip --type zip --clean true
 ```
 
-Or from GitHub: fork this repository, and the **Deploy to a customer**
-workflow (`.github/workflows/deploy-customer.yml`) deploys a branch to a web
-app with OpenID Connect - it needs an app registration with a federated
-credential for your repository and the variables `AZURE_CLIENT_ID`,
-`AZURE_TENANT_ID` and `AZURE_SUBSCRIPTION_ID`.
+Or from GitHub Actions: build the package as above on `ubuntu-latest` and
+deploy it with `azure/login` (OpenID Connect - an app registration with a
+federated credential for your repository) and `azure/webapps-deploy`. Keep
+such a workflow in a **private** repository: the logs of a public one are
+public, and they name your app, resource group and Azure identifiers.
 
 Check: `https://<app>.azurewebsites.net/readyz` answers 200.
 

@@ -22,11 +22,11 @@ to 49. A working local proof of concept.
 
 - This repository: https://github.com/servideskly/servideskly
   (public, source-available under PolyForm Shield 1.0.0). Branch `main` is where work lands; branch `production`
-  is the released version, moved forward along `main` by "Promote to
-  production". Workflows: **CI** (push to main, pull requests), **Deploy to
-  a customer**, **Promote to production**, **Customer log**, **Customer
-  secrets**, **Check Azure** - the last five are the maintainer's hosting
-  operations and only run with their repository variables.
+  is the released version, moved forward along `main` by the maintainer's
+  release process. The only workflow here is **CI** (push to main, pull
+  requests): deploying and operating hosted helpdesks happens in the
+  maintainer's private repository, so its logs - app names, resource groups,
+  Azure identifiers - never become public.
 - The maintainer's hosting portal (which orders, builds and hosts helpdesks
   on Azure) is a **separate, private** project. It deploys this code
   unmodified and points each helpdesk's "Source code" link here.

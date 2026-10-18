@@ -137,8 +137,5 @@ In short:
 For anything the license does not allow - hosting it for customers, say -
 ask: **[support@servideskly.com](mailto:support@servideskly.com)**.
 
-Versions published before 18 October 2026 were briefly under the GNU AGPL
-3.0; every version since is under PolyForm Shield 1.0.0.
-
 The six bundled fonts are under the SIL Open Font License 1.1
 ([public/fonts/NOTICES.md](public/fonts/NOTICES.md)).

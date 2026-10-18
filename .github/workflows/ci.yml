@@ -1,7 +1,6 @@
 # Every push to main and every pull request: typecheck (src and
 # tests), the whole test suite, and npm audit - the same `npm run verify`
-# that is run locally. "Promote to production" runs it again on the commit
-# it promotes.
+# that is run locally.
 #
 # The suite runs twice: on SQLite (local development, the default) and on
 # PostgreSQL (what customers run on Azure), each test file in a database of
