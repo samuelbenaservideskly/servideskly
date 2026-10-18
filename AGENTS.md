@@ -21,7 +21,7 @@ to 49. A working local proof of concept.
 ## 0. Repositories
 
 - This repository: https://github.com/servideskly/servideskly
-  (public, source-available under PolyForm Shield 1.0.0). Branch `main` is where work lands; branch `production`
+  (public, open source under the GNU AGPL 3.0 or later). Branch `main` is where work lands; branch `production`
   is the released version, moved forward along `main` by the maintainer's
   release process. The only workflow here is **CI** (push to main, pull
   requests): deploying and operating hosted helpdesks happens in the
