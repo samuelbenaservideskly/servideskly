@@ -1053,7 +1053,7 @@ transaction.
 > network share. Scaling past one instance is the point at which the
 > database has to move to a server - see DEPLOYMENT.md §3.3.
 
-**[DEPLOYMENT.md](DEPLOYMENT.md) is the full guide** - the local proof of
+**[DEPLOYMENT.md](../DEPLOYMENT.md) is the full guide** - the local proof of
 concept, the Docker stack, backups and restores, upgrades, what has to change
 for Azure Web App and SQL Server, troubleshooting, and a pre-launch checklist.
 ---
@@ -1152,7 +1152,7 @@ tar czf uploads.tar.gz -C "$UPLOAD_DIR" .
 ```
 
 For the Docker stack, including restores, see
-[DEPLOYMENT.md](DEPLOYMENT.md#backups).
+[DEPLOYMENT.md](../DEPLOYMENT.md#backups).
 
 ---
 
@@ -1345,7 +1345,7 @@ Deliberate omissions, so you know what you are getting:
   processes cannot share it, and its locking is unreliable on a network
   filesystem (an SMB/NFS mount, an Azure Files share). This is the limit that
   decides when the database has to move to a server - see
-  [DEPLOYMENT.md §3.3](DEPLOYMENT.md#33-moving-to-sql-server), which lists
+  [DEPLOYMENT.md §3.3](../DEPLOYMENT.md#33-moving-to-sql-server), which lists
   exactly what that change touches. The data layer was written to keep it
   contained to `src/db/`.
 - **Attachments are on a filesystem, not object storage.** They live under
