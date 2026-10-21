@@ -178,6 +178,24 @@ export function formatDetail(detail: unknown): string {
     .join(', ');
 }
 
+/** An audit detail as [name, value] pairs, one per line in the audit trail's panel. */
+export function detailPairs(detail: unknown): [string, string][] {
+  if (detail === null || detail === undefined || detail === '') return [];
+  let value: unknown = detail;
+  if (typeof detail === 'string') {
+    try {
+      value = JSON.parse(detail);
+    } catch {
+      return [['detail', detail]];
+    }
+  }
+  if (typeof value !== 'object' || value === null || Array.isArray(value)) return [['detail', formatDetail(value)]];
+  return Object.entries(value as Record<string, unknown>).map(([k, v]) => [
+    k,
+    v === null || v === undefined ? '-' : typeof v === 'object' ? JSON.stringify(v) : String(v),
+  ]);
+}
+
 /** Builds a query string, dropping empty values, for filter and page links. */
 export function queryString(params: Record<string, string | number | undefined>): string {
   const search = new URLSearchParams();

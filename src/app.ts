@@ -12,6 +12,7 @@ import {
   formatDateTime,
   formatDate,
   formatDetail,
+  detailPairs,
   formatRelative,
   shortFileName,
   formatDuration,
@@ -204,6 +205,7 @@ export function createApp(): Express {
   app.locals.shortFileName = shortFileName;
   app.locals.formatDuration = formatDuration;
   app.locals.formatDetail = formatDetail;
+  app.locals.detailPairs = detailPairs;
   app.locals.queryString = queryString;
   app.locals.provisioningLabel = provisioningLabel;
   app.locals.roleLabel = roleLabel;

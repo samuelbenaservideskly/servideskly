@@ -4647,3 +4647,24 @@ h1 { font-weight: 700; letter-spacing: -0.015em; }
 .role-permissions__group { margin: 0; padding: 0; border: 0; display: grid; gap: 0.35rem; align-content: start; }
 .role-permissions__group legend { margin-bottom: 0.35rem; font-weight: 600; font-size: 0.9rem; }
 .dialog__panel--wide { width: min(46rem, calc(100vw - 2rem)); }
+
+/* The audit trail (21 Oct 2026): one line per entry, the rest behind Details. */
+.audit-list { overflow: hidden; }
+.audit-row { display: grid; grid-template-columns: 9.5rem minmax(0, 1.3fr) minmax(0, 1.4fr) 7rem 5rem; gap: 1rem; align-items: center; padding: 0.65rem 1rem; font-size: 0.88rem; }
+.audit-row > span { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.audit-row--head { font-size: 0.8rem; font-weight: 600; color: var(--text-muted); border-bottom: 1px solid var(--border); }
+.audit-entry + .audit-entry { border-top: 1px solid var(--border); }
+.audit-entry > summary { cursor: pointer; list-style: none; }
+.audit-entry > summary::-webkit-details-marker { display: none; }
+.audit-entry > summary:hover { background: var(--surface-2); }
+.audit-row__when { font-variant-numeric: tabular-nums; color: var(--text-muted); }
+.audit-row__more { justify-self: end; font-size: 0.8rem; color: var(--accent); }
+.audit-entry[open] .audit-row__more { font-weight: 600; }
+.audit-detail { display: grid; grid-template-columns: 9rem minmax(0, 1fr); gap: 0.35rem 1rem; margin: 0; padding: 0.4rem 1rem 0.9rem 1rem; font-size: 0.85rem; background: var(--surface-2); }
+.audit-detail dt { color: var(--text-muted); }
+.audit-detail dd { margin: 0; overflow-wrap: anywhere; }
+@media (max-width: 48rem) {
+  .audit-row { grid-template-columns: minmax(0, 1fr) auto; }
+  .audit-row--head { display: none; }
+  .audit-row__who, .audit-row__action { grid-column: 1 / -1; }
+}

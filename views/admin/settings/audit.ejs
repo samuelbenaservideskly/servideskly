@@ -34,35 +34,32 @@
 <% if (entries.length === 0) { %>
   <p class="muted">No audit entries match this filter.</p>
 <% } else { %>
-  <div class="table-scroll">
-    <table class="table table--dense">
-      <thead>
-        <tr>
-          <th scope="col">When</th>
-          <th scope="col">Actor</th>
-          <th scope="col">Action</th>
-          <th scope="col">Outcome</th>
-          <th scope="col">Target</th>
-          <th scope="col">Client IP</th>
-          <th scope="col">Detail</th>
-        </tr>
-      </thead>
-      <tbody>
-        <% entries.forEach(function (entry) { %>
-          <tr>
-            <td class="small mono"><%= formatDateTime(entry.created_at) %></td>
-            <td class="small"><%= entry.actor_email || 'anonymous' %></td>
-            <td class="small mono"><%= entry.action %></td>
-            <td>
-              <span class="pill pill--<%= entry.outcome === 'success' ? 'resolved' : 'urgent' %>"><%= entry.outcome %></span>
-            </td>
-            <td class="small"><%= entry.target_type ? entry.target_type + ' ' + (entry.target_id || '') : '' %></td>
-            <td class="small mono"><%= entry.ip || '' %></td>
-            <td class="small detail-cell"><%= formatDetail(entry.detail) %></td>
-          </tr>
-        <% }); %>
-      </tbody>
-    </table>
+  <%#
+    One line per entry - when, who, what, how it went - and the rest behind
+    Details (21 Oct 2026: seven columns squeezed the detail until it broke
+    mid-word). A <details> per entry, so no script and a keyboard opens it.
+  %>
+  <div class="card card--flush audit-list">
+    <div class="audit-row audit-row--head" aria-hidden="true">
+      <span>When</span><span>Actor</span><span>Action</span><span>Outcome</span><span></span>
+    </div>
+    <% entries.forEach(function (entry) { var pairs = detailPairs(entry.detail); %>
+      <details class="audit-entry">
+        <summary class="audit-row">
+          <span class="audit-row__when"><%= formatDateTime(entry.created_at) %></span>
+          <span class="audit-row__who" title="<%= entry.actor_email || '' %>"><%= entry.actor_email || 'anonymous' %></span>
+          <span class="audit-row__action mono"><%= entry.action %></span>
+          <span><span class="pill pill--<%= entry.outcome === 'success' ? 'resolved' : 'urgent' %>"><%= entry.outcome %></span></span>
+          <span class="audit-row__more">Details</span>
+        </summary>
+        <dl class="audit-detail">
+          <% if (entry.target_type) { %><dt>Target</dt><dd><%= entry.target_type %> <span class="mono"><%= entry.target_id || '' %></span></dd><% } %>
+          <% if (entry.ip) { %><dt>Client IP</dt><dd class="mono"><%= entry.ip %></dd><% } %>
+          <% pairs.forEach(function (pair) { %><dt><%= pair[0] %></dt><dd><%= pair[1] %></dd><% }); %>
+          <% if (!entry.target_type && !entry.ip && pairs.length === 0) { %><dt>Detail</dt><dd class="muted">Nothing more was recorded.</dd><% } %>
+        </dl>
+      </details>
+    <% }); %>
   </div>
 
   <% if (pageCount > 1) { %>

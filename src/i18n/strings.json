@@ -2327,6 +2327,12 @@
     "where": "views/admin/settings/audit.ejs",
     "uses": 12
   },
+  "s2b51a2f4db": {
+    "text": "Nothing more was recorded.",
+    "context": "Text on admin/settings/audit",
+    "where": "views/admin/settings/audit.ejs",
+    "uses": 1
+  },
   "s2b65656bbb": {
     "text": "Request forms, the catalogue, categories and service levels",
     "context": "The line under \"Tickets\" in the Settings list",
@@ -3673,7 +3679,7 @@
   },
   "s449995c4fe": {
     "text": "Actor",
-    "context": "A table column heading on admin/settings/audit",
+    "context": "Text on the page on admin/settings/audit",
     "where": "views/admin/settings/audit.ejs",
     "uses": 1
   },
@@ -3727,9 +3733,9 @@
   },
   "s45989de49f": {
     "text": "Details",
-    "context": "The label of a form field on admin/settings/dashboard-edit / A heading on admin/settings/group-detail / A heading on admin/settings/user-group-detail",
-    "where": "views/admin/settings/dashboard-edit.ejs",
-    "uses": 4
+    "context": "Text on the page on admin/settings/audit / The label of a form field on admin/settings/dashboard-edit / A heading on admin/settings/group-detail",
+    "where": "views/admin/settings/audit.ejs",
+    "uses": 5
   },
   "s45999251b2": {
     "text": "Use this relay",
@@ -4135,7 +4141,7 @@
   },
   "s4e80abb5b1": {
     "text": "Outcome",
-    "context": "The label of a form field on admin/settings/audit / A table column heading on admin/settings/audit / A table column heading on admin/settings/automation-edit",
+    "context": "The label of a form field on admin/settings/audit / Text on the page on admin/settings/audit / A table column heading on admin/settings/automation-edit",
     "where": "views/admin/settings/audit.ejs",
     "uses": 4
   },
@@ -5371,7 +5377,7 @@
   },
   "s64cff1319d": {
     "text": "Action",
-    "context": "The label of a form field on admin/settings/audit / A table column heading on admin/settings/audit / The label of a form field on admin/settings/automation-edit",
+    "context": "The label of a form field on admin/settings/audit / Text on the page on admin/settings/audit / The label of a form field on admin/settings/automation-edit",
     "where": "views/admin/settings/audit.ejs",
     "uses": 3
   },
@@ -8179,7 +8185,7 @@
   },
   "s978354db0c": {
     "text": "Target",
-    "context": "A table column heading on admin/settings/audit",
+    "context": "Text on admin/settings/audit",
     "where": "views/admin/settings/audit.ejs",
     "uses": 1
   },
@@ -11125,7 +11131,7 @@
   },
   "scf9c7aa24a": {
     "text": "When",
-    "context": "A table column heading on admin/settings/audit / A table column heading on admin/settings/automation-edit / The label of a form field on admin/settings/automation-edit",
+    "context": "Text on the page on admin/settings/audit / A table column heading on admin/settings/automation-edit / The label of a form field on admin/settings/automation-edit",
     "where": "views/admin/settings/audit.ejs",
     "uses": 10
   },
@@ -12649,7 +12655,7 @@
   },
   "seb3f1fe567": {
     "text": "Client IP",
-    "context": "A table column heading on admin/settings/audit",
+    "context": "Text on admin/settings/audit",
     "where": "views/admin/settings/audit.ejs",
     "uses": 1
   },
@@ -13351,7 +13357,7 @@
   },
   "sfb5f27d545": {
     "text": "Detail",
-    "context": "A table column heading on admin/settings/audit",
+    "context": "Text on admin/settings/audit",
     "where": "views/admin/settings/audit.ejs",
     "uses": 1
   },

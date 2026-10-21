@@ -12,3 +12,13 @@ test('an audit detail reads as names and values, never [object Object]', () => {
   assert.equal(formatDetail(null), '');
   assert.doesNotMatch(formatDetail({ a: { b: 1 } }), /\[object Object\]/);
 });
+
+test('the Details panel lists each detail on its own line', async () => {
+  const { detailPairs } = await import('../src/lib/format.js');
+  assert.deepEqual(detailPairs({ source: 'manual', role: 'admin', provisioned: false }), [
+    ['source', 'manual'],
+    ['role', 'admin'],
+    ['provisioned', 'false'],
+  ]);
+  assert.deepEqual(detailPairs(null), []);
+});
