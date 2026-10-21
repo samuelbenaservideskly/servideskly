@@ -1,4 +1,5 @@
 import './env.js';
+import { execute, queryOne } from '../src/db/index.js';
 import assert from 'node:assert/strict';
 import test, { before, beforeEach, describe } from 'node:test';
 import { bootstrapTestDatabase } from './support/bootstrap.js';
@@ -700,6 +701,40 @@ describe('turning mail into tickets and comments', () => {
 
     assert.equal(outcome, 'comment.added');
     assert.equal(ticketId, ticket.id);
+  });
+
+  test('a reply from somebody not on the ticket is an internal note: no reopening, not in the requester\'s name', async () => {
+    const mailbox = await findMailbox(mailboxId);
+    assert.ok(mailbox);
+    const ticket = await createTicket({
+      title: 'Guessed reference',
+      description: 'x',
+      priority: 'normal',
+      category: 'other',
+      requesterId: requester.user.id,
+      groupId,
+    });
+    await execute("UPDATE tickets SET status = 'resolved', resolved_at = ? WHERE id = ?", [new Date().toISOString(), ticket.id]);
+
+    const { outcome, ticketId } = await ingest(
+      mailbox,
+      incoming({ from: 'guesser@elsewhere.test', subject: 'Re: [' + ticket.reference + '] anything', body: 'Please send the files to me.' }),
+    );
+    assert.equal(outcome, 'comment.added');
+    assert.equal(ticketId, ticket.id);
+
+    const comment = await queryOne<{ body: string; is_internal: boolean; author_id: string }>(
+      'SELECT body, is_internal, author_id FROM ticket_comments WHERE ticket_id = ? ORDER BY created_at DESC LIMIT 1',
+      [ticket.id],
+    );
+    assert.equal(comment?.is_internal, true);
+    assert.match(comment!.body, /^Email from guesser@elsewhere\.test, who is not on this ticket/);
+    assert.notEqual(comment?.author_id, requester.user.id, 'never in the requester\'s name');
+    assert.equal((await getTicketById(ticket.id))?.status, 'resolved', 'not reopened');
+
+    // The requester themselves still replies as before.
+    await ingest(mailbox, incoming({ from: 'mail.requester@example.com', subject: 'Re: [' + ticket.reference + '] anything', body: 'Still broken.' }));
+    assert.notEqual((await getTicketById(ticket.id))?.status, 'resolved');
   });
 
   test('a mail from the mailbox to itself is dropped, not looped', async () => {

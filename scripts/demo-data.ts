@@ -35,6 +35,7 @@ const { createGroup, setGroupManager, setMembersWithin } = await import('../src/
 const { createTicket } = await import('../src/services/tickets.js');
 const { addBusinessMinutes } = await import('../src/services/sla.js');
 const { applyAllDisplayNames } = await import('../src/services/display-names.js');
+const { setManager } = await import('../src/services/teams.js');
 const { config } = await import('../src/config.js');
 const { newId } = await import('../src/lib/util.js');
 
@@ -128,7 +129,12 @@ async function person(company: { name: string; domain: string }, role: 'user' | 
 
 const requesters = [];
 for (const company of COMPANIES) {
-  for (let i = 0; i < 7; i += 1) requesters.push(await person(company, 'user', pick(DEPARTMENTS)));
+  const staff = [];
+  for (let i = 0; i < 7; i += 1) staff.push(await person(company, 'user', pick(DEPARTMENTS)));
+  // One team per company: the first is everybody else's manager, so On
+  // behalf of works for them (services/teams.ts).
+  for (const member of staff.slice(1)) await setManager(member.id, staff[0]!.id, null);
+  requesters.push(...staff);
 }
 
 const DESK = { name: 'Service Desk', domain: 'servicedesk.demo' };

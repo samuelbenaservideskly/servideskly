@@ -246,6 +246,45 @@ export async function ingest(
     // anybody else it is the requester adding to their request.
     const fromStaff = sender !== undefined && isStaff(sender.role);
 
+    // From somebody who is not on the ticket (security review, 21 Oct 2026):
+    // a reference in a subject is easy to guess, so anybody could otherwise
+    // add to any ticket in the requester's name and reopen it. It becomes an
+    // internal note saying who sent it - no reopening, nobody emailed - and
+    // a technician decides what it is.
+    const t = match.ticket;
+    const onTicket =
+      fromStaff ||
+      (sender !== undefined && [t.requester_id, t.raised_by, t.assignee_id].includes(sender.id)) ||
+      (!!t.external_email && t.external_email.toLowerCase() === from.toLowerCase());
+    if (!onTicket) {
+      const noteAuthor = sender?.id ?? (await systemRequesterId());
+      await addComment({
+        ticketId: t.id,
+        authorId: noteAuthor,
+        body: 'Email from ' + from + ', who is not on this ticket:\n\n' + body,
+        isInternal: true,
+      });
+      if (attachments.length > 0) {
+        try {
+          const result = await storeIncomingAttachments(t.id, noteAuthor, attachments, { isInternal: true });
+          const note = skippedNote(result.skipped);
+          if (note) await addComment({ ticketId: t.id, authorId: noteAuthor, body: note, isInternal: true });
+        } catch (err) {
+          mailLog.warn({ err, ticketId: t.id }, 'could not store the files on an incoming message');
+        }
+      }
+      await remember(message.messageId, mailbox.id, t.id, 'comment.added');
+      audit({
+        action: 'mail.comment.not_on_ticket',
+        actorId: sender?.id ?? null,
+        actorEmail: from,
+        targetType: 'ticket',
+        targetId: t.id,
+        detail: { via: match.via, reference: ticketReference(Number(t.ref_seq), t.ref_prefix) },
+      });
+      return { outcome: 'comment.added', ticketId: t.id };
+    }
+
     const author = sender?.id ?? match.ticket.requester_id;
 
     // A reply to a finished ticket is somebody saying it is not finished.

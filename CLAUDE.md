@@ -1125,6 +1125,15 @@ first:
 3. **The `[TKT-000123]` reference in the subject**, for clients that strip
    headers.
 
+**A match is not a licence to write.** A reference in a subject is easy to
+guess, so a matched reply from somebody **not on the ticket** - not staff,
+not the requester, whoever raised it or the assignee, nor the stranger
+address it came from - becomes an internal note "Email from x, who is not
+on this ticket", its files internal: no reopening, nobody emailed
+(security review, 21 Oct 2026). A colleague copied in lands there too; a
+technician decides. A forged staff address is still believed - telling it
+apart needs the mail server's DMARC result.
+
 **Subject text alone is never matched.** "Re: printer broken" finding the last
 ticket of that name is how two people's problems get merged into one. The
 subject pattern is built from `TICKET_PREFIX` so it cannot drift from the
