@@ -30,7 +30,9 @@
     else if (kind === 'hours') text = diff === 0 ? t('no change') : readableHours(Math.abs(diff));
     else text = diff === 0 ? t('no change') : Math.abs(diff) + (before > 0 ? ' (' + Math.round(Math.abs(diff) / before * 100) + '%)' : '');
     var was = kind === 'pts' ? before + '%' : kind === 'hours' ? readableHours(before) : before;
-    return '<span class="report-delta report-delta--' + tone + '" title="' + tx('Previous period ({0}): {1}', [prevWhen, was]) + '"><span aria-hidden="true">' + arrow + '</span> ' + text + '<span class="visually-hidden"> ' + tx('against {0} in the previous period', [was]) + '</span></span>';
+    // Escaped: this is raw HTML, and a translation is text somebody imported.
+    var e = function (v) { return String(v).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;'); };
+    return '<span class="report-delta report-delta--' + tone + '" title="' + e(tx('Previous period ({0}): {1}', [prevWhen, was])) + '"><span aria-hidden="true">' + arrow + '</span> ' + e(text) + '<span class="visually-hidden"> ' + e(tx('against {0} in the previous period', [was])) + '</span></span>';
   }
 %>
 

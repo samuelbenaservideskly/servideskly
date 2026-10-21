@@ -86,10 +86,12 @@
    * that is the person's own text - nothing here second-guesses what
    * language it is in.
    */
+  // Escaped: a pin's label and address are the person's own text (review, 21 Oct 2026).
+  var escapeLink = function (v) { return String(v).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;'); };
   var link = function (href, icon, label, on, badge) {
-    return '<a class="side-link" href="' + href + '"' + (on ? ' aria-current="page"' : '') + '>' +
-      include('icon', { name: icon }) + '<span>' + label + '</span>' +
-      (badge ? '<em class="side-link__badge">' + badge + '</em>' : '') + '</a>';
+    return '<a class="side-link" href="' + escapeLink(href) + '"' + (on ? ' aria-current="page"' : '') + '>' +
+      include('icon', { name: icon }) + '<span>' + escapeLink(label) + '</span>' +
+      (badge ? '<em class="side-link__badge">' + escapeLink(badge) + '</em>' : '') + '</a>';
   };
 %>
 <div class="shell">
