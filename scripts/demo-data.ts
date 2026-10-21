@@ -96,8 +96,8 @@ const COMPANIES = [
   { name: 'Tailspin Toys', domain: 'tailspintoys.com' },
   { name: 'Adventure Works', domain: 'adventure-works.com' },
 ];
-const FIRST = ['Jana', 'Petr', 'Eva', 'Tomas', 'Lucie', 'Martin', 'Klara', 'Jakub', 'Tereza', 'Ondrej', 'Anna', 'David', 'Marie', 'Lukas', 'Veronika', 'Filip', 'Barbora', 'Adam', 'Zuzana', 'Jan', 'Alex', 'Sam', 'Nina', 'Oliver', 'Emma'];
-const LAST = ['Novak', 'Svoboda', 'Dvorak', 'Cerny', 'Prochazka', 'Kucera', 'Vesely', 'Horak', 'Nemec', 'Marek', 'Pospisil', 'Hajek', 'Kral', 'Jelinek', 'Ruzicka', 'Benes', 'Fiala', 'Sedlacek', 'Dolezal', 'Zeman'];
+const FIRST = ['Emma', 'James', 'Olivia', 'Thomas', 'Sophie', 'Daniel', 'Grace', 'Michael', 'Chloe', 'Ryan', 'Hannah', 'David', 'Lucy', 'Jack', 'Amelia', 'Ethan', 'Isabel', 'Adam', 'Megan', 'Sam', 'Alex', 'Laura', 'Nina', 'Oliver', 'Kate'];
+const LAST = ['Smith', 'Johnson', 'Williams', 'Brown', 'Taylor', 'Wilson', 'Davies', 'Evans', 'Thomas', 'Roberts', 'Walker', 'Wright', 'Thompson', 'White', 'Hughes', 'Edwards', 'Green', 'Hall', 'Wood', 'Harris'];
 const DEPARTMENTS = ['Finance', 'Sales', 'Marketing', 'HR', 'Operations', 'Legal', 'Warehouse', 'Customer care'];
 
 const used = new Set<string>();
