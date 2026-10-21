@@ -355,6 +355,16 @@
         </div>
       </form>
     <% } %>
+    <% if (locals.hasAuthenticator) { %>
+      <%# The way back for a lost phone and lost recovery codes (auth/authenticator.ts). %>
+      <form method="post" action="/admin/settings/users/<%= user.id %>/authenticator/reset" class="stack">
+        <input type="hidden" name="_csrf" value="<%= locals.csrfToken %>">
+        <div class="actions actions--middle">
+          <button type="submit" class="btn">Remove their authenticator app</button>
+          <span class="small muted">They sign in with the password alone until they set it up again.</span>
+        </div>
+      </form>
+    <% } %>
   </div>
 <% } %>
 

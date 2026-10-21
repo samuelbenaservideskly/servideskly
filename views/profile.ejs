@@ -164,6 +164,31 @@
           <button type="submit" class="btn btn--primary">Change password</button>
         </div>
       </form>
+
+      <%# An authenticator app after the password (auth/authenticator.ts). %>
+      <div class="card stack" id="authenticator">
+        <div class="spread-row">
+          <h2 class="section-title">Authenticator app</h2>
+          <span class="pill <%= authenticator.on ? 'pill--resolved' : 'pill--muted' %>"><%= authenticator.on ? t('On') : t('Off') %></span>
+        </div>
+        <% (locals.flashMessages || []).filter(function (m) { return m.where === 'authenticator'; }).forEach(function (m) { %>
+          <div class="flash flash--<%= m.type %>" role="<%= m.type === 'error' ? 'alert' : 'status' %>"><%= m.message %></div>
+        <% }); %>
+        <% if (authenticator.on) { %>
+          <p class="small">Signing in asks for your password and then a code from the app. <%= tx('{0} recovery codes left.', [authenticator.left]) %></p>
+          <form method="post" action="/profile/authenticator/off" class="row-form">
+            <input type="hidden" name="_csrf" value="<%= locals.csrfToken %>">
+            <label for="off-code">To turn it off, type a code from the app</label>
+            <div class="row-form__line">
+              <input id="off-code" name="code" type="text" required maxlength="20" autocomplete="one-time-code" spellcheck="false" class="authenticator-code">
+              <button type="submit" class="btn btn--danger">Turn it off</button>
+            </div>
+          </form>
+        <% } else { %>
+          <p class="small">Add a code from an app on your phone to your password, so a stolen password alone is not enough to sign in as you.</p>
+          <div class="actions"><a class="btn" href="/profile/authenticator">Set up an authenticator app</a></div>
+        <% } %>
+      </div>
     <% } else { %>
       <div class="card card--info">
         <h2 class="section-title">Password</h2>

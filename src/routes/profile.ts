@@ -33,6 +33,18 @@ import {
   personOf,
 } from '../auth/password.js';
 import { availabilityRouter, availabilityView, tracksAvailability } from './availability.js';
+import { renderSVG } from 'uqr';
+import { openMaybe, seal } from '../lib/secret-box.js';
+import {
+  enableAuthenticator,
+  hasAuthenticator,
+  matchStep,
+  newSecret,
+  otpauthUri,
+  recoveryLeft,
+  removeAuthenticator,
+  useAuthenticatorCode,
+} from '../auth/authenticator.js';
 /**
  * The signed-in user's own page: who the application thinks they are, where
  * that came from, and the one self-service action available - changing the
@@ -59,10 +71,13 @@ async function profileView(req: Request, extra: Record<string, unknown> = {}) {
   ]);
 
   const availability = (await tracksAvailability(user)) ? await availabilityView(user.id, '/profile/availability', true) : null;
+  // A password account's authenticator app, and how many recovery codes are left.
+  const authenticator = local && !usesCode && (await hasAuthenticator(user.id)) ? { on: true, left: await recoveryLeft(user.id) } : { on: false, left: 0 };
 
   return {
     title: 'Your profile',
     availability,
+    authenticator,
     user,
     groups,
     activity,
@@ -134,6 +149,84 @@ profileRouter.get(
   allowOwnScripts(),
   asyncHandler(async (req, res) => {
     res.render('profile', await profileView(req));
+  }),
+);
+
+// --- an authenticator app (auth/authenticator.ts) -----------------------------------
+
+/** Only a password account has a password for an app's code to follow. */
+function mayUseAuthenticator(req: Request) {
+  const user = req.currentUser;
+  if (!user || !isLocalAccount(user)) throw forbidden('Your sign-in is your organisation\'s, with its own second step.', 'not_local');
+  return user;
+}
+
+async function renderSetup(req: Request, res: import('express').Response, error: string | null) {
+  const user = mayUseAuthenticator(req);
+  // Kept sealed in the session between the page and the code that confirms it.
+  let secret = req.session.totpSetup ? openMaybe(JSON.parse(req.session.totpSetup)) : '';
+  if (!secret) {
+    secret = newSecret();
+    req.session.totpSetup = JSON.stringify(seal(secret));
+  }
+  res.setHeader('Cache-Control', 'no-store');
+  res.status(error ? 400 : 200).render('profile-authenticator', {
+    title: 'Set up an authenticator app',
+    secret,
+    qrSvg: renderSVG(otpauthUri(secret, user.email, settings().branding.appName || 'Service Desk')),
+    error,
+  });
+}
+
+profileRouter.get(
+  '/authenticator',
+  asyncHandler(async (req, res) => {
+    if (await hasAuthenticator(mayUseAuthenticator(req).id)) {
+      res.redirect('/profile#authenticator');
+      return;
+    }
+    await renderSetup(req, res, null);
+  }),
+);
+
+profileRouter.post(
+  '/authenticator',
+  loginLimiter,
+  asyncHandler(async (req, res) => {
+    const user = mayUseAuthenticator(req);
+    const secret = req.session.totpSetup ? openMaybe(JSON.parse(req.session.totpSetup)) : '';
+    if (!secret) {
+      res.redirect('/profile/authenticator');
+      return;
+    }
+    const typed = String((req.body as Record<string, unknown>)?.code ?? '');
+    if (matchStep(secret, typed, 0) === null) {
+      await renderSetup(req, res, 'That code is not right. Type the six digits the app shows now.');
+      return;
+    }
+    const codes = await enableAuthenticator(user.id, secret, user);
+    delete req.session.totpSetup;
+    // Shown on this response only: stored as hashes, never in the session or a redirect.
+    res.setHeader('Cache-Control', 'no-store');
+    res.render('profile-recovery', { title: 'Your recovery codes', codes });
+  }),
+);
+
+/** Turning it off takes a code now: a session left open on somebody's desk is not enough. */
+profileRouter.post(
+  '/authenticator/off',
+  loginLimiter,
+  asyncHandler(async (req, res) => {
+    const user = mayUseAuthenticator(req);
+    const typed = String((req.body as Record<string, unknown>)?.code ?? '');
+    if (!(await useAuthenticatorCode(user.id, typed))) {
+      flash(req, 'error', 'That code is not right, so the app is still on.', 'authenticator');
+      res.redirect('/profile#authenticator');
+      return;
+    }
+    await removeAuthenticator(user.id, user);
+    flash(req, 'success', 'The authenticator app is off. Signing in asks only for your password.', 'authenticator');
+    res.redirect('/profile#authenticator');
   }),
 );
 

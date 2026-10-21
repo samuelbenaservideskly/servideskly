@@ -73,6 +73,7 @@ import {
   type ImportedAccount,
 } from '../services/local-import.js';
 import { PROVIDERS, providerConfig, providerName, type ProviderKey } from '../auth/oidc.js';
+import { hasAuthenticator, removeAuthenticator } from '../auth/authenticator.js';
 
 /**
  * Users.
@@ -920,6 +921,23 @@ userAdminRouter.get(
   }),
 );
 
+/**
+ * Removes somebody's authenticator app: the way back for a lost phone and
+ * lost recovery codes. Their password still works; they can set the app up
+ * again. Audited as auth.authenticator.reset.
+ */
+userAdminRouter.post(
+  '/:id/authenticator/reset',
+  writeLimiter,
+  asyncHandler(async (req, res) => {
+    const target = await load(req);
+    const actor = req.currentUser!;
+    await removeAuthenticator(target.id, actor, true);
+    flash(req, 'success', 'The authenticator app is removed. ' + target.display_name + ' signs in with the password alone until they set it up again.');
+    res.redirect(userUrl(target));
+  }),
+);
+
 /** One account's page. The break-glass account's is its tab. */
 /**
  * An administrator the customer portal lists is the portal's to demote,
@@ -962,6 +980,8 @@ async function renderUser(req: Request, res: Response, user: UserRow): Promise<v
         userGroupSources: Object.fromEntries(userGroupSources),
         activity,
         local,
+        // Their authenticator app, which an administrator can remove after a lost phone.
+        hasAuthenticator: isLocalAccount(user) ? await hasAuthenticator(user.id) : false,
         isLocal: isLocalAccount(user),
         isProtected: isLocalAdmin(user),
         isSelf: user.id === req.currentUser?.id,

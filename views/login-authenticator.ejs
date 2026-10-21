@@ -1,0 +1,41 @@
+<%- include('partials/header') %>
+
+<%#
+  The second step for somebody who turned on an authenticator app
+  (auth/authenticator.ts, 21 Oct 2026). Six digits from the app, or one of
+  the recovery codes shown when it was set up - the box takes either, so it
+  is not limited to six digits.
+%>
+<div class="signin">
+  <div class="card signin-card">
+    <%- include("partials/signin-mark") %>
+    <h1>Enter the code from your app</h1>
+    <p class="lede">
+      Your password was accepted. Open your authenticator app and type the six digits it shows for
+      <strong><%= locals.appName || 'this service desk' %></strong>.
+    </p>
+
+    <form method="post" action="/auth/local/authenticator" class="stack local-signin">
+      <input type="hidden" name="_csrf" value="<%= locals.csrfToken %>">
+
+      <div class="field">
+        <label for="code" class="visually-hidden">Code from your authenticator app</label>
+        <div class="code-entry<%= error ? ' code-entry--error' : '' %>">
+          <input id="code" name="code" type="text" required maxlength="20"
+                 autocomplete="one-time-code" spellcheck="false" autofocus
+                 <%- error ? 'aria-describedby="code-error"' : '' %>>
+        </div>
+        <% if (error) { %><p class="field-error" id="code-error" role="alert"><%= error %></p><% } %>
+      </div>
+
+      <button type="submit" class="btn btn--primary btn--block">Finish signing in</button>
+    </form>
+
+    <p class="small muted">
+      Lost your phone? Type one of your recovery codes instead. Without one, ask an administrator to remove the app from your account.
+    </p>
+    <p class="small muted"><a href="/login?change=1">Use a different address</a></p>
+  </div>
+</div>
+
+<%- include('partials/footer') %>

@@ -1,0 +1,19 @@
+<%- include('partials/header') %>
+<%#
+  The recovery codes, on this one response: they are stored only as hashes,
+  never put in the session or a redirect, and the page is sent no-store.
+%>
+<div class="wrap--narrow">
+  <h1>Your recovery codes</h1>
+  <div class="card stack">
+    <p><strong>The authenticator app is on.</strong> From now on, signing in with your password asks for a code from it.</p>
+    <p>If you lose your phone, each of these codes signs you in once instead. Keep them somewhere safe, such as a password manager. They are not shown again.</p>
+    <ul class="authenticator-recovery">
+      <% codes.forEach(function (code) { %><li><%= code %></li><% }); %>
+    </ul>
+    <div class="actions">
+      <a class="btn btn--primary" href="/profile#authenticator">I have saved them</a>
+    </div>
+  </div>
+</div>
+<%- include('partials/footer') %>

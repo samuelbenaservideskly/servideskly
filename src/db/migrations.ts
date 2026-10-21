@@ -1947,4 +1947,29 @@ export const migrations: readonly Migration[] = [
         ON mail_notifications (event, language);
     `,
   },
+  {
+    version: 64,
+    name: 'an authenticator app as a second sign-in step',
+    sql: `
+      -- auth/authenticator.ts (21 Oct 2026). One row per person who turned it
+      -- on: the secret sealed (secret-box), the last 30-second step used, so
+      -- a code works once, and the recovery codes as hashes, as JSON text.
+      CREATE TABLE IF NOT EXISTS user_authenticators (
+        user_id    TEXT PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
+        secret     TEXT NOT NULL,
+        last_step  INTEGER NOT NULL DEFAULT 0,
+        recovery   TEXT NOT NULL DEFAULT '[]',
+        enabled_at TEXT NOT NULL
+      );
+    `,
+    pg: `
+      CREATE TABLE IF NOT EXISTS user_authenticators (
+        user_id    TEXT PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
+        secret     TEXT NOT NULL,
+        last_step  BIGINT NOT NULL DEFAULT 0,
+        recovery   TEXT NOT NULL DEFAULT '[]',
+        enabled_at TEXT NOT NULL
+      );
+    `,
+  },
 ];

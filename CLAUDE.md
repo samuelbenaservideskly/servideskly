@@ -2074,6 +2074,20 @@ What it has to get right, and does:
    arrives as the loopback address, and behind an untrusted proxy as the
    proxy. The card names the address and whether the list covers it.
 
+### An authenticator app after the password (21 Oct 2026)
+
+`auth/authenticator.ts`, migration 64 (`user_authenticators`), the same as
+the customer portal's src/mfa.ts: RFC 6238 (SHA-1, 30 s, six digits), the
+secret sealed with secret-box, the last step kept so **a code works once**,
+ten recovery codes stored as hashes. Set up on /profile (password accounts
+only; an identity provider's account has its own second step, a code
+account already has one). At sign-in it comes after the password and the
+address rule, **instead of** conditional access's emailed code (one second
+step, never two), and before the must-change step. Five wrong codes and the
+password is asked again. Turning it off needs a current code; an
+administrator removes it from the person's page (lost phone and codes).
+The QR code is an SVG drawn on the server by `uqr`, no script.
+
 ### The sign-in code is one field, and was three attempts
 
 `.code-entry`: one input, centred, with wide tracking. It used to draw six

@@ -27,6 +27,16 @@ declare module 'express-session' {
     idpSessionIndex?: string;
     idpNameId?: string;
     idpNameIdFormat?: string;
+    /**
+     * The account whose password was right and who now owes a code from their
+     * authenticator app (auth/authenticator.ts). No session exists yet.
+     */
+    totpUserId?: string;
+    totpReturnTo?: string;
+    totpMustChange?: boolean;
+    totpTries?: number;
+    /** An authenticator secret being set up, sealed, until a code proves the app holds it. */
+    totpSetup?: string;
     /** A refused reply's words, put back in the box once (routes/tickets.ts). */
     replyDraft?: { ticketId: string; body: string; internal: boolean; notify?: boolean };
     /** One-shot messages rendered on the next page load. */

@@ -51,6 +51,7 @@ import { rotateCsrfToken } from '../middleware/csrf.js';
 import { allowFormActionTo, callbackLimiter, loginLimiter } from '../middleware/security.js';
 import { flash } from '../middleware/view-locals.js';
 import type { UserRow, UserSource } from '../services/users.js';
+import { hasAuthenticator, useAuthenticatorCode } from '../auth/authenticator.js';
 
 const log = logger.child({ module: 'routes/auth' });
 
@@ -857,6 +858,79 @@ authRouter.post(
   }),
 );
 
+/**
+ * The authenticator app's code (or a recovery code), after a correct
+ * password. Reachable only with `totpUserId` in the pre-auth session, which
+ * only a correct password puts there. Five wrong codes and the password has
+ * to be given again.
+ */
+const AUTHENTICATOR_TRIES = 5;
+
+authRouter.get('/login/authenticator', asyncHandler(async (req: Request, res: Response) => {
+  if (req.currentUser) {
+    res.redirect('/home');
+    return;
+  }
+  if (!req.session.totpUserId) {
+    res.redirect('/login');
+    return;
+  }
+  res.render('login-authenticator', { title: 'Enter the code from your app', error: null });
+}));
+
+authRouter.post(
+  '/auth/local/authenticator',
+  loginLimiter,
+  asyncHandler(async (req: Request, res: Response) => {
+    if (req.currentUser) {
+      res.redirect('/home');
+      return;
+    }
+    const pending = req.session.totpUserId ? await findUserById(req.session.totpUserId) : undefined;
+    if (!pending) {
+      res.redirect('/login');
+      return;
+    }
+    const typed = typeof (req.body ?? {}).code === 'string' ? String(req.body.code).slice(0, 40) : '';
+    const used = await useAuthenticatorCode(pending.id, typed);
+    if (!used) {
+      const tries = (req.session.totpTries ?? 0) + 1;
+      auditRequest(req, { action: 'auth.login.failed', outcome: 'failure', detail: { stage: 'authenticator' } });
+      if (tries >= AUTHENTICATOR_TRIES) {
+        delete req.session.totpUserId;
+        delete req.session.totpTries;
+        flash(req, 'error', 'Too many wrong codes. Sign in again.');
+        res.redirect('/login');
+        return;
+      }
+      req.session.totpTries = tries;
+      res.status(400).render('login-authenticator', {
+        title: 'Enter the code from your app',
+        error: 'That code is not right. Type the one your app shows now.',
+      });
+      return;
+    }
+    if (used === 'recovery') {
+      audit({ action: 'auth.authenticator.recovery_used', actorId: pending.id, actorEmail: pending.email });
+    }
+
+    const returnTo = req.session.totpReturnTo ?? '/home';
+    const mustChange = req.session.totpMustChange;
+    delete req.session.totpUserId;
+    delete req.session.totpReturnTo;
+    delete req.session.totpMustChange;
+    delete req.session.totpTries;
+
+    if (mustChange) {
+      req.session.mustChangeUserId = pending.id;
+      req.session.mustChangeReturnTo = returnTo;
+      res.redirect('/login/new-password');
+      return;
+    }
+    await establishSession(req, res, pending, false, 'manual', returnTo);
+  }),
+);
+
 authRouter.get('/login/code', (req: Request, res: Response) => {
   if (previewingStep(req)) {
     res.render('login-code', { title: 'Enter your code', email: 'name@example.com', error: null });
@@ -989,6 +1063,20 @@ authRouter.post(
         'Sign-in is not allowed from this network. Ask the service desk.',
         403,
       );
+      return;
+    }
+    /*
+     * An authenticator app (auth/authenticator.ts): its code is the second
+     * step, and it answers conditional access's "a code" as well - one
+     * second step, never two. Before the must-change step for the same
+     * reason the emailed code is.
+     */
+    if (await hasAuthenticator(user.id)) {
+      req.session.totpUserId = user.id;
+      req.session.totpReturnTo = parsed.data.returnTo ?? '/home';
+      req.session.totpMustChange = mustChange;
+      req.session.totpTries = 0;
+      res.redirect('/login/authenticator');
       return;
     }
     if (decision === 'code') {

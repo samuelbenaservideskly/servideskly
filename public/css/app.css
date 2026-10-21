@@ -4626,3 +4626,16 @@ h1 { font-weight: 700; letter-spacing: -0.015em; }
 .ticket-form__submit { display: flex; justify-content: space-between; align-items: center; gap: 1rem; flex-wrap: wrap; padding-top: 1.1rem; border-top: 1px solid var(--border); }
 .ticket-form__submit .hint { margin: 0; flex: 1 1 16rem; }
 .file-form--drop { outline: 2px dashed var(--brand); outline-offset: 3px; }
+
+/* An authenticator app (21 Oct 2026): the setup page and the profile card. */
+.spread-row { display: flex; justify-content: space-between; align-items: center; gap: 0.75rem; }
+.spread-row .section-title { margin: 0; }
+.authenticator-steps { margin: 0; padding-left: 1.3rem; display: grid; gap: 0.4rem; }
+.authenticator-qr { width: 12rem; max-width: 100%; padding: 0.6rem; background: #fff; border: 1px solid var(--border); border-radius: var(--radius); }
+.authenticator-qr svg { display: block; width: 100%; height: auto; }
+.authenticator-key { margin: 0; font-family: var(--mono); font-size: 1rem; letter-spacing: 0.06em; word-break: break-all; }
+.authenticator-code { max-width: 12rem; letter-spacing: 0.12em; }
+.authenticator-recovery { list-style: none; margin: 0; padding: 0.75rem 1rem; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0.35rem 1.5rem; font-family: var(--mono); font-size: 1rem; background: var(--surface-2); border: 1px solid var(--border); border-radius: var(--radius); user-select: all; }
+.row-form { display: grid; gap: 0.35rem; }
+.row-form label { font-size: 0.85rem; color: var(--text-muted); }
+.row-form__line { display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap; }

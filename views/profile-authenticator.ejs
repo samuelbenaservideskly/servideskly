@@ -1,0 +1,39 @@
+<%- include('partials/header') %>
+<%#
+  Setting up an authenticator app (auth/authenticator.ts). The QR code is an
+  SVG drawn on the server (uqr) from the otpauth address, so no script and
+  nothing fetched; the secret is shown too, for a phone that cannot scan.
+  It is kept, sealed, in the session until a code from it proves the app
+  has it - only then is it saved.
+%>
+<div class="wrap--narrow">
+  <%- include('partials/back-link', { href: '/profile#authenticator', label: t('Your profile') }) %>
+  <h1>Set up an authenticator app</h1>
+
+  <div class="card stack">
+    <ol class="authenticator-steps">
+      <li>Install an authenticator app on your phone, such as Microsoft Authenticator, Google Authenticator or 1Password.</li>
+      <li>In the app, add an account and scan this code.</li>
+    </ol>
+    <div class="authenticator-qr" role="img" aria-label="<%= t('QR code for your authenticator app') %>"><%- qrSvg %></div>
+    <p class="small muted">Cannot scan it? Choose to enter a key instead, and type:</p>
+    <p class="authenticator-key"><%= secret.match(/.{1,4}/g).join(' ') %></p>
+    <ol class="authenticator-steps" start="3">
+      <li>Type the six digits the app now shows, to confirm it works.</li>
+    </ol>
+    <form method="post" action="/profile/authenticator" class="stack">
+      <input type="hidden" name="_csrf" value="<%= locals.csrfToken %>">
+      <div class="field">
+        <label for="code">Code from the app</label>
+        <input id="code" name="code" type="text" inputmode="numeric" required maxlength="6" pattern="[0-9 ]{6,7}"
+               autocomplete="one-time-code" spellcheck="false" class="authenticator-code"<%- error ? ' aria-describedby="code-error"' : '' %>>
+        <% if (error) { %><p class="field-error" id="code-error" role="alert"><%= error %></p><% } %>
+      </div>
+      <div class="actions">
+        <button type="submit" class="btn btn--primary">Turn it on</button>
+        <a class="btn btn--quiet" href="/profile#authenticator">Cancel</a>
+      </div>
+    </form>
+  </div>
+</div>
+<%- include('partials/footer') %>
