@@ -1,0 +1,52 @@
+<%#
+  An asset's fields, one per column switched on, by its format; the status
+  and the person it is assigned to first. Used by the New asset dialog and
+  the asset's page. `p` prefixes the ids so the two never clash.
+  Locals: columns, statuses, values, statusId, assignee, p.
+%>
+<div class="grid-2">
+  <div class="field">
+    <label for="<%= p %>status">Status</label>
+    <select id="<%= p %>status" name="statusId" data-no-search>
+      <option value="">No status</option>
+      <% statuses.forEach(function (s) { %><option value="<%= s.id %>"<%= s.id === statusId ? ' selected' : '' %>><%= s.name %></option><% }); %>
+    </select>
+  </div>
+  <% columns.forEach(function (c) { %>
+    <% var id = p + 'v-' + c.key; var value = values[c.key] || ''; %>
+    <% if (c.format === 'person') { %>
+      <div class="field">
+        <label for="<%= p %>assignee"><%= c.label %></label>
+        <input id="<%= p %>assignee" name="assignee" type="email" maxlength="320" autocomplete="off" value="<%= assignee %>" placeholder="name@example.com">
+      </div>
+    <% } else if (c.format === 'textarea') { %>
+      <div class="field field--full">
+        <label for="<%= id %>"><%= c.label %></label>
+        <textarea id="<%= id %>" name="v_<%= c.key %>" rows="3" maxlength="5000"><%= value %></textarea>
+      </div>
+    <% } else if (c.format === 'select') { %>
+      <div class="field">
+        <label for="<%= id %>"><%= c.label %></label>
+        <select id="<%= id %>" name="v_<%= c.key %>">
+          <option value=""></option>
+          <% c.choices.forEach(function (o) { %><option<%= o === value ? ' selected' : '' %>><%= o %></option><% }); %>
+        </select>
+      </div>
+    <% } else if (c.format === 'multiselect') { %>
+      <% var chosen = value ? value.split(/\s*,\s*/) : []; %>
+      <fieldset class="field">
+        <legend><%= c.label %></legend>
+        <% c.choices.forEach(function (o) { %>
+          <label class="check"><input type="checkbox" name="v_<%= c.key %>" value="<%= o %>"<%= chosen.indexOf(o) !== -1 ? ' checked' : '' %>> <%= o %></label>
+        <% }); %>
+      </fieldset>
+    <% } else { %>
+      <div class="field">
+        <label for="<%= id %>"><%= c.label %></label>
+        <input id="<%= id %>" name="v_<%= c.key %>"
+               type="<%= c.format === 'date' ? 'date' : 'text' %>"<% if (c.format === 'number') { %> inputmode="decimal"<% } %>
+               maxlength="500" value="<%= value %>">
+      </div>
+    <% } %>
+  <% }); %>
+</div>

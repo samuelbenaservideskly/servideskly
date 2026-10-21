@@ -1,0 +1,8 @@
+<nav class="subtabs" aria-label="Assets">
+  <a href="/admin/settings/assets/columns"
+     class="<%= locals.tab === 'columns' ? 'subtabs__item--current' : '' %>"
+     <%- locals.tab === 'columns' ? 'aria-current="page"' : '' %>>Columns</a>
+  <a href="/admin/settings/assets/statuses"
+     class="<%= locals.tab === 'statuses' ? 'subtabs__item--current' : '' %>"
+     <%- locals.tab === 'statuses' ? 'aria-current="page"' : '' %>>Statuses</a>
+</nav>

@@ -1,0 +1,24 @@
+<%# What is assigned to one person: their page under People and under Settings - Users. Locals: assets, assetTitle. %>
+<% if (assets && assets.length) { %>
+  <h2 class="section-title">Assets</h2>
+  <div class="table-scroll">
+    <table class="table">
+      <thead>
+        <tr>
+          <th scope="col">Asset</th>
+          <th scope="col">Status</th>
+          <th scope="col">Changed</th>
+        </tr>
+      </thead>
+      <tbody>
+        <% assets.forEach(function (a) { %>
+          <tr>
+            <td><a href="/inventory/<%= a.id %>"><%= assetTitle(a) %></a></td>
+            <td class="small"><%= a.status_name || '-' %></td>
+            <td class="small"><%= formatDate(a.updated_at) %></td>
+          </tr>
+        <% }); %>
+      </tbody>
+    </table>
+  </div>
+<% } %>

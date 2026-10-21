@@ -1,0 +1,108 @@
+<%- include('../partials/header') %>
+
+<div class="page-head">
+  <div>
+    <%- include('../partials/back-link', { href: '/inventory', label: t('All assets') }) %>
+    <h1><%= title %></h1>
+  </div>
+  <div class="page-head__actions">
+    <a class="btn btn--quiet btn--danger" href="#delete-asset">Delete</a>
+  </div>
+</div>
+
+<div class="columns">
+  <div class="stack">
+    <form method="post" action="/inventory/<%= asset.id %>" class="card stack" id="details">
+      <input type="hidden" name="_csrf" value="<%= locals.csrfToken %>">
+      <h2 class="section-title">Details</h2>
+      <% if (errors.form) { %><p class="field-error" role="alert"><%= errors.form %></p><% } %>
+      <%- include('_fields', {
+        p: '',
+        columns: columns,
+        statuses: statuses,
+        values: draft ? draft.values : asset.field_values,
+        statusId: draft ? draft.statusId : asset.status_id,
+        assignee: draft ? draft.assignee : (asset.assignee_email || ''),
+      }) %>
+      <div class="actions">
+        <button type="submit" class="btn btn--primary">Save asset</button>
+      </div>
+    </form>
+
+    <section class="card stack" id="comments" aria-labelledby="comments-title">
+      <h2 class="section-title" id="comments-title">Comments</h2>
+      <% if (comments.length) { %>
+        <ul class="asset-comments">
+          <% comments.forEach(function (c) { %>
+            <li>
+              <p class="small muted"><strong><%= c.author_name || t('Somebody') %></strong> &middot; <span title="<%= formatDateTime(c.created_at) %>"><%= formatRelative(c.created_at) %></span></p>
+              <p class="asset-comments__body"><%= c.body %></p>
+            </li>
+          <% }); %>
+        </ul>
+      <% } %>
+      <form method="post" action="/inventory/<%= asset.id %>/comments" class="stack">
+        <input type="hidden" name="_csrf" value="<%= locals.csrfToken %>">
+        <% (locals.flashMessages || []).filter(function (m) { return m.where === 'comment'; }).forEach(function (m) { %>
+          <p class="field-error" role="alert"><%= m.message %></p>
+        <% }); %>
+        <label for="comment" class="visually-hidden">Add a comment</label>
+        <textarea id="comment" name="body" rows="3" maxlength="10000" placeholder="Add a comment"></textarea>
+        <div class="actions"><button type="submit" class="btn">Add comment</button></div>
+      </form>
+    </section>
+  </div>
+
+  <aside class="col-side stack">
+    <div class="card stack">
+      <h2 class="section-title">At a glance</h2>
+      <dl class="details small">
+        <dt>Status</dt>
+        <dd><%= asset.status_name || '-' %></dd>
+        <dt>Assigned to</dt>
+        <dd><% if (asset.assigned_to) { %><a href="/people/<%= asset.assigned_to %>"><%= asset.assignee_name %></a><% } else { %>Nobody<% } %></dd>
+        <dt>Added</dt>
+        <dd><%= formatDateTime(asset.created_at) %></dd>
+        <dt>Changed</dt>
+        <dd><%= formatDateTime(asset.updated_at) %></dd>
+      </dl>
+    </div>
+
+    <div class="card stack">
+      <h2 class="section-title">History</h2>
+      <% if (!events.length) { %>
+        <p class="small muted">Nothing yet.</p>
+      <% } else { %>
+        <ul class="timeline">
+          <% events.forEach(function (e) { %>
+            <li>
+              <% if (e.kind === 'created') { %>Added
+              <% } else if (e.kind === 'assigned') { %><%= tx('Assigned to {0}', [e.new_value]) %>
+              <% } else if (e.kind === 'unassigned') { %><%= tx('Taken back from {0}', [e.old_value]) %>
+              <% } else if (e.kind === 'status') { %><%= tx('Status changed from {0} to {1}', [e.old_value || '-', e.new_value || '-']) %>
+              <% } else { %><%= tx('{0} changed from "{1}" to "{2}"', [e.field, e.old_value, e.new_value]) %><% } %>
+              <div class="small muted"><%= e.actor_name || t('Automatic') %> &middot; <span title="<%= formatDateTime(e.created_at) %>"><%= formatRelative(e.created_at) %></span></div>
+            </li>
+          <% }); %>
+        </ul>
+      <% } %>
+    </div>
+  </aside>
+</div>
+
+<div class="dialog" id="delete-asset">
+  <a class="dialog__backdrop" href="#top" aria-label="Close"></a>
+  <div class="dialog__panel" role="dialog" aria-modal="true" aria-labelledby="delete-asset-title">
+    <div class="dialog__head"><h2 id="delete-asset-title">Delete this asset?</h2><a class="dialog__close" href="#top" aria-label="Close">&times;</a></div>
+    <form method="post" action="/inventory/<%= asset.id %>/delete" class="stack">
+      <input type="hidden" name="_csrf" value="<%= locals.csrfToken %>">
+      <p>Its comments and history go with it.</p>
+      <div class="dialog__actions">
+        <a class="btn btn--quiet" href="#top">Cancel</a>
+        <button type="submit" class="btn btn--danger">Delete asset</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<%- include('../partials/footer') %>

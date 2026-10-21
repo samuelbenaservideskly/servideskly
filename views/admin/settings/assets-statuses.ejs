@@ -1,0 +1,77 @@
+<%- include('_layout') %>
+
+<%- include('_assets-tabs') %>
+
+<div class="toolbar">
+  <a class="btn btn--primary" href="#new-status"><span aria-hidden="true">+</span> New status</a>
+</div>
+
+<div class="table-scroll">
+  <table class="table">
+    <thead>
+      <tr>
+        <th scope="col">Status</th>
+        <th scope="col"><span class="visually-hidden">Actions</span></th>
+      </tr>
+    </thead>
+    <tbody>
+      <% statuses.forEach(function (s, i) { %>
+        <tr id="row-<%= s.id %>">
+          <td><%= s.name %></td>
+          <td class="row-actions">
+            <form method="post" action="/admin/settings/assets/statuses/<%= s.id %>/move" class="inline-form">
+              <input type="hidden" name="_csrf" value="<%= locals.csrfToken %>">
+              <button type="submit" name="direction" value="up" class="icon-btn" title="Move up"<%= i === 0 ? ' disabled' : '' %>>&#9650;<span class="visually-hidden">Move <%= s.name %> up</span></button>
+              <button type="submit" name="direction" value="down" class="icon-btn" title="Move down"<%= i === statuses.length - 1 ? ' disabled' : '' %>>&#9660;<span class="visually-hidden">Move <%= s.name %> down</span></button>
+            </form>
+            <a class="btn btn--quiet btn--small" href="#status-<%= s.id %>">Rename</a>
+            <form method="post" action="/admin/settings/assets/statuses/<%= s.id %>/delete" class="inline-form">
+              <input type="hidden" name="_csrf" value="<%= locals.csrfToken %>">
+              <%- include('../../partials/bin-button', { label: 'Remove ' + s.name }) %>
+            </form>
+          </td>
+        </tr>
+      <% }); %>
+    </tbody>
+  </table>
+</div>
+
+<% statuses.forEach(function (s) { %>
+  <div class="dialog" id="status-<%= s.id %>">
+    <a class="dialog__backdrop" href="#row-<%= s.id %>" aria-label="Close"></a>
+    <div class="dialog__panel" role="dialog" aria-modal="true" aria-labelledby="status-<%= s.id %>-title">
+      <div class="dialog__head"><h2 id="status-<%= s.id %>-title">Rename <%= s.name %></h2><a class="dialog__close" href="#row-<%= s.id %>" aria-label="Close">&times;</a></div>
+      <form method="post" action="/admin/settings/assets/statuses/<%= s.id %>" class="stack">
+        <input type="hidden" name="_csrf" value="<%= locals.csrfToken %>">
+        <div class="field">
+          <label for="name-<%= s.id %>">Name</label>
+          <input id="name-<%= s.id %>" name="name" type="text" maxlength="40" required value="<%= s.name %>">
+        </div>
+        <div class="dialog__actions">
+          <a class="btn btn--quiet" href="#row-<%= s.id %>">Cancel</a>
+          <button type="submit" class="btn btn--primary">Rename status</button>
+        </div>
+      </form>
+    </div>
+  </div>
+<% }); %>
+
+<div class="dialog" id="new-status">
+  <a class="dialog__backdrop" href="#top" aria-label="Close"></a>
+  <div class="dialog__panel" role="dialog" aria-modal="true" aria-labelledby="new-status-title">
+    <div class="dialog__head"><h2 id="new-status-title">New status</h2><a class="dialog__close" href="#top" aria-label="Close">&times;</a></div>
+    <form method="post" action="/admin/settings/assets/statuses" class="stack">
+      <input type="hidden" name="_csrf" value="<%= locals.csrfToken %>">
+      <div class="field">
+        <label for="new-status-name">Name</label>
+        <input id="new-status-name" name="name" type="text" maxlength="40" required placeholder="Lost">
+      </div>
+      <div class="dialog__actions">
+        <a class="btn btn--quiet" href="#top">Cancel</a>
+        <button type="submit" class="btn btn--primary">Add status</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<%- include('_layout_end') %>

@@ -28,6 +28,7 @@ import { providerName, providerOfIssuer } from './auth/oidc.js';
 import { adminSetupRouter } from './routes/admin-setup.js';
 import { ticketRouter } from './routes/tickets.js';
 import { peopleRouter } from './routes/people.js';
+import { assetsRouter } from './routes/assets.js';
 import { searchRouter } from './routes/search.js';
 import { selectSearch } from './middleware/select-search.js';
 import { workDashboardLink, workDashboardRouter } from './routes/work-dashboard.js';
@@ -360,6 +361,7 @@ export function createApp(): Express {
   app.use('/tickets', ticketRouter);
   // One person, read only, for the service desk; see routes/people.ts.
   app.use('/people', peopleRouter);
+  app.use('/inventory', assetsRouter);
   // The bar above every page: tickets, people and references in one.
   app.use('/search', searchRouter);
   app.use('/dashboard', workDashboardRouter);

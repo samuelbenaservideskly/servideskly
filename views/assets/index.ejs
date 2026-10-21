@@ -1,0 +1,116 @@
+<%- include('../partials/header') %>
+
+<div class="page-head">
+  <h1>Assets</h1>
+  <div class="page-head__actions">
+    <a class="btn btn--primary" href="#new-asset"><span aria-hidden="true">+</span> New asset</a>
+  </div>
+</div>
+
+<form method="get" action="/inventory" class="filters">
+  <span class="filters__field">
+    <label for="q">Search</label>
+    <input id="q" name="q" type="search" maxlength="200" value="<%= filters.q %>" placeholder="Model, serial number, person...">
+  </span>
+  <span class="filters__field">
+    <label for="status">Status</label>
+    <select id="status" name="status" data-no-search>
+      <option value="">Any</option>
+      <% statuses.forEach(function (s) { %><option value="<%= s.id %>"<%= s.id === filters.status ? ' selected' : '' %>><%= s.name %></option><% }); %>
+    </select>
+  </span>
+  <span class="filters__field">
+    <label for="assigned">Assigned</label>
+    <select id="assigned" name="assigned" data-no-search>
+      <option value="">Anyone</option>
+      <option value="none"<%= filters.assigned === 'none' ? ' selected' : '' %>>Nobody</option>
+    </select>
+  </span>
+  <% if (filters.sort) { %><input type="hidden" name="sort" value="<%= filters.sort %>"><input type="hidden" name="dir" value="<%= filters.dir %>"><% } %>
+  <button type="submit" class="btn">Show</button>
+  <% if (filters.q || filters.status || filters.assigned) { %><a class="btn btn--quiet" href="/inventory">Clear</a><% } %>
+</form>
+
+<%
+  function sortLink(key) {
+    return link({ sort: key, dir: filters.sort === key && filters.dir === 'asc' ? 'desc' : 'asc', page: undefined });
+  }
+  function ariaSort(key) {
+    if (filters.sort !== key) return 'none';
+    return filters.dir === 'desc' ? 'descending' : 'ascending';
+  }
+  var headers = shown.map(function (c) { return { key: c.key, label: c.label }; });
+  headers.push({ key: 'status', label: t('Status') });
+%>
+
+<% if (!assets.length) { %>
+  <p class="empty"><%= filters.q || filters.status || filters.assigned ? t('No assets match.') : t('No assets yet. Add one with New asset.') %></p>
+<% } else { %>
+  <div class="table-scroll">
+    <table class="table asset-table">
+      <thead>
+        <tr>
+          <% headers.forEach(function (h) { %>
+            <th scope="col" aria-sort="<%= ariaSort(h.key) %>">
+              <a class="th-sort<%= filters.sort === h.key ? ' th-sort--on' : '' %>" href="<%= sortLink(h.key) %>">
+                <%= h.label %>
+                <span class="th-sort__mark" aria-hidden="true"></span>
+              </a>
+            </th>
+          <% }); %>
+        </tr>
+      </thead>
+      <tbody>
+        <% assets.forEach(function (a) { %>
+          <tr>
+            <% shown.forEach(function (c, i) { %>
+              <td<%= i === 0 ? '' : ' class=small' %>>
+                <% if (c.format === 'person') { %>
+                  <% if (a.assigned_to) { %><a href="/people/<%= a.assigned_to %>"><%= a.assignee_name %></a><% } else { %><span class="muted">-</span><% } %>
+                <% } else if (i === 0) { %>
+                  <a href="/inventory/<%= a.id %>"><%= a.field_values[c.key] || assetTitle(a) %></a>
+                <% } else { %>
+                  <%= a.field_values[c.key] || '-' %>
+                <% } %>
+              </td>
+            <% }); %>
+            <td><% if (a.status_name) { %><span class="pill"><%= a.status_name %></span><% } else { %><span class="muted">-</span><% } %></td>
+          </tr>
+        <% }); %>
+      </tbody>
+    </table>
+  </div>
+
+  <% if (pages > 1) { %>
+    <nav class="pagination" aria-label="Pages">
+      <% if (page > 1) { %><a class="btn btn--quiet" href="<%= link({ page: page - 1 }) %>">Previous</a><% } %>
+      <span class="small muted"><%= tx('Page {0} of {1}', [page, pages]) %></span>
+      <% if (page < pages) { %><a class="btn btn--quiet" href="<%= link({ page: page + 1 }) %>">Next</a><% } %>
+    </nav>
+  <% } %>
+<% } %>
+
+<div class="dialog<%= openDialog === 'new-asset' ? ' dialog--open' : '' %>" id="new-asset">
+  <a class="dialog__backdrop" href="#top" aria-label="Close"></a>
+  <div class="dialog__panel dialog__panel--wide" role="dialog" aria-modal="true" aria-labelledby="new-asset-title">
+    <div class="dialog__head"><h2 id="new-asset-title">New asset</h2><a class="dialog__close" href="#top" aria-label="Close">&times;</a></div>
+    <form method="post" action="/inventory" class="stack">
+      <input type="hidden" name="_csrf" value="<%= locals.csrfToken %>">
+      <% if (errors.form) { %><p class="field-error" role="alert"><%= errors.form %></p><% } %>
+      <%- include('_fields', {
+        p: 'new-',
+        columns: columns,
+        statuses: statuses,
+        values: draft ? draft.values : {},
+        statusId: draft ? draft.statusId : (statuses[0] ? statuses[0].id : ''),
+        assignee: draft ? draft.assignee : '',
+      }) %>
+      <div class="dialog__actions">
+        <a class="btn btn--quiet" href="#top">Cancel</a>
+        <button type="submit" class="btn btn--primary">Add asset</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<%- include('../partials/footer') %>

@@ -21,6 +21,7 @@ import { approvalPageAdminRouter, portalAdminRouter } from './portal-admin.js';
 import { customImagesAdminRouter } from './custom-images.js';
 import { advancedAdminRouter } from './advanced-admin.js';
 import { dashboardsAdminRouter } from './dashboards-admin.js';
+import { assetsAdminRouter } from './assets-admin.js';
 import { lastChangeLocal } from './last-change.js';
 import { generateScimToken, revokeScimToken } from '../services/scim.js';
 import { flash } from '../middleware/view-locals.js';
@@ -148,6 +149,7 @@ settingsRouter.use('/customization/portal', portalAdminRouter);
 settingsRouter.use('/customization/images', customImagesAdminRouter);
 settingsRouter.use('/advanced', advancedAdminRouter);
 settingsRouter.use('/dashboards', dashboardsAdminRouter);
+settingsRouter.use('/assets', assetsAdminRouter);
 
 // Attachments moved under Customisation. The whole subtree, with a 308 so a
 // form still posting to the old URL keeps its method and body (trap 7).

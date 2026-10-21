@@ -52,6 +52,7 @@ import {
 import { MIN_PASSWORD_LENGTH as MIN_PASSWORD_FLOOR, minPasswordLength, passwordPolicyText, generatePassword, passwordProblems, personOf } from '../auth/password.js';
 import { attempt, type FieldErrors } from './form-errors.js';
 import { managerEmailOf, setManagerByEmail } from '../services/teams.js';
+import { assetsAssignedTo, assetTitle } from '../services/assets.js';
 import { applyAllRules, listActiveUserGroups, listUserGroups, setUserGroupsForUser, userGroupSourcesFor, userGroupsFor } from '../services/user-groups.js';
 import { applyAllTechnicianRules } from '../services/technician-rules.js';
 import { settingsView } from './settings-shared.js';
@@ -75,7 +76,7 @@ import {
 } from '../services/local-import.js';
 import { PROVIDERS, providerConfig, providerName, type ProviderKey } from '../auth/oidc.js';
 import { hasAuthenticator, removeAuthenticator } from '../auth/authenticator.js';
-import { PERMISSIONS, countRoleMembers, createRole, deleteRole, listRoles, roleById, roleProblems, setCustomRole, updateRole } from '../auth/permissions.js';
+import { PERMISSIONS, can, countRoleMembers, createRole, deleteRole, listRoles, roleById, roleProblems, setCustomRole, updateRole } from '../auth/permissions.js';
 
 /**
  * Users.
@@ -1070,6 +1071,9 @@ async function renderUser(req: Request, res: Response, user: UserRow): Promise<v
         sectionTitle: user.display_name,
         user,
         managerEmail: await managerEmailOf(user),
+        // What is assigned to them (services/assets.ts), for those who manage assets.
+        assets: can(req.currentUser, 'assets.manage') ? await assetsAssignedTo(user.id) : [],
+        assetTitle,
         groups,
         groupIds: groups.map((g) => g.id),
         allGroups,

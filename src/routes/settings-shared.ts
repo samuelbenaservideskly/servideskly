@@ -20,6 +20,7 @@ export const SETTINGS_SECTIONS = [
   { slug: 'mail', title: 'Mail', blurb: 'Mailboxes, notifications and approvals' },
   { slug: 'customization', title: 'Customisation', blurb: 'Branding, portal, images and locale' },
   { slug: 'dashboards', title: 'Dashboards', blurb: 'Dashboards shown to requesters, and locations' },
+  { slug: 'assets', title: 'Assets', blurb: 'Asset columns, statuses and documents' },
   { slug: 'advanced', title: 'Advanced settings', blurb: 'Portal scripting, automation and connections' },
   { slug: 'audit', title: 'Audit trail', blurb: 'Record of administrative activity' },
 ] as const;

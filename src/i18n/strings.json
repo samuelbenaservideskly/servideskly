@@ -407,6 +407,12 @@
     "where": "views/admin/settings/template-catalogue.ejs",
     "uses": 1
   },
+  "s084f1652d0": {
+    "text": "Manage assets",
+    "context": "A permission a custom role can be given, a tick box on the Roles page",
+    "where": "src/i18n/code-strings.ts",
+    "uses": 1
+  },
   "s085154084c": {
     "text": "tasks",
     "context": "Text on admin/settings/api-keys",
@@ -441,6 +447,12 @@
     "text": "Results per page",
     "context": "The label of a form field on admin/settings/_member-picker",
     "where": "views/admin/settings/_member-picker.ejs",
+    "uses": 1
+  },
+  "s08ee4565a2": {
+    "text": "Assigned to",
+    "context": "Text on assets/show",
+    "where": "views/assets/show.ejs",
     "uses": 1
   },
   "s08f66e7434": {
@@ -502,6 +514,12 @@
     "context": "The grey example inside an input on admin/settings/users / The grey example inside an input on people/index",
     "where": "views/admin/settings/users.ejs",
     "uses": 2
+  },
+  "s0a40010961": {
+    "text": "Assets have this status. Give them another first.",
+    "context": "A message shown beside a form or after an action",
+    "where": "src/services/assets.ts",
+    "uses": 1
   },
   "s0a4c68a80e": {
     "text": "{{request.json.title}}",
@@ -635,6 +653,12 @@
     "where": "views/admin/settings/user-detail.ejs",
     "uses": 1
   },
+  "s0c8cf39500": {
+    "text": "{0} changed from \"{1}\" to \"{2}\"",
+    "context": "Text on assets/show. Keep each {0}, {1}...: it is a value",
+    "where": "views/assets/show.ejs",
+    "uses": 1
+  },
   "s0ca2c3f7dc": {
     "text": "The current announcements, most serious first.",
     "context": "A message shown beside a form or after an action",
@@ -703,9 +727,9 @@
   },
   "s0df6f1cad3": {
     "text": "Show",
-    "context": "A button on reports / The label of a form field on tickets/index / A button on work-dashboard",
-    "where": "views/reports.ejs",
-    "uses": 3
+    "context": "A button on assets/index / A button on reports / The label of a form field on tickets/index",
+    "where": "views/assets/index.ejs",
+    "uses": 4
   },
   "s0df9b92e49": {
     "text": "No locations set up",
@@ -763,9 +787,9 @@
   },
   "s0e76960093": {
     "text": "History",
-    "context": "Text on the page on tickets/show",
-    "where": "views/tickets/show.ejs",
-    "uses": 1
+    "context": "A heading on assets/show / Text on the page on tickets/show",
+    "where": "views/assets/show.ejs",
+    "uses": 2
   },
   "s0ea3bb8e20": {
     "text": "Delete a closed ticket this long after it closed",
@@ -1133,6 +1157,12 @@
     "where": "views/admin/settings/automations.ejs",
     "uses": 25
   },
+  "s151779ccfc": {
+    "text": "Asset added.",
+    "context": "A message shown after an action / A message shown beside a form or after an action",
+    "where": "src/routes/assets.ts",
+    "uses": 2
+  },
   "s151e58a831": {
     "text": "they",
     "context": "Text on boards/show",
@@ -1161,6 +1191,12 @@
     "text": "Nobody can be assigned tickets yet",
     "context": "Text on tickets/_field",
     "where": "views/tickets/_field.ejs",
+    "uses": 1
+  },
+  "s158e3e025f": {
+    "text": "Taken back from {0}",
+    "context": "Text on assets/show. Keep each {0}, {1}...: it is a value",
+    "where": "views/assets/show.ejs",
     "uses": 1
   },
   "s159a2394f6": {
@@ -1371,7 +1407,7 @@
     "text": "Cancel",
     "context": "A button on admin/settings/_mailbox-dialog / A button on admin/settings/_relay-dialog / A button on admin/settings/advanced-data",
     "where": "views/admin/settings/_mailbox-dialog.ejs",
-    "uses": 60
+    "uses": 66
   },
   "s19e1e1c903": {
     "text": "An upper-case letter",
@@ -1601,6 +1637,12 @@
     "where": "src/services/mail/notifications.ts",
     "uses": 1
   },
+  "s1e7fcfae1e": {
+    "text": "A built-in column is switched off rather than removed.",
+    "context": "A message shown beside a form or after an action",
+    "where": "src/services/assets.ts",
+    "uses": 1
+  },
   "s1ea442a134": {
     "text": "No",
     "context": "Text on the page on admin/settings/portal-edit",
@@ -1707,7 +1749,7 @@
     "text": "Next",
     "context": "A button on admin/settings/_member-picker / A button on admin/settings/audit / A button on admin/settings/automation-runs",
     "where": "views/admin/settings/_member-picker.ejs",
-    "uses": 7
+    "uses": 8
   },
   "s2001e777b1": {
     "text": "What somebody who has chosen nothing sees",
@@ -1847,6 +1889,12 @@
     "where": "views/tickets/index.ejs",
     "uses": 4
   },
+  "s2279b3e6f5": {
+    "text": "Choose a format.",
+    "context": "A message shown beside a form or after an action",
+    "where": "src/services/assets.ts",
+    "uses": 1
+  },
   "s228195d95e": {
     "text": "Already had an account, left as it is: {0}",
     "context": "Text on the page on admin/settings/users",
@@ -1870,6 +1918,12 @@
     "context": "What the \"Breached\" figure in Reports counts, shown when pointed at / A message shown beside a form or after an action",
     "where": "src/i18n/code-strings.ts",
     "uses": 2
+  },
+  "s22bf6ef955": {
+    "text": "Rename status",
+    "context": "A button on admin/settings/assets-statuses",
+    "where": "views/admin/settings/assets-statuses.ejs",
+    "uses": 1
   },
   "s22d1dd2d38": {
     "text": "Add a dashboard",
@@ -1917,6 +1971,12 @@
     "text": "Recent runs",
     "context": "A heading on admin/settings/automation-edit",
     "where": "views/admin/settings/automation-edit.ejs",
+    "uses": 1
+  },
+  "s237121128b": {
+    "text": "Always a person: notifications and automations act on them.",
+    "context": "Text on the page on admin/settings/assets-columns",
+    "where": "views/admin/settings/assets-columns.ejs",
     "uses": 1
   },
   "s239ac21dc3": {
@@ -2073,6 +2133,12 @@
     "text": "The directory at /people: a searchable list of everybody with an account, and a page each with their department, job title, office and telephone number. An administrator always has it.",
     "context": "An explanation behind an (i) mark on admin/settings/users-other",
     "where": "views/admin/settings/users-other.ejs",
+    "uses": 1
+  },
+  "s25d7e7e6a7": {
+    "text": "Save column",
+    "context": "A button on admin/settings/assets-columns",
+    "where": "views/admin/settings/assets-columns.ejs",
     "uses": 1
   },
   "s25e9c8090d": {
@@ -2297,6 +2363,12 @@
     "where": "src/i18n/code-strings.ts",
     "uses": 1
   },
+  "s2a6141e43b": {
+    "text": "Changed",
+    "context": "A table column heading on assets/_assigned-list / Text on assets/show",
+    "where": "views/assets/_assigned-list.ejs",
+    "uses": 2
+  },
   "s2a91b37009": {
     "text": "That account is disabled.",
     "context": "A message shown beside a form or after an action",
@@ -2329,9 +2401,9 @@
   },
   "s2b505597da": {
     "text": "Any",
-    "context": "One choice in a dropdown on admin/settings/audit / One choice in a dropdown on admin/settings/users / One choice in a dropdown on boards/_widget-form",
+    "context": "One choice in a dropdown on admin/settings/audit / One choice in a dropdown on admin/settings/users / One choice in a dropdown on assets/index",
     "where": "views/admin/settings/audit.ejs",
-    "uses": 12
+    "uses": 13
   },
   "s2b51a2f4db": {
     "text": "Nothing more was recorded.",
@@ -2563,9 +2635,9 @@
   },
   "s2f343666aa": {
     "text": "Format",
-    "context": "The label of a form field on admin/settings/users-other",
-    "where": "views/admin/settings/users-other.ejs",
-    "uses": 1
+    "context": "A table column heading on admin/settings/assets-columns / The label of a form field on admin/settings/assets-columns / The label of a form field on admin/settings/users-other",
+    "where": "views/admin/settings/assets-columns.ejs",
+    "uses": 4
   },
   "s2f8f858452": {
     "text": "Enter the new password twice.",
@@ -2629,9 +2701,9 @@
   },
   "s3064d79a29": {
     "text": "Rename",
-    "context": "A button on admin/settings/automation-edit / A button on admin/settings/dashboard-edit / A button on admin/settings/portal-edit",
-    "where": "views/admin/settings/automation-edit.ejs",
-    "uses": 6
+    "context": "A button on admin/settings/assets-statuses / A button on admin/settings/automation-edit / A button on admin/settings/dashboard-edit",
+    "where": "views/admin/settings/assets-statuses.ejs",
+    "uses": 7
   },
   "s307405d250": {
     "text": "That account is a placeholder and cannot be enabled.",
@@ -2915,6 +2987,12 @@
     "where": "views/admin/settings/template-edit.ejs",
     "uses": 1
   },
+  "s355f79f29d": {
+    "text": "Comments",
+    "context": "A heading on assets/show",
+    "where": "views/assets/show.ejs",
+    "uses": 1
+  },
   "s357352aaed": {
     "text": "The password must contain an upper-case letter.",
     "context": "A message shown beside a form or after an action",
@@ -3043,9 +3121,9 @@
   },
   "s37babe0f8c": {
     "text": "Move {0} down",
-    "context": "Read only by a screen reader on admin/settings/_builder-widget / Read only by a screen reader on admin/settings/mail-rules / Read only by a screen reader on admin/settings/template-edit",
+    "context": "Read only by a screen reader on admin/settings/_builder-widget / Read only by a screen reader on admin/settings/assets-columns / Read only by a screen reader on admin/settings/assets-statuses",
     "where": "views/admin/settings/_builder-widget.ejs",
-    "uses": 3
+    "uses": 5
   },
   "s380684a5e3": {
     "text": "Add announcement",
@@ -3226,6 +3304,12 @@
     "context": "Text on the page on tickets/index",
     "where": "views/tickets/index.ejs",
     "uses": 1
+  },
+  "s3ae6ee0458": {
+    "text": "Asset saved.",
+    "context": "A message shown after an action / A message shown beside a form or after an action",
+    "where": "src/routes/assets.ts",
+    "uses": 2
   },
   "s3b1167ee00": {
     "text": "Technician groups",
@@ -3433,14 +3517,20 @@
   },
   "s3fad99b521": {
     "text": "Nobody",
-    "context": "One choice in a dropdown on admin/settings/users-other",
+    "context": "One choice in a dropdown on admin/settings/users-other / One choice in a dropdown on assets/index / A link on assets/show",
     "where": "views/admin/settings/users-other.ejs",
-    "uses": 1
+    "uses": 3
   },
   "s3fd2c20e5c": {
     "text": "1 comment",
     "context": "Text on tickets/index",
     "where": "views/tickets/index.ejs",
+    "uses": 1
+  },
+  "s3fdc9a5876": {
+    "text": "Column",
+    "context": "A table column heading on admin/settings/assets-columns",
+    "where": "views/admin/settings/assets-columns.ejs",
     "uses": 1
   },
   "s3ff3d47e9e": {
@@ -3470,8 +3560,8 @@
   "s4075683102": {
     "text": "Keep the name under 60 characters.",
     "context": "A message shown beside a form or after an action",
-    "where": "src/auth/permissions.ts",
-    "uses": 1
+    "where": "src/services/assets.ts",
+    "uses": 2
   },
   "s40a852ac6b": {
     "text": "updatedSince",
@@ -3481,9 +3571,9 @@
   },
   "s40bb50da16": {
     "text": "Move down",
-    "context": "A tooltip on admin/settings/_builder-widget",
+    "context": "A tooltip on admin/settings/_builder-widget / A tooltip on admin/settings/assets-columns / A tooltip on admin/settings/assets-statuses",
     "where": "views/admin/settings/_builder-widget.ejs",
-    "uses": 1
+    "uses": 3
   },
   "s40d9e2d80c": {
     "text": "{{{0}:id}}",
@@ -3753,7 +3843,7 @@
     "text": "Details",
     "context": "Text on the page on admin/settings/audit / The label of a form field on admin/settings/dashboard-edit / A heading on admin/settings/group-detail",
     "where": "views/admin/settings/audit.ejs",
-    "uses": 5
+    "uses": 6
   },
   "s45999251b2": {
     "text": "Use this relay",
@@ -3805,9 +3895,9 @@
   },
   "s464c4ffd01": {
     "text": "Edit",
-    "context": "A button on admin/settings/api-keys / A link on admin/settings/automation-edit / A button on admin/settings/automation-edit",
+    "context": "A button on admin/settings/api-keys / A button on admin/settings/assets-columns / A link on admin/settings/automation-edit",
     "where": "views/admin/settings/api-keys.ejs",
-    "uses": 17
+    "uses": 18
   },
   "s4674f44604": {
     "text": "No such user.",
@@ -3819,6 +3909,12 @@
     "text": "A built-in notification cannot be removed - switch it off instead.",
     "context": "A message shown beside a form or after an action",
     "where": "src/services/mail/notifications.ts",
+    "uses": 1
+  },
+  "s46b396c859": {
+    "text": "At a glance",
+    "context": "A heading on assets/show",
+    "where": "views/assets/show.ejs",
     "uses": 1
   },
   "s46e48e0945": {
@@ -3863,6 +3959,12 @@
     "where": "views/profile-authenticator.ejs",
     "uses": 1
   },
+  "s47d7fe021b": {
+    "text": "Choose one of the statuses.",
+    "context": "A message shown beside a form or after an action",
+    "where": "src/services/assets.ts",
+    "uses": 1
+  },
   "s47e2276771": {
     "text": "filters",
     "context": "Text on admin/settings/api-keys",
@@ -3905,6 +4007,12 @@
     "where": "views/approval-wrong-person.ejs",
     "uses": 3
   },
+  "s48f15767b0": {
+    "text": "Add asset",
+    "context": "A button on assets/index",
+    "where": "views/assets/index.ejs",
+    "uses": 1
+  },
   "s490c67a211": {
     "text": "At risk",
     "context": "A service-level clock's state - met, breached, at risk / One choice in a dropdown on tickets/index / Text on work-dashboard",
@@ -3945,7 +4053,13 @@
     "text": "Search",
     "context": "A button on admin/settings/_layout / A button on admin/settings/_list-search / A button on admin/settings/_member-picker",
     "where": "views/admin/settings/_layout.ejs",
-    "uses": 15
+    "uses": 16
+  },
+  "s49c2e3f170": {
+    "text": "Delete asset",
+    "context": "A button on assets/show",
+    "where": "views/assets/show.ejs",
+    "uses": 1
   },
   "s49c3a4eabc": {
     "text": "Monitoring system",
@@ -4108,6 +4222,12 @@
     "context": "Text on the page on admin/settings/user-detail",
     "where": "views/admin/settings/user-detail.ejs",
     "uses": 1
+  },
+  "s4dd6aa4072": {
+    "text": "Asset removed.",
+    "context": "A message shown after an action / A message shown beside a form or after an action",
+    "where": "src/routes/assets.ts",
+    "uses": 2
   },
   "s4dfc774ca5": {
     "text": "Sits beside another field.",
@@ -4277,6 +4397,12 @@
     "where": "views/admin/settings/automation-runs.ejs",
     "uses": 1
   },
+  "s502b40ac53": {
+    "text": "Write something first.",
+    "context": "A message shown beside a form or after an action",
+    "where": "src/services/assets.ts",
+    "uses": 1
+  },
   "s503f97133f": {
     "text": "your groups and your own tickets",
     "context": "Text on work-dashboard",
@@ -4359,6 +4485,12 @@
     "text": "Makes a new link; the current one stops working",
     "context": "Text on boards/show",
     "where": "views/boards/show.ejs",
+    "uses": 1
+  },
+  "s51e1357de8": {
+    "text": "Lost",
+    "context": "The grey example inside an input on admin/settings/assets-statuses",
+    "where": "views/admin/settings/assets-statuses.ejs",
     "uses": 1
   },
   "s521425a7dd": {
@@ -4451,6 +4583,12 @@
     "where": "views/admin/settings/user-detail.ejs",
     "uses": 4
   },
+  "s530b32a11e": {
+    "text": "That column no longer exists.",
+    "context": "A message shown beside a form or after an action",
+    "where": "src/services/assets.ts",
+    "uses": 2
+  },
   "s532d0508ff": {
     "text": "A lower-case letter",
     "context": "Text on the page on admin/settings/users-other",
@@ -4495,9 +4633,9 @@
   },
   "s53aade77cd": {
     "text": "Columns",
-    "context": "The label of a form field on admin/settings/template-catalogue",
-    "where": "views/admin/settings/template-catalogue.ejs",
-    "uses": 1
+    "context": "A link on admin/settings/_assets-tabs / The label of a form field on admin/settings/template-catalogue",
+    "where": "views/admin/settings/_assets-tabs.ejs",
+    "uses": 2
   },
   "s544e3ec44d": {
     "text": "Colour mode: {0}",
@@ -4595,10 +4733,22 @@
     "where": "views/admin/settings/users-other.ejs",
     "uses": 1
   },
+  "s55ec0395b6": {
+    "text": "For a choice: one option per line.",
+    "context": "An explanation behind an (i) mark on admin/settings/assets-columns",
+    "where": "views/admin/settings/assets-columns.ejs",
+    "uses": 2
+  },
   "s55ec288036": {
     "text": "Save prefixes",
     "context": "A button on admin/settings/template-other",
     "where": "views/admin/settings/template-other.ejs",
+    "uses": 1
+  },
+  "s560e695436": {
+    "text": "That status no longer exists.",
+    "context": "A message shown beside a form or after an action",
+    "where": "src/services/assets.ts",
     "uses": 1
   },
   "s562658c1b0": {
@@ -4804,6 +4954,12 @@
     "context": "Text on work-dashboard. Keep each {0}, {1}...: it is a value",
     "where": "views/work-dashboard.ejs",
     "uses": 1
+  },
+  "s59b57ac0bc": {
+    "text": "There is already a status with that name.",
+    "context": "A message shown beside a form or after an action",
+    "where": "src/services/assets.ts",
+    "uses": 2
   },
   "s59c4a51e4c": {
     "text": "{{requesterCompany}}",
@@ -5207,6 +5363,12 @@
     "where": "views/admin/settings/mail-rules.ejs",
     "uses": 1
   },
+  "s62a24aa0e4": {
+    "text": "That comment could not be added.",
+    "context": "A message shown beside a form or after an action",
+    "where": "src/routes/assets.ts",
+    "uses": 1
+  },
   "s62bdb92aee": {
     "text": "Include every ticket in the Excel download",
     "context": "Text on the page on reports",
@@ -5485,9 +5647,9 @@
   },
   "s66aaf2571d": {
     "text": "Add a comment",
-    "context": "Text on admin/settings/api-keys / Text on tickets/show",
+    "context": "Text on admin/settings/api-keys / The label of a form field on assets/show / The grey example inside an input on assets/show",
     "where": "views/admin/settings/api-keys.ejs",
-    "uses": 2
+    "uses": 4
   },
   "s66ab0b8ae5": {
     "text": "The end date is before the start date.",
@@ -5777,6 +5939,12 @@
     "where": "views/error.ejs",
     "uses": 1
   },
+  "s6b02e0d363": {
+    "text": "Added",
+    "context": "Text on assets/show / Text on the page on assets/show",
+    "where": "views/assets/show.ejs",
+    "uses": 2
+  },
   "s6b0cc904d0": {
     "text": "Users",
     "context": "A section of Settings, in the list on the left / A label for a screen reader on admin/settings/_user-tabs / A link on admin/settings/authentication",
@@ -5815,9 +5983,9 @@
   },
   "s6ba2a0e0af": {
     "text": "Shown",
-    "context": "A table column heading on admin/settings/dashboard-edit",
-    "where": "views/admin/settings/dashboard-edit.ejs",
-    "uses": 1
+    "context": "A table column heading on admin/settings/assets-columns / Text on admin/settings/assets-columns / A table column heading on admin/settings/dashboard-edit",
+    "where": "views/admin/settings/assets-columns.ejs",
+    "uses": 3
   },
   "s6ba4487369": {
     "text": "Nobody is emailed: the reply and its files are only added to the ticket, where the requester can read them.",
@@ -5883,6 +6051,12 @@
     "text": "Close menu",
     "context": "A label for a screen reader on partials/header",
     "where": "views/partials/header.ejs",
+    "uses": 1
+  },
+  "s6d04ba0082": {
+    "text": "Add status",
+    "context": "A button on admin/settings/assets-statuses",
+    "where": "views/admin/settings/assets-statuses.ejs",
     "uses": 1
   },
   "s6d1f93d19d": {
@@ -6607,9 +6781,9 @@
   },
   "s7b17fb0bd1": {
     "text": "name@example.com",
-    "context": "The grey example inside an input on login-forgot / The grey example inside an input on login",
-    "where": "views/login-forgot.ejs",
-    "uses": 2
+    "context": "The grey example inside an input on assets/_fields / The grey example inside an input on login-forgot / The grey example inside an input on login",
+    "where": "views/assets/_fields.ejs",
+    "uses": 3
   },
   "s7b264b40fb": {
     "text": "Allow HTTP steps to call the private network",
@@ -6657,6 +6831,12 @@
     "text": "{0} open now",
     "context": "Text on reports",
     "where": "views/reports.ejs",
+    "uses": 1
+  },
+  "s7bb573859a": {
+    "text": "Model, serial number, person...",
+    "context": "The grey example inside an input on assets/index",
+    "where": "views/assets/index.ejs",
     "uses": 1
   },
   "s7bb76bab58": {
@@ -6771,7 +6951,7 @@
     "text": "Close",
     "context": "A label for a screen reader on admin/settings/_mailbox-dialog / A label for a screen reader on admin/settings/_relay-dialog / A label for a screen reader on admin/settings/advanced-data",
     "where": "views/admin/settings/_mailbox-dialog.ejs",
-    "uses": 117
+    "uses": 129
   },
   "s7da11212ed": {
     "text": "Thu",
@@ -6893,6 +7073,12 @@
     "where": "views/admin/settings/mail.ejs",
     "uses": 1
   },
+  "s7f5d1e5288": {
+    "text": "No assets match.",
+    "context": "Text on assets/index",
+    "where": "views/assets/index.ejs",
+    "uses": 1
+  },
   "s7f9999fc78": {
     "text": "The library already has a field with that label.",
     "context": "A message shown beside a form or after an action",
@@ -6921,6 +7107,12 @@
     "text": "Every agent is listed. Add technician groups under Groups to list only some.",
     "context": "A note under a control on admin/settings/dashboard-edit",
     "where": "views/admin/settings/dashboard-edit.ejs",
+    "uses": 1
+  },
+  "s80d298c9f2": {
+    "text": "Asset",
+    "context": "A table column heading on assets/_assigned-list",
+    "where": "views/assets/_assigned-list.ejs",
     "uses": 1
   },
   "s80d33d6dc0": {
@@ -6963,6 +7155,12 @@
     "text": "Portals are limited to HTML and CSS.",
     "context": "Text on the page on admin/settings/advanced-javascript",
     "where": "views/admin/settings/advanced-javascript.ejs",
+    "uses": 1
+  },
+  "s8191888dd9": {
+    "text": "Assigned",
+    "context": "The label of a form field on assets/index",
+    "where": "views/assets/index.ejs",
     "uses": 1
   },
   "s81bf964a97": {
@@ -7061,6 +7259,12 @@
     "where": "src/routes/tickets.ts",
     "uses": 2
   },
+  "s8355c3b39c": {
+    "text": "At most 50 options.",
+    "context": "A message shown beside a form or after an action",
+    "where": "src/services/assets.ts",
+    "uses": 1
+  },
   "s835f1c7ce9": {
     "text": "Business time spent On-hold is added to the resolution target, and the clock shows Paused while it waits. The first-response clock is not paused.",
     "context": "An explanation behind an (i) mark on admin/settings/template-other",
@@ -7081,9 +7285,9 @@
   },
   "s83b12c2216": {
     "text": "Clear",
-    "context": "A button on admin/settings/_list-search / A button on admin/settings/_member-picker / A button on people/index",
+    "context": "A button on admin/settings/_list-search / A button on admin/settings/_member-picker / A button on assets/index",
     "where": "views/admin/settings/_list-search.ejs",
-    "uses": 4
+    "uses": 5
   },
   "s83dc6c92f2": {
     "text": "Raised in the period, by top-level category",
@@ -7595,6 +7799,12 @@
     "where": "views/tickets/index.ejs",
     "uses": 1
   },
+  "s8d486bb2d3": {
+    "text": "Anyone",
+    "context": "One choice in a dropdown on assets/index",
+    "where": "views/assets/index.ejs",
+    "uses": 1
+  },
   "s8d4b4c93ff": {
     "text": ", a placeholder account nobody can sign in to:\n              {0} ticket{1}\n              and {2} comment{3}.",
     "context": "Text on admin/settings/user-detail",
@@ -7815,7 +8025,7 @@
     "text": "Pages",
     "context": "A label for a screen reader on admin/settings/_list-pages / A label for a screen reader on admin/settings/automation-runs / A label for a screen reader on admin/settings/users",
     "where": "views/admin/settings/_list-pages.ejs",
-    "uses": 5
+    "uses": 6
   },
   "s905e2d7f01": {
     "text": "Nobody is in these groups yet.",
@@ -7839,6 +8049,12 @@
     "text": "Say why this ticket is being deleted.",
     "context": "A message shown after an action / A message shown beside a form or after an action",
     "where": "src/routes/tickets.ts",
+    "uses": 2
+  },
+  "s90b59765ff": {
+    "text": "New asset",
+    "context": "Text on assets/index / A heading on assets/index",
+    "where": "views/assets/index.ejs",
     "uses": 2
   },
   "s90cf93b5dd": {
@@ -7963,9 +8179,9 @@
   },
   "s920e413c7d": {
     "text": "Status",
-    "context": "The label of a form field on admin/settings/automation-edit / A table column heading on admin/settings/automations / A table column heading on admin/settings/groups",
-    "where": "views/admin/settings/automation-edit.ejs",
-    "uses": 26
+    "context": "A table column heading on admin/settings/assets-statuses / The label of a form field on admin/settings/automation-edit / A table column heading on admin/settings/automations",
+    "where": "views/admin/settings/assets-statuses.ejs",
+    "uses": 32
   },
   "s9234069589": {
     "text": "Active",
@@ -8309,6 +8525,12 @@
     "where": "views/admin/settings/users.ejs",
     "uses": 1
   },
+  "s98be79c6eb": {
+    "text": "Add column",
+    "context": "A button on admin/settings/assets-columns",
+    "where": "views/admin/settings/assets-columns.ejs",
+    "uses": 1
+  },
   "s98e548b4a7": {
     "text": "Redirect URI",
     "context": "Text on admin/settings/authentication / Text on the page on admin/settings/connections / Text on admin/settings/integration-generic",
@@ -8325,6 +8547,12 @@
     "text": "Last 90 days",
     "context": "A period a report covers",
     "where": "src/i18n/code-strings.ts",
+    "uses": 1
+  },
+  "s992539dd9a": {
+    "text": "Save asset",
+    "context": "A button on assets/show",
+    "where": "views/assets/show.ejs",
     "uses": 1
   },
   "s994332b7aa": {
@@ -8413,9 +8641,9 @@
   },
   "s9a220ba251": {
     "text": "Somebody",
-    "context": "Text on boards/show / Text on work-dashboard",
-    "where": "views/boards/show.ejs",
-    "uses": 3
+    "context": "Text on assets/show / Text on boards/show / Text on work-dashboard",
+    "where": "views/assets/show.ejs",
+    "uses": 4
   },
   "s9a234df426": {
     "text": "New location",
@@ -8445,6 +8673,12 @@
     "text": "Link from a colleague",
     "context": "The label of a form field on boards/index",
     "where": "views/boards/index.ejs",
+    "uses": 1
+  },
+  "s9aae5f6057": {
+    "text": "Keep at least one status.",
+    "context": "A message shown beside a form or after an action",
+    "where": "src/services/assets.ts",
     "uses": 1
   },
   "s9aceb79b4f": {
@@ -8921,6 +9155,12 @@
     "where": "views/admin/settings/automation-edit.ejs",
     "uses": 1
   },
+  "sa2c75fac54": {
+    "text": "New column",
+    "context": "Text on admin/settings/assets-columns / A heading on admin/settings/assets-columns",
+    "where": "views/admin/settings/assets-columns.ejs",
+    "uses": 2
+  },
   "sa2d285b352": {
     "text": "Decline",
     "context": "A button on approval",
@@ -9038,8 +9278,8 @@
   "sa56dc4df07": {
     "text": "A choice needs at least two options, one per line.",
     "context": "A message shown beside a form or after an action",
-    "where": "src/services/custom-fields.ts",
-    "uses": 3
+    "where": "src/services/assets.ts",
+    "uses": 4
   },
   "sa575200976": {
     "text": "Dashboards shown to requesters, and locations",
@@ -9051,7 +9291,7 @@
     "text": "Previous",
     "context": "A button on admin/settings/_member-picker / A button on admin/settings/audit / A button on admin/settings/automation-runs",
     "where": "views/admin/settings/_member-picker.ejs",
-    "uses": 7
+    "uses": 8
   },
   "sa57bcc68b0": {
     "text": "SMTP relays",
@@ -9341,6 +9581,12 @@
     "where": "views/admin/settings/_mailbox-dialog.ejs",
     "uses": 1
   },
+  "sab4e992b9b": {
+    "text": "Status changed from {0} to {1}",
+    "context": "Text on assets/show. Keep each {0}, {1}...: it is a value",
+    "where": "views/assets/show.ejs",
+    "uses": 1
+  },
   "sab6a98a35d": {
     "text": "user groups",
     "context": "A link on admin/settings/template-edit",
@@ -9381,6 +9627,12 @@
     "text": "Add widget",
     "context": "Text on boards/_widget-form",
     "where": "views/boards/_widget-form.ejs",
+    "uses": 1
+  },
+  "sac1d036e73": {
+    "text": "Assets: columns and statuses",
+    "context": "A permission a custom role can be given, a tick box on the Roles page",
+    "where": "src/i18n/code-strings.ts",
     "uses": 1
   },
   "sac2e4b4d26": {
@@ -9459,6 +9711,12 @@
     "text": "I understand the risks of running custom scripts",
     "context": "Text on admin/settings/advanced-javascript",
     "where": "views/admin/settings/advanced-javascript.ejs",
+    "uses": 1
+  },
+  "sae170a2766": {
+    "text": "Give the status a name.",
+    "context": "A message shown beside a form or after an action",
+    "where": "src/services/assets.ts",
     "uses": 1
   },
   "sae188faa09": {
@@ -9585,6 +9843,12 @@
     "text": "Setting this files the ticket at this depth, which implies its category and sub category too.",
     "context": "A message shown beside a form or after an action",
     "where": "src/services/templates.ts",
+    "uses": 1
+  },
+  "sb1000b6fa9": {
+    "text": "Assigned to {0}",
+    "context": "Text on assets/show. Keep each {0}, {1}...: it is a value",
+    "where": "views/assets/show.ejs",
     "uses": 1
   },
   "sb10fb966d7": {
@@ -9845,6 +10109,12 @@
     "where": "src/i18n/code-strings.ts",
     "uses": 2
   },
+  "sb525b5e3c1": {
+    "text": "No assets yet. Add one with New asset.",
+    "context": "Text on assets/index",
+    "where": "views/assets/index.ejs",
+    "uses": 1
+  },
   "sb545dd1651": {
     "text": "This cannot be undone.",
     "context": "A note under a control on admin/settings/portal-edit",
@@ -9867,6 +10137,12 @@
     "text": "until {0}",
     "context": "Text on the page on admin/settings/connections",
     "where": "views/admin/settings/connections.ejs",
+    "uses": 1
+  },
+  "sb5c3b907a3": {
+    "text": "Statuses",
+    "context": "A link on admin/settings/_assets-tabs",
+    "where": "views/admin/settings/_assets-tabs.ejs",
     "uses": 1
   },
   "sb617615f96": {
@@ -10325,6 +10601,12 @@
     "where": "views/reports-empty.ejs",
     "uses": 1
   },
+  "sbd12731d7b": {
+    "text": "Assets",
+    "context": "A section of Settings, in the list on the left / A group of permissions on the Roles page / A label for a screen reader on admin/settings/_assets-tabs",
+    "where": "src/i18n/code-strings.ts",
+    "uses": 8
+  },
   "sbd3ce63349": {
     "text": "None yet.",
     "context": "Text on the page on admin/settings/template-edit",
@@ -10378,6 +10660,12 @@
     "context": "Text on admin/settings/api-keys",
     "where": "views/admin/settings/api-keys.ejs",
     "uses": 1
+  },
+  "sbe57ae1f5c": {
+    "text": "New status",
+    "context": "Text on admin/settings/assets-statuses / A heading on admin/settings/assets-statuses",
+    "where": "views/admin/settings/assets-statuses.ejs",
+    "uses": 2
   },
   "sbe9fd8087e": {
     "text": "Automation runs",
@@ -10769,6 +11057,12 @@
     "where": "views/admin/settings/mail-notifications.ejs",
     "uses": 1
   },
+  "sc4d891e9a8": {
+    "text": "Add comment",
+    "context": "A button on assets/show",
+    "where": "views/assets/show.ejs",
+    "uses": 1
+  },
   "sc4ebc6d4a5": {
     "text": "High",
     "context": "A ticket's priority",
@@ -10829,6 +11123,12 @@
     "where": "views/admin/settings/custom-images.ejs",
     "uses": 1
   },
+  "sc642dc2ae3": {
+    "text": "That asset no longer exists.",
+    "context": "A message shown beside a form or after an action",
+    "where": "src/services/assets.ts",
+    "uses": 4
+  },
   "sc64fbda071": {
     "text": "{0} second ago",
     "context": "How long ago something happened. Keep {0}: it is the number",
@@ -10843,9 +11143,9 @@
   },
   "sc66feb5eb8": {
     "text": "Move up",
-    "context": "A tooltip on admin/settings/_builder-widget",
+    "context": "A tooltip on admin/settings/_builder-widget / A tooltip on admin/settings/assets-columns / A tooltip on admin/settings/assets-statuses",
     "where": "views/admin/settings/_builder-widget.ejs",
-    "uses": 1
+    "uses": 3
   },
   "sc6d774cd6f": {
     "text": "Only service desk staff can take a ticket.",
@@ -11033,6 +11333,12 @@
     "where": "views/admin/settings/user-detail.ejs",
     "uses": 1
   },
+  "scacd16c581": {
+    "text": "Delete this asset?",
+    "context": "A heading on assets/show",
+    "where": "views/assets/show.ejs",
+    "uses": 1
+  },
   "scaf71b3f58": {
     "text": "Feb",
     "context": "A month, shortened, in a date such as \"21 Oct 2026\"",
@@ -11073,7 +11379,7 @@
     "text": "There is no active account with that address.",
     "context": "A message shown beside a form or after an action",
     "where": "src/routes/tickets.ts",
-    "uses": 2
+    "uses": 3
   },
   "scc5d2592f0": {
     "text": "Scripts run on custom requester portals only, never on the sign-in page, the approval page or in Settings.",
@@ -11269,9 +11575,9 @@
   },
   "sd0db8b5e36": {
     "text": "Options",
-    "context": "The label of a form field on admin/settings/custom-fields / The label of a form field on admin/settings/template-edit",
-    "where": "views/admin/settings/custom-fields.ejs",
-    "uses": 3
+    "context": "The label of a form field on admin/settings/assets-columns / The label of a form field on admin/settings/custom-fields / The label of a form field on admin/settings/template-edit",
+    "where": "views/admin/settings/assets-columns.ejs",
+    "uses": 5
   },
   "sd136160a13": {
     "text": "No ticket matches.",
@@ -11369,6 +11675,12 @@
     "where": "views/boards/_widget-form.ejs",
     "uses": 1
   },
+  "sd3460bceb2": {
+    "text": "Asset columns, statuses and documents",
+    "context": "The line under \"Assets\" in the Settings list",
+    "where": "src/i18n/code-strings.ts",
+    "uses": 1
+  },
   "sd353a99eb4": {
     "text": "Cancelled",
     "context": "A ticket's status - a badge on the ticket and in the queue / A figure in Reports / The tickets behind one figure in Reports - a page heading",
@@ -11431,9 +11743,9 @@
   },
   "sd461a493a3": {
     "text": "Automatic",
-    "context": "Text on admin/settings/provisioning",
+    "context": "Text on admin/settings/provisioning / Text on assets/show",
     "where": "views/admin/settings/provisioning.ejs",
-    "uses": 1
+    "uses": 2
   },
   "sd465bcfa36": {
     "text": "From address",
@@ -11705,6 +12017,12 @@
     "where": "views/admin/settings/api-keys.ejs",
     "uses": 1
   },
+  "sd897e471e7": {
+    "text": "inputmode=\"decimal\"",
+    "context": "Text on assets/_fields",
+    "where": "views/assets/_fields.ejs",
+    "uses": 1
+  },
   "sd8a43dbfd9": {
     "text": "Identity provider",
     "context": "A label for a screen reader on admin/settings/users",
@@ -11771,6 +12089,12 @@
     "where": "views/approval.ejs",
     "uses": 1
   },
+  "sd9b59e3725": {
+    "text": "Its comments and history go with it.",
+    "context": "Text on the page on assets/show",
+    "where": "views/assets/show.ejs",
+    "uses": 1
+  },
   "sd9e3c79736": {
     "text": "Raised, updated, resolved",
     "context": "What \"Tickets\" lines in the Activity feed are",
@@ -11793,7 +12117,7 @@
     "text": "Page {0} of {1}",
     "context": "Text on the page on admin/settings/_member-picker / Text on the page on admin/settings/audit / Text on the page on admin/settings/template-catalogue",
     "where": "views/admin/settings/_member-picker.ejs",
-    "uses": 6
+    "uses": 7
   },
   "sda998c7c59": {
     "text": "It has no widgets yet.",
@@ -11831,6 +12155,12 @@
     "where": "views/partials/header.ejs",
     "uses": 5
   },
+  "sdaea5bb12f": {
+    "text": "Give the column a name.",
+    "context": "A message shown beside a form or after an action",
+    "where": "src/services/assets.ts",
+    "uses": 1
+  },
   "sdaee7606b3": {
     "text": "Reset",
     "context": "A button on admin/settings/audit / A button on admin/settings/custom-images / A button on admin/settings/users",
@@ -11839,9 +12169,9 @@
   },
   "sdb053ddf99": {
     "text": "Rename {0}",
-    "context": "Read only by a screen reader on admin/settings/template-edit",
-    "where": "views/admin/settings/template-edit.ejs",
-    "uses": 1
+    "context": "Text on admin/settings/assets-statuses / Read only by a screen reader on admin/settings/template-edit",
+    "where": "views/admin/settings/assets-statuses.ejs",
+    "uses": 2
   },
   "sdb18f17fe5": {
     "text": "Sun",
@@ -11871,6 +12201,12 @@
     "text": "Read internal notes too",
     "context": "Text on admin/settings/api-keys",
     "where": "views/admin/settings/api-keys.ejs",
+    "uses": 1
+  },
+  "sdbbf280464": {
+    "text": "Keep a comment under 10,000 characters.",
+    "context": "A message shown beside a form or after an action",
+    "where": "src/services/assets.ts",
     "uses": 1
   },
   "sdbcd5e7bb7": {
@@ -11955,7 +12291,7 @@
     "text": "Name",
     "context": "The label of a form field on admin/settings/_mailbox-dialog / A table column heading on admin/settings/_member-picker / The label of a form field on admin/settings/_relay-dialog",
     "where": "views/admin/settings/_mailbox-dialog.ejs",
-    "uses": 48
+    "uses": 52
   },
   "sdce880ecdd": {
     "text": "Make another template the default first.",
@@ -12167,6 +12503,12 @@
     "where": "src/services/templates.ts",
     "uses": 1
   },
+  "se056734eff": {
+    "text": "Nothing yet.",
+    "context": "Text on the page on assets/show",
+    "where": "views/assets/show.ejs",
+    "uses": 1
+  },
   "se065594ac6": {
     "text": "POST {0}\nAuthorization: Bearer hd_{1}_...\nContent-Type: application/json\n\n{ \"ticket\": \"INC-000123\", \"anything\": \"else\" }",
     "context": "Text on admin/settings/automation-edit",
@@ -12319,9 +12661,9 @@
   },
   "se2d0a54968": {
     "text": "Delete",
-    "context": "A button on admin/settings/automation-edit / A button on admin/settings/template-edit / A button on tickets/show",
+    "context": "A button on admin/settings/automation-edit / A button on admin/settings/template-edit / A button on assets/show",
     "where": "views/admin/settings/automation-edit.ejs",
-    "uses": 3
+    "uses": 4
   },
   "se2d65334cf": {
     "text": "What it counts",
@@ -12445,9 +12787,9 @@
   },
   "se57e998726": {
     "text": "Variable",
-    "context": "A table column heading on admin/settings/portal-edit",
-    "where": "views/admin/settings/portal-edit.ejs",
-    "uses": 2
+    "context": "A table column heading on admin/settings/assets-columns / A table column heading on admin/settings/portal-edit",
+    "where": "views/admin/settings/assets-columns.ejs",
+    "uses": 3
   },
   "se5bfa11596": {
     "text": "Mailbox in Graph",
@@ -12713,6 +13055,12 @@
     "where": "views/admin/settings/group-detail.ejs",
     "uses": 1
   },
+  "seace244cc8": {
+    "text": "No status",
+    "context": "One choice in a dropdown on assets/_fields",
+    "where": "views/assets/_fields.ejs",
+    "uses": 1
+  },
   "seb04021468": {
     "text": "What to look for",
     "context": "A label for a screen reader on admin/settings/mail-rules",
@@ -12765,6 +13113,12 @@
     "text": "That password is not right.",
     "context": "A message shown beside a form or after an action",
     "where": "src/routes/auth.ts",
+    "uses": 1
+  },
+  "seba68d27fc": {
+    "text": "All assets",
+    "context": "Text on assets/show",
+    "where": "views/assets/show.ejs",
     "uses": 1
   },
   "sebe7db36e4": {
@@ -13079,6 +13433,12 @@
     "where": "views/tickets/show.ejs",
     "uses": 2
   },
+  "sf4d474f0b1": {
+    "text": "Keep the name under 40 characters.",
+    "context": "A message shown beside a form or after an action",
+    "where": "src/services/assets.ts",
+    "uses": 1
+  },
   "sf4db1e4847": {
     "text": "End",
     "context": "A label for a screen reader on admin/settings/template-other",
@@ -13204,6 +13564,12 @@
     "context": "A message shown beside a form or after an action",
     "where": "src/auth/permissions.ts",
     "uses": 2
+  },
+  "sf7935a2e57": {
+    "text": "Warranty until",
+    "context": "The grey example inside an input on admin/settings/assets-columns",
+    "where": "views/admin/settings/assets-columns.ejs",
+    "uses": 1
   },
   "sf793de205e": {
     "text": "Low",
@@ -13559,6 +13925,12 @@
     "where": "views/admin/settings/api-keys.ejs",
     "uses": 1
   },
+  "sfcd2f57a1d": {
+    "text": "That asset does not exist.",
+    "context": "A message shown beside a form or after an action",
+    "where": "src/routes/assets.ts",
+    "uses": 1
+  },
   "sfd1a1cae06": {
     "text": "The ticket cannot be resolved until this task is done",
     "context": "Text on the page on admin/settings/templates",
@@ -13633,9 +14005,9 @@
   },
   "sfe065a57c0": {
     "text": "Move {0} up",
-    "context": "Read only by a screen reader on admin/settings/_builder-widget / Read only by a screen reader on admin/settings/mail-rules / Read only by a screen reader on admin/settings/template-edit",
+    "context": "Read only by a screen reader on admin/settings/_builder-widget / Read only by a screen reader on admin/settings/assets-columns / Read only by a screen reader on admin/settings/assets-statuses",
     "where": "views/admin/settings/_builder-widget.ejs",
-    "uses": 3
+    "uses": 5
   },
   "sfe18013d93": {
     "text": "Now",
@@ -13661,6 +14033,12 @@
     "where": "src/i18n/code-strings.ts",
     "uses": 2
   },
+  "sfe9ed8b8d5": {
+    "text": "The variable is what a notification or a document writes, for example {{SerialNumber}}. It stays the same when a column is renamed.",
+    "context": "An explanation behind an (i) mark on admin/settings/assets-columns",
+    "where": "views/admin/settings/assets-columns.ejs",
+    "uses": 1
+  },
   "sfefd38f343": {
     "text": "Tasks raised with it",
     "context": "A heading on admin/settings/template-edit",
@@ -13669,9 +14047,9 @@
   },
   "sff8059dc67": {
     "text": "Actions",
-    "context": "A table column heading on admin/settings/_member-picker / Read only by a screen reader on admin/settings/api-keys / Read only by a screen reader on admin/settings/automations",
+    "context": "A table column heading on admin/settings/_member-picker / Read only by a screen reader on admin/settings/api-keys / Read only by a screen reader on admin/settings/assets-columns",
     "where": "views/admin/settings/_member-picker.ejs",
-    "uses": 18
+    "uses": 20
   },
   "sff82a31ee6": {
     "text": "For an email",

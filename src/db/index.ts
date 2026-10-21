@@ -70,10 +70,11 @@ const BOOLEAN_COLUMNS = new Set([
   'urgent',
   'is_private',
   'automatic',
+  'is_builtin',
 ]);
 
 /** Columns holding a JSON document as TEXT. */
-const JSON_COLUMNS = new Set(['widgets', 'detail', 'document', 'data', 'fields', 'attachment_ids', 'pages', 'graph', 'dashboard_options', 'allowed_actions', 'template_ids', 'choices', 'strings', 'domains']);
+const JSON_COLUMNS = new Set(['widgets', 'detail', 'document', 'data', 'fields', 'attachment_ids', 'pages', 'graph', 'dashboard_options', 'allowed_actions', 'template_ids', 'choices', 'strings', 'domains', 'field_values']);
 
 const SQLITE_NOW = "strftime('%Y-%m-%dT%H:%M:%fZ', 'now')";
 

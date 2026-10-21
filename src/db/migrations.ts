@@ -32,6 +32,80 @@ const NOW = "strftime('%Y-%m-%dT%H:%M:%fZ', 'now')";
 /** The same text, from PostgreSQL: ISO-8601 UTC with milliseconds. */
 export const PG_NOW = `to_char(clock_timestamp() AT TIME ZONE 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"')`;
 
+/**
+ * Assets (services/assets.ts, 21 Oct 2026), one text for both databases but
+ * the integer type. A column's `key` is stable - it is the variable a
+ * document or notification writes, e.g. {{SerialNumber}} - and its label is
+ * free to change. An asset's values are one JSON document keyed by it.
+ */
+const ASSETS_SQL = (int: string) => `
+  CREATE TABLE IF NOT EXISTS asset_statuses (
+    id         TEXT PRIMARY KEY,
+    name       TEXT NOT NULL,
+    sort_order ${int} NOT NULL DEFAULT 0,
+    created_at TEXT NOT NULL
+  );
+  CREATE TABLE IF NOT EXISTS asset_columns (
+    key        TEXT PRIMARY KEY,
+    label      TEXT NOT NULL,
+    format     TEXT NOT NULL DEFAULT 'text',
+    choices    TEXT NOT NULL DEFAULT '[]',
+    is_enabled ${int} NOT NULL DEFAULT 1,
+    is_builtin ${int} NOT NULL DEFAULT 0,
+    sort_order ${int} NOT NULL DEFAULT 0,
+    created_at TEXT NOT NULL
+  );
+  CREATE TABLE IF NOT EXISTS assets (
+    id           TEXT PRIMARY KEY,
+    status_id    TEXT REFERENCES asset_statuses(id) ON DELETE SET NULL,
+    assigned_to  TEXT REFERENCES users(id) ON DELETE SET NULL,
+    field_values TEXT NOT NULL DEFAULT '{}',
+    created_by   TEXT REFERENCES users(id) ON DELETE SET NULL,
+    created_at   TEXT NOT NULL,
+    updated_at   TEXT NOT NULL
+  );
+  CREATE INDEX IF NOT EXISTS assets_assigned_idx ON assets (assigned_to);
+  CREATE INDEX IF NOT EXISTS assets_status_idx ON assets (status_id);
+  CREATE TABLE IF NOT EXISTS asset_events (
+    id         TEXT PRIMARY KEY,
+    asset_id   TEXT NOT NULL REFERENCES assets(id) ON DELETE CASCADE,
+    actor_id   TEXT REFERENCES users(id) ON DELETE SET NULL,
+    kind       TEXT NOT NULL,
+    field      TEXT NOT NULL DEFAULT '',
+    old_value  TEXT NOT NULL DEFAULT '',
+    new_value  TEXT NOT NULL DEFAULT '',
+    created_at TEXT NOT NULL
+  );
+  CREATE INDEX IF NOT EXISTS asset_events_asset_idx ON asset_events (asset_id, created_at);
+  CREATE TABLE IF NOT EXISTS asset_comments (
+    id         TEXT PRIMARY KEY,
+    asset_id   TEXT NOT NULL REFERENCES assets(id) ON DELETE CASCADE,
+    author_id  TEXT REFERENCES users(id) ON DELETE SET NULL,
+    body       TEXT NOT NULL,
+    created_at TEXT NOT NULL
+  );
+  CREATE INDEX IF NOT EXISTS asset_comments_asset_idx ON asset_comments (asset_id, created_at);
+  INSERT INTO asset_statuses (id, name, sort_order, created_at) VALUES
+    ('in-stock', 'In stock', 10, '2026-10-21T00:00:00.000Z'),
+    ('assigned', 'Assigned', 20, '2026-10-21T00:00:00.000Z'),
+    ('in-repair', 'In repair', 30, '2026-10-21T00:00:00.000Z'),
+    ('retired', 'Retired', 40, '2026-10-21T00:00:00.000Z'),
+    ('bought-out', 'Bought out', 50, '2026-10-21T00:00:00.000Z')
+    ON CONFLICT (id) DO NOTHING;
+  INSERT INTO asset_columns (key, label, format, is_builtin, sort_order, created_at) VALUES
+    ('Model', 'Model', 'text', 1, 10, '2026-10-21T00:00:00.000Z'),
+    ('AssignedTo', 'Assigned to', 'person', 1, 20, '2026-10-21T00:00:00.000Z'),
+    ('DateBought', 'Date bought', 'date', 1, 30, '2026-10-21T00:00:00.000Z'),
+    ('SerialNumber', 'Serial number', 'text', 1, 40, '2026-10-21T00:00:00.000Z'),
+    ('Imei', 'IMEI / Other', 'text', 1, 50, '2026-10-21T00:00:00.000Z'),
+    ('PoNumber', 'PO number', 'text', 1, 60, '2026-10-21T00:00:00.000Z'),
+    ('Type', 'Type', 'text', 1, 70, '2026-10-21T00:00:00.000Z'),
+    ('Vendor', 'Vendor', 'text', 1, 80, '2026-10-21T00:00:00.000Z'),
+    ('Company', 'Company', 'text', 1, 90, '2026-10-21T00:00:00.000Z'),
+    ('Comment', 'Comment', 'textarea', 1, 100, '2026-10-21T00:00:00.000Z')
+    ON CONFLICT (key) DO NOTHING;
+`;
+
 export const migrations: readonly Migration[] = [
   {
     version: 1,
@@ -2015,5 +2089,11 @@ export const migrations: readonly Migration[] = [
       ALTER TABLE users ADD COLUMN IF NOT EXISTS manager_id TEXT REFERENCES users(id) ON DELETE SET NULL;
       CREATE INDEX IF NOT EXISTS users_manager_idx ON users (manager_id);
     `,
+  },
+  {
+    version: 67,
+    name: 'assets',
+    sql: ASSETS_SQL('INTEGER'),
+    pg: ASSETS_SQL('BIGINT'),
   },
 ];

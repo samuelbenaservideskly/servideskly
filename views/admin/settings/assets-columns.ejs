@@ -1,0 +1,121 @@
+<%- include('_layout') %>
+
+<%- include('_assets-tabs') %>
+
+<div class="toolbar">
+  <a class="btn btn--primary" href="#new-column"><span aria-hidden="true">+</span> New column</a>
+  <%- include('../../partials/info', { text: 'The variable is what a notification or a document writes, for example {{SerialNumber}}. It stays the same when a column is renamed.' }) %>
+</div>
+
+<% var formatLabel = function (key) { if (key === 'person') return 'Person'; var f = formats.find(function (x) { return x.key === key; }); return f ? f.label : key; }; %>
+
+<div class="table-scroll">
+  <table class="table">
+    <thead>
+      <tr>
+        <th scope="col">Column</th>
+        <th scope="col">Format</th>
+        <th scope="col">Variable</th>
+        <th scope="col">Shown</th>
+        <th scope="col"><span class="visually-hidden">Actions</span></th>
+      </tr>
+    </thead>
+    <tbody>
+      <% columns.forEach(function (c, i) { %>
+        <tr id="row-<%= c.key %>">
+          <td><%= c.label %></td>
+          <td class="small"><%= formatLabel(c.format) %><% if (c.choices.length) { %> <span class="muted">(<%= c.choices.length %>)</span><% } %></td>
+          <td class="small mono">{{<%= c.key %>}}</td>
+          <td><span class="pill pill--<%= c.is_enabled ? 'ok' : 'muted' %>"><%= c.is_enabled ? 'On' : 'Off' %></span></td>
+          <td class="row-actions">
+            <form method="post" action="/admin/settings/assets/columns/<%= c.key %>/move" class="inline-form">
+              <input type="hidden" name="_csrf" value="<%= locals.csrfToken %>">
+              <button type="submit" name="direction" value="up" class="icon-btn" title="Move up"<%= i === 0 ? ' disabled' : '' %>>&#9650;<span class="visually-hidden">Move <%= c.label %> up</span></button>
+              <button type="submit" name="direction" value="down" class="icon-btn" title="Move down"<%= i === columns.length - 1 ? ' disabled' : '' %>>&#9660;<span class="visually-hidden">Move <%= c.label %> down</span></button>
+            </form>
+            <a class="btn btn--quiet btn--small" href="#column-<%= c.key %>">Edit</a>
+            <form method="post" action="/admin/settings/assets/columns/<%= c.key %>/delete" class="inline-form">
+              <input type="hidden" name="_csrf" value="<%= locals.csrfToken %>">
+              <%- include('../../partials/bin-button', { label: 'Remove ' + c.label, refused: c.is_builtin ? 'A built-in column is switched off rather than removed.' : '' }) %>
+            </form>
+          </td>
+        </tr>
+      <% }); %>
+    </tbody>
+  </table>
+</div>
+
+<%# One dialog per column, and one for a new one: the radio-free version of
+    the form, since a choice's options show whatever the format (they are
+    ignored unless it is a choice). %>
+<% columns.forEach(function (c) { %>
+  <div class="dialog" id="column-<%= c.key %>">
+    <a class="dialog__backdrop" href="#row-<%= c.key %>" aria-label="Close"></a>
+    <div class="dialog__panel" role="dialog" aria-modal="true" aria-labelledby="column-<%= c.key %>-title">
+      <div class="dialog__head"><h2 id="column-<%= c.key %>-title"><%= c.label %></h2><a class="dialog__close" href="#row-<%= c.key %>" aria-label="Close">&times;</a></div>
+      <form method="post" action="/admin/settings/assets/columns/<%= c.key %>" class="stack">
+        <input type="hidden" name="_csrf" value="<%= locals.csrfToken %>">
+        <div class="field">
+          <label for="label-<%= c.key %>">Name</label>
+          <input id="label-<%= c.key %>" name="label" type="text" maxlength="60" required value="<%= c.label %>">
+        </div>
+        <% if (c.format === 'person') { %>
+          <input type="hidden" name="format" value="person">
+          <p class="small muted">Always a person: notifications and automations act on them.</p>
+        <% } else { %>
+          <div class="field">
+            <label for="format-<%= c.key %>">Format</label>
+            <select id="format-<%= c.key %>" name="format">
+              <% formats.forEach(function (f) { %><option value="<%= f.key %>"<%= f.key === c.format ? ' selected' : '' %>><%= f.label %></option><% }); %>
+            </select>
+          </div>
+          <div class="field">
+            <div class="label-row">
+              <label for="choices-<%= c.key %>">Options</label>
+              <%- include('../../partials/info', { text: 'For a choice: one option per line.' }) %>
+            </div>
+            <textarea id="choices-<%= c.key %>" name="choices" rows="4"><%= c.choices.join('\n') %></textarea>
+          </div>
+        <% } %>
+        <label class="check"><input type="checkbox" name="enabled" value="on"<%= c.is_enabled ? ' checked' : '' %>> Shown</label>
+        <div class="dialog__actions">
+          <a class="btn btn--quiet" href="#row-<%= c.key %>">Cancel</a>
+          <button type="submit" class="btn btn--primary">Save column</button>
+        </div>
+      </form>
+    </div>
+  </div>
+<% }); %>
+
+<div class="dialog" id="new-column">
+  <a class="dialog__backdrop" href="#top" aria-label="Close"></a>
+  <div class="dialog__panel" role="dialog" aria-modal="true" aria-labelledby="new-column-title">
+    <div class="dialog__head"><h2 id="new-column-title">New column</h2><a class="dialog__close" href="#top" aria-label="Close">&times;</a></div>
+    <form method="post" action="/admin/settings/assets/columns" class="stack">
+      <input type="hidden" name="_csrf" value="<%= locals.csrfToken %>">
+      <div class="field">
+        <label for="new-label">Name</label>
+        <input id="new-label" name="label" type="text" maxlength="60" required placeholder="Warranty until">
+      </div>
+      <div class="field">
+        <label for="new-format">Format</label>
+        <select id="new-format" name="format">
+          <% formats.forEach(function (f) { %><option value="<%= f.key %>"><%= f.label %></option><% }); %>
+        </select>
+      </div>
+      <div class="field">
+        <div class="label-row">
+          <label for="new-choices">Options</label>
+          <%- include('../../partials/info', { text: 'For a choice: one option per line.' }) %>
+        </div>
+        <textarea id="new-choices" name="choices" rows="4"></textarea>
+      </div>
+      <div class="dialog__actions">
+        <a class="btn btn--quiet" href="#top">Cancel</a>
+        <button type="submit" class="btn btn--primary">Add column</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<%- include('_layout_end') %>

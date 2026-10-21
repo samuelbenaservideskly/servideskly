@@ -27,7 +27,7 @@ import type { UserRow } from '../services/users.js';
 export interface Permission {
   key: string;
   label: string;
-  group: 'Tickets' | 'Reports and people' | 'Settings' | 'Automation and API';
+  group: 'Tickets' | 'Assets' | 'Reports and people' | 'Settings' | 'Automation and API';
 }
 
 /** Every permission a role can be given, in the order the role page lists them. */
@@ -37,6 +37,7 @@ export const PERMISSIONS: readonly Permission[] = [
   { key: 'tickets.edit', label: 'Change status, priority, assignee, group and category', group: 'Tickets' },
   { key: 'tickets.internal', label: 'Read and write internal notes', group: 'Tickets' },
   { key: 'tickets.delete', label: 'Delete tickets', group: 'Tickets' },
+  { key: 'assets.manage', label: 'Manage assets', group: 'Assets' },
   { key: 'reports.view', label: 'Open Reports', group: 'Reports and people' },
   { key: 'people.directory', label: 'Search the people directory', group: 'Reports and people' },
   { key: 'settings.integrations', label: 'Integrations', group: 'Settings' },
@@ -47,6 +48,7 @@ export const PERMISSIONS: readonly Permission[] = [
   { key: 'settings.customization', label: 'Customisation', group: 'Settings' },
   { key: 'settings.dashboards', label: 'Dashboards', group: 'Settings' },
   { key: 'settings.advanced', label: 'Advanced settings: portal scripting, data', group: 'Settings' },
+  { key: 'settings.assets', label: 'Assets: columns and statuses', group: 'Settings' },
   { key: 'settings.audit', label: 'Audit trail', group: 'Settings' },
   { key: 'automation.manage', label: 'Build automations and connections', group: 'Automation and API' },
   { key: 'api.manage', label: 'Manage API keys', group: 'Automation and API' },
@@ -55,7 +57,7 @@ export const PERMISSIONS: readonly Permission[] = [
 const KNOWN = new Set(PERMISSIONS.map((p) => p.key));
 
 /** What a technician (agent) could always do, without a custom role. */
-const AGENT_DEFAULT = ['tickets.work', 'tickets.view_all', 'tickets.edit', 'tickets.internal', 'reports.view'];
+const AGENT_DEFAULT = ['tickets.work', 'tickets.view_all', 'tickets.edit', 'tickets.internal', 'reports.view', 'assets.manage'];
 
 export interface RoleRow {
   id: string;

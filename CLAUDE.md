@@ -2890,6 +2890,33 @@ Roles, group membership, templates, branding, attachment limits and the SCIM
 token are all set here - **not** in environment variables. The environment only
 seeds initial values.
 
+### Assets (21 Oct 2026)
+
+`services/assets.ts`, migration 67; the plan is in the owner's
+`.claude/plans/partitioned-booping-falcon.md` (five steps: pages, CSV
+import, assigned / unassigned mail, automations, .docx documents).
+
+- **The pages are `/inventory`, not `/assets`**: `/assets` is where the
+  stylesheets and scripts are served (express.static), and it answered
+  `/assets` with a 301. Settings - Assets is `/admin/settings/assets`.
+- **A column's `key` never changes** (`asset_columns.key`, e.g.
+  `SerialNumber`): it is the variable a notification or document writes.
+  The label, the format, on/off and the order are the administrator's.
+  Ten are built in; a built-in one is switched off, never removed.
+- **Assigned to is a person** (format `person`, fixed), stored in
+  `assets.assigned_to` rather than among the values, so a deleted account
+  leaves the asset unassigned. Typed as an email address.
+- **Values are one JSON document** (`assets.field_values`, in
+  JSON_COLUMNS) keyed by column; a switched-off column's values stay, so
+  switching it back on brings them back. Search is a LIKE over that
+  document and the assignee; sorting by a column goes through
+  `sqlJsonText`, whitelisted against the columns.
+- **Every change is a line of history** (`asset_events`), and status or
+  assignee changes are announced to `onAssetChange` listeners - what the
+  notifications and automations (later steps) hang off.
+- Permissions: `assets.manage` (the built-in technician has it) for the
+  pages, `settings.assets` for Settings - Assets.
+
 ---
 
 ## Not built, on purpose

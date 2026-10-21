@@ -324,6 +324,11 @@
     </div>
   </div>
 </div>
+<% if (locals.assets && locals.assets.length) { %>
+  <div class="card stack">
+    <%- include('../../assets/_assigned-list', { assets: locals.assets, assetTitle: locals.assetTitle }) %>
+  </div>
+<% } %>
 <% } %>
 
 <% if (isLocal) { %>
