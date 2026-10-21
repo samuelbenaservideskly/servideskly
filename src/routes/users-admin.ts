@@ -668,8 +668,7 @@ userAdminRouter.get(
 async function cannotDisableLocalSignIn(): Promise<string | null> {
   if (!settings().anySsoConfigured) {
     return (
-      'Local sign-in cannot be disabled until another identity provider is set up under ' +
-      'Integrations. Without one, no user would be able to sign in.'
+      'Set up an identity provider under Integrations first.'
     );
   }
   // An administrator only counts if a *configured* provider can sign them in:
@@ -705,8 +704,7 @@ async function cannotDisableLocalSignIn(): Promise<string | null> {
         );
   if (directoryAdmins === 0) {
     return (
-      'Local sign-in cannot be disabled until at least one account from your identity ' +
-      'provider has the Administrator role. Without one, no administrator would be able to sign in.'
+      'Give an account from your identity provider the Administrator role first.'
     );
   }
   return null;

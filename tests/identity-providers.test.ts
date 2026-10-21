@@ -167,6 +167,6 @@ describe('signing in', () => {
     void page;
     // Google is configured, but no Google account is an administrator yet.
     const users = await as(admin).get('/admin/settings/users').expect(200);
-    assert.match(users.text, /until at least one account from your identity\s+provider has the Administrator role/);
+    assert.match(users.text, /Give an account from your identity provider the Administrator role first\./);
   });
 });

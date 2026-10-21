@@ -199,7 +199,7 @@ describe('switching local sign-in off', () => {
       .expect(302);
     assert.equal(settings().localAccounts.signInEnabled, true);
     const page = await as(admin).get('/admin/settings/users').expect(200);
-    assert.match(page.text, /until another identity provider is set up under Integrations/);
+    assert.match(page.text, /Set up an identity provider under Integrations first./);
     assert.match(page.text, />Disable sign-in with local accounts</);
   });
 
