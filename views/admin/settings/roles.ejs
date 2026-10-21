@@ -1,0 +1,104 @@
+<%- include('_layout') %>
+
+<%- include('_user-tabs', { tab: 'roles' }) %>
+
+<%#
+  Custom roles (auth/permissions.ts, 21 Oct 2026): a name and the
+  permissions ticked on it. A role that may work on tickets makes its people
+  agents; any other, users; none makes an administrator. Only an
+  administrator sees this page and gives roles to people.
+%>
+<% var groups = ['Tickets', 'Reports and people', 'Settings', 'Automation and API']; %>
+<% function roleForm(id, v, problems) { %>
+  <% var ticked = (v && v.permissions) || []; %>
+  <div class="field">
+    <label for="<%= id %>-name">Name</label>
+    <input id="<%= id %>-name" name="name" maxlength="60" required value="<%= v ? v.name : '' %>" placeholder="Service desk lead">
+    <% if (problems.name) { %><p class="field-error" role="alert"><%= problems.name %></p><% } %>
+  </div>
+  <div class="field">
+    <label for="<%= id %>-description">Description <span class="hint-inline">(optional)</span></label>
+    <input id="<%= id %>-description" name="description" maxlength="300" value="<%= v ? v.description : '' %>">
+    <% if (problems.description) { %><p class="field-error" role="alert"><%= problems.description %></p><% } %>
+  </div>
+  <div class="role-permissions">
+    <% groups.forEach(function (g) { %>
+      <fieldset class="role-permissions__group">
+        <legend><%= t(g) %></legend>
+        <% permissions.filter(function (p) { return p.group === g; }).forEach(function (p) { %>
+          <label class="check"><input type="checkbox" name="permissions" value="<%= p.key %>"<%= ticked.indexOf(p.key) >= 0 ? ' checked' : '' %>> <span><%= t(p.label) %></span></label>
+        <% }); %>
+      </fieldset>
+    <% }); %>
+  </div>
+  <p class="small muted">Ticking "Work on tickets as a technician" makes the role's people technicians: they see the queue and can be assigned tickets. Without it they raise tickets like a user. Roles themselves, and giving them to people, stay with administrators.</p>
+<% } %>
+
+<div class="page-head">
+  <div></div>
+  <div class="page-head__actions">
+    <a class="btn btn--primary" href="#new-role"><span aria-hidden="true">+</span> New role</a>
+  </div>
+</div>
+
+<div class="card card--flush">
+  <% if (roles.length === 0) { %>
+    <p class="dash-empty">No custom roles yet. Everybody has one of the built-in roles: User, Agent or Administrator. Start with <a href="#new-role">New role</a>.</p>
+  <% } else { %>
+    <div class="table-scroll">
+      <table class="table">
+        <thead><tr><th scope="col">Role</th><th scope="col">Permissions</th><th scope="col">People</th><th scope="col"><span class="visually-hidden">Actions</span></th></tr></thead>
+        <tbody>
+          <% roles.forEach(function (r) { %>
+            <tr id="row-<%= r.id %>">
+              <td><strong><%= r.name %></strong><% if (r.description) { %><div class="small muted"><%= r.description %></div><% } %></td>
+              <td class="small"><%= r.permissions.length ? permissions.filter(function (p) { return r.permissions.indexOf(p.key) >= 0; }).map(function (p) { return t(p.label); }).join(', ') : t('None') %></td>
+              <td><%= members.get(r.id) || 0 %></td>
+              <td class="row-actions">
+                <a class="btn btn--quiet btn--small" href="#role-<%= r.id %>">Edit</a>
+                <form method="post" action="/admin/settings/users/roles/<%= r.id %>/delete" class="inline-form">
+                  <input type="hidden" name="_csrf" value="<%= locals.csrfToken %>">
+                  <%- include('../../partials/bin-button', { label: tx('Delete {0}', [r.name]), refused: (members.get(r.id) || 0) > 0 ? t('Give its people another role first.') : '' }) %>
+                </form>
+              </td>
+            </tr>
+          <% }); %>
+        </tbody>
+      </table>
+    </div>
+  <% } %>
+</div>
+
+<div class="dialog<%= openDialog === 'new-role' ? ' dialog--open' : '' %>" id="new-role">
+  <a class="dialog__backdrop" href="#top" aria-label="Close"></a>
+  <div class="dialog__panel dialog__panel--wide" role="dialog" aria-modal="true" aria-labelledby="new-role-title">
+    <div class="dialog__head"><h2 id="new-role-title">New role</h2><a class="dialog__close" href="#top" aria-label="Close">&times;</a></div>
+    <form method="post" action="/admin/settings/users/roles" class="stack">
+      <input type="hidden" name="_csrf" value="<%= locals.csrfToken %>">
+      <% roleForm('new', !editing ? values : null, !editing ? problems : {}); %>
+      <div class="dialog__actions">
+        <button type="submit" class="btn btn--primary">Create role</button>
+        <a class="btn btn--quiet" href="#top">Cancel</a>
+      </div>
+    </form>
+  </div>
+</div>
+
+<% roles.forEach(function (r) { var mine = editing === r.id; %>
+  <div class="dialog<%= openDialog === 'role-' + r.id ? ' dialog--open' : '' %>" id="role-<%= r.id %>">
+    <a class="dialog__backdrop" href="#row-<%= r.id %>" aria-label="Close"></a>
+    <div class="dialog__panel dialog__panel--wide" role="dialog" aria-modal="true" aria-labelledby="role-<%= r.id %>-title">
+      <div class="dialog__head"><h2 id="role-<%= r.id %>-title"><%= tx('Edit {0}', [r.name]) %></h2><a class="dialog__close" href="#row-<%= r.id %>" aria-label="Close">&times;</a></div>
+      <form method="post" action="/admin/settings/users/roles/<%= r.id %>" class="stack">
+        <input type="hidden" name="_csrf" value="<%= locals.csrfToken %>">
+        <% roleForm('role-' + r.id, mine && values ? values : r, mine ? problems : {}); %>
+        <div class="dialog__actions">
+          <button type="submit" class="btn btn--primary">Save role</button>
+          <a class="btn btn--quiet" href="#row-<%= r.id %>">Cancel</a>
+        </div>
+      </form>
+    </div>
+  </div>
+<% }); %>
+
+<%- include('_layout_end') %>

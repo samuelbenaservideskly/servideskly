@@ -2,6 +2,7 @@ import type { Request, RequestHandler, Response } from 'express';
 import { settings } from '../settings/index.js';
 import { isStaff } from '../services/users.js';
 import { brandingVersion } from '../services/branding.js';
+import { can, canOpenSettings, roleById } from '../auth/permissions.js';
 
 export type FlashType = 'success' | 'error' | 'info';
 
@@ -35,6 +36,18 @@ export function viewLocals(): RequestHandler {
     res.locals.currentUser = req.currentUser ?? null;
     res.locals.isStaff = req.currentUser ? isStaff(req.currentUser.role) : false;
     res.locals.isAdmin = req.currentUser?.role === 'admin';
+    // Custom roles (auth/permissions.ts): asked when a page is drawn.
+    res.locals.can = (permission: string) => can(req.currentUser, permission);
+    res.locals.canOpenSettings = () => canOpenSettings(req.currentUser);
+    // Shown under the person's name in the sidebar instead of the base role.
+    res.locals.roleName = req.currentUser?.role_id && req.currentUser.role !== 'admin' ? (roleById(req.currentUser.role_id)?.name ?? '') : '';
+    res.locals.canSection = (slug: string) => {
+      const user = req.currentUser;
+      if (!user) return false;
+      if (user.role === 'admin') return true;
+      if (slug === 'advanced') return can(user, 'settings.advanced') || can(user, 'automation.manage') || can(user, 'api.manage');
+      return can(user, 'settings.' + slug);
+    };
     res.locals.currentPath = req.path;
     // Branding is read per request, so a change in Customisation shows up
     // immediately without a restart.

@@ -8,7 +8,7 @@ import multer from 'multer';
 import { z } from 'zod';
 import { asyncHandler } from '../lib/async-handler.js';
 import { auditRequest } from '../lib/audit.js';
-import { badRequest, conflict, notFound } from '../lib/errors.js';
+import { badRequest, conflict, forbidden, notFound } from '../lib/errors.js';
 import { normaliseLine } from '../lib/util.js';
 import { NAME_VARIABLES, applyAllDisplayNames, buildDisplayName, formatProblem, setSourceName } from '../services/display-names.js';
 import { allowOwnScripts, writeLimiter } from '../middleware/security.js';
@@ -74,6 +74,7 @@ import {
 } from '../services/local-import.js';
 import { PROVIDERS, providerConfig, providerName, type ProviderKey } from '../auth/oidc.js';
 import { hasAuthenticator, removeAuthenticator } from '../auth/authenticator.js';
+import { PERMISSIONS, countRoleMembers, createRole, deleteRole, listRoles, roleById, roleProblems, setCustomRole, updateRole } from '../auth/permissions.js';
 
 /**
  * Users.
@@ -110,6 +111,91 @@ userAdminRouter.use((_req, res, next) => {
 const uuid = z.string().uuid();
 const PER_PAGE = 50;
 
+// --- custom roles (auth/permissions.ts, 21 Oct 2026) ---------------------------------
+// An administrator's only: the gate in routes/admin.ts keeps everybody else out.
+
+function readRole(body: Record<string, unknown>) {
+  const text = (k: string) => (typeof body[k] === 'string' ? String(body[k]) : '');
+  const ticked = body.permissions;
+  return {
+    name: normaliseLine(text('name')).slice(0, 80),
+    description: text('description').trim().slice(0, 400),
+    permissions: (Array.isArray(ticked) ? ticked : ticked === undefined ? [] : [ticked]).map(String),
+  };
+}
+
+async function renderRoles(res: Response, extra: { editing?: string | null; values?: ReturnType<typeof readRole>; problems?: Record<string, string>; status?: number } = {}) {
+  if (extra.status) res.status(extra.status);
+  res.render(
+    'admin/settings/roles',
+    settingsView('users', {
+      sectionTitle: 'Users',
+      tab: 'roles',
+      entraReady: entraReady(),
+      roles: listRoles(),
+      members: await countRoleMembers(),
+      permissions: PERMISSIONS,
+      editing: extra.editing ?? null,
+      values: extra.values ?? null,
+      problems: extra.problems ?? {},
+      openDialog: extra.problems && Object.keys(extra.problems).length ? (extra.editing ? 'role-' + extra.editing : 'new-role') : null,
+    }),
+  );
+}
+
+userAdminRouter.get('/roles', asyncHandler(async (_req, res) => renderRoles(res)));
+
+userAdminRouter.post(
+  '/roles',
+  writeLimiter,
+  asyncHandler(async (req, res) => {
+    const input = readRole((req.body ?? {}) as Record<string, unknown>);
+    const problems = roleProblems(input, null);
+    if (Object.keys(problems).length) {
+      await renderRoles(res, { values: input, problems, status: 400 });
+      return;
+    }
+    await createRole(input, req.currentUser!);
+    flash(req, 'success', 'Role ' + input.name + ' created. Give it to people on their page.');
+    res.redirect('/admin/settings/users/roles');
+  }),
+);
+
+userAdminRouter.post(
+  '/roles/:roleId',
+  writeLimiter,
+  asyncHandler(async (req, res) => {
+    const id = String(req.params.roleId);
+    if (!roleById(id)) throw notFound();
+    const input = readRole((req.body ?? {}) as Record<string, unknown>);
+    const problems = roleProblems(input, id);
+    if (Object.keys(problems).length) {
+      await renderRoles(res, { editing: id, values: input, problems, status: 400 });
+      return;
+    }
+    await updateRole(id, input, req.currentUser!);
+    flash(req, 'success', 'Role ' + input.name + ' saved. Its people have the new permissions from their next page.');
+    res.redirect('/admin/settings/users/roles');
+  }),
+);
+
+userAdminRouter.post(
+  '/roles/:roleId/delete',
+  writeLimiter,
+  asyncHandler(async (req, res) => {
+    const id = String(req.params.roleId);
+    const role = roleById(id);
+    if (!role) throw notFound();
+    const done = await attempt(() => deleteRole(id, req.currentUser!));
+    if (!done.ok) {
+      flash(req, 'error', Object.values(done.errors)[0] ?? 'That role could not be deleted.');
+    } else {
+      flash(req, 'success', 'Role ' + role.name + ' deleted.');
+    }
+    res.redirect('/admin/settings/users/roles');
+  }),
+);
+
 const usersQuery = z.object({
   q: z.string().trim().max(200).optional(),
   // Filters. An empty value means "any", so the select's first option posts ''.
@@ -121,7 +207,7 @@ const usersQuery = z.object({
   page: z.coerce.number().int().min(1).max(10_000).default(1),
 });
 
-const roleBody = z.object({ role: z.enum(['user', 'agent', 'admin']) });
+const roleBody = z.object({ role: z.union([z.enum(['user', 'agent', 'admin']), z.string().regex(/^role:[0-9a-f-]{36}$/)]) });
 const statusBody = z.object({ status: z.enum(['active', 'disabled']) });
 const passwordBody = z.object({ password: z.string().max(200).optional() });
 
@@ -812,6 +898,11 @@ userAdminRouter.post(
       await refuse(plan.problems);
       return;
     }
+    // Only an administrator imports staff (custom roles, 21 Oct 2026).
+    if (req.currentUser?.role !== 'admin' && plan.create.some((row) => row.role !== 'user')) {
+      await refuse(['Only an administrator imports agents or administrators. Set every role to user, or ask an administrator.']);
+      return;
+    }
 
     const mailPassword = (req.body ?? {}).mailPassword === 'on';
     const imported = await runImport(plan.create, req.currentUser?.id ?? null, { mailPassword });
@@ -980,6 +1071,8 @@ async function renderUser(req: Request, res: Response, user: UserRow): Promise<v
         userGroupSources: Object.fromEntries(userGroupSources),
         activity,
         local,
+        // Custom roles, offered beside the built-in ones (auth/permissions.ts).
+        customRoles: listRoles(),
         // Their authenticator app, which an administrator can remove after a lost phone.
         hasAuthenticator: isLocalAccount(user) ? await hasAuthenticator(user.id) : false,
         isLocal: isLocalAccount(user),
@@ -1095,10 +1188,26 @@ userAdminRouter.post(
 
     const parsed = roleBody.safeParse(req.body ?? {});
     if (!parsed.success) throw badRequest('That role is not valid.', 'bad_role');
+    // Giving roles stays an administrator's, whoever else may open Users (custom roles, 21 Oct 2026).
+    if (actor.role !== 'admin') throw forbidden('Only an administrator changes a role.', 'not_admin');
+    const custom = parsed.data.role.startsWith('role:') ? roleById(parsed.data.role.slice(5)) : undefined;
+    if (parsed.data.role.startsWith('role:') && !custom) throw badRequest('That role no longer exists.', 'bad_role');
+    if (custom) {
+      if (isLocalAdmin(target)) throw conflict('The local administrator account must keep the administrator role.', 'local_admin_protected');
+      if (target.role === 'admin' && target.id === actor.id) throw conflict('You cannot remove your own administrator role.', 'self_demotion');
+      if (target.role === 'admin') refuseOverAdmin(actor, target);
+      if (target.role === 'admin' && (await countAdmins()) <= 1) throw conflict('At least one administrator must remain.', 'last_admin');
+      await setCustomRole(target.id, custom.id);
+      auditRequest(req, { action: 'user.role.changed', targetType: 'user', targetId: target.id, detail: { from: target.role, to: 'role:' + custom.name } });
+      flash(req, 'success', 'Role changed to ' + custom.name + '.');
+      res.redirect(userUrl(target));
+      return;
+    }
+    const builtin = parsed.data.role as 'user' | 'agent' | 'admin';
 
     // The local break-glass administrator exists precisely so administrative
     // access always remains; demoting it would defeat that.
-    if (isLocalAdmin(target) && parsed.data.role !== 'admin') {
+    if (isLocalAdmin(target) && builtin !== 'admin') {
       throw conflict(
         'The local administrator account must keep the administrator role.',
         'local_admin_protected',
@@ -1107,7 +1216,7 @@ userAdminRouter.post(
 
     // Refuse to remove the last administrator, and refuse self-demotion, so an
     // administrator cannot lock the whole organisation out by accident.
-    const demotingAdmin = target.role === 'admin' && parsed.data.role !== 'admin';
+    const demotingAdmin = target.role === 'admin' && builtin !== 'admin';
     if (demotingAdmin && target.id === actor.id) {
       throw conflict('You cannot remove your own administrator role.', 'self_demotion');
     }
@@ -1116,16 +1225,17 @@ userAdminRouter.post(
       throw conflict('At least one administrator must remain.', 'last_admin');
     }
 
-    if (parsed.data.role === 'admin' && target.role !== 'admin' && portalManagesAdmins()) {
+    if (builtin === 'admin' && target.role !== 'admin' && portalManagesAdmins()) {
       throw conflict(ADMINS_IN_PORTAL, 'admins_in_portal');
     }
 
-    await setUserRole(target.id, parsed.data.role, true);
+    await setUserRole(target.id, builtin, true);
+    await setCustomRole(target.id, null);
 
     // A plain user has no queue, so team membership would mean nothing. Drop
     // it rather than leave a membership the group page would have refused.
     let droppedGroups = 0;
-    if (!isStaff(parsed.data.role)) {
+    if (!isStaff(builtin)) {
       droppedGroups = await clearGroupsForUser(target.id);
     }
     // Promoted to staff, a rule may now want them in a technician group.
@@ -1138,7 +1248,7 @@ userAdminRouter.post(
       detail: {
         email: target.email,
         from: target.role,
-        to: parsed.data.role,
+        to: builtin,
         groupsDropped: droppedGroups,
       },
     });
@@ -1148,7 +1258,7 @@ userAdminRouter.post(
       'success',
       target.display_name +
         ' is now ' +
-        parsed.data.role +
+        builtin +
         (droppedGroups > 0
           ? ', and was removed from ' + droppedGroups + ' technician group(s).'
           : '.'),
@@ -1339,6 +1449,8 @@ userAdminRouter.post(
     const parsed = createBody.safeParse(candidate);
     const errors: Record<string, string> = {};
     if (parsed.success && parsed.data.role === 'admin' && portalManagesAdmins()) errors.role = ADMINS_IN_PORTAL;
+    // Somebody who may open Users without being an administrator adds users, never staff (custom roles).
+    if (parsed.success && parsed.data.role !== 'user' && req.currentUser?.role !== 'admin') errors.role = 'Only an administrator gives a role other than User.';
     if (!parsed.success) {
       for (const issue of parsed.error.issues) {
         const key = String(issue.path[0] ?? 'form');

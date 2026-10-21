@@ -1,5 +1,8 @@
 import { Router } from 'express';
-import { requireAuth, requireRole } from '../middleware/auth.js';
+import { requireAuth } from '../middleware/auth.js';
+import { forbidden } from '../lib/errors.js';
+import { audit } from '../lib/audit.js';
+import { can, canOpenSettings, permissionForSettingsPath } from '../auth/permissions.js';
 import { settingsRouter } from './settings.js';
 
 /**
@@ -12,8 +15,21 @@ import { settingsRouter } from './settings.js';
  */
 export const adminRouter = Router();
 
-// Every route below requires an authenticated administrator.
-adminRouter.use(requireAuth(), requireRole('admin'));
+/*
+ * Who may come in (custom roles, 21 Oct 2026): an administrator everywhere;
+ * anybody else only into the sections their role ticks, by the path's first
+ * part (auth/permissions.ts). The roles themselves stay an administrator's.
+ * Denials are audited, as requireRole's were.
+ */
+adminRouter.use(requireAuth(), (req, _res, next) => {
+  const user = req.currentUser!;
+  if (user.role === 'admin') return next();
+  const needed = permissionForSettingsPath(req.path);
+  const ok = needed === 'admin' ? false : needed === 'any' ? canOpenSettings(user) : can(user, needed);
+  if (ok) return next();
+  audit({ action: 'authz.denied', outcome: 'failure', actorId: user.id, actorEmail: user.email, detail: { path: req.originalUrl, needed } });
+  next(forbidden('You do not have access to this part of Settings.', 'not_permitted'));
+});
 
 adminRouter.use('/settings', settingsRouter);
 

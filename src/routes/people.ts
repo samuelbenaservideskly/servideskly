@@ -7,6 +7,7 @@ import { groupsForUser } from '../services/groups.js';
 import { listUserGroups, userGroupIdsFor } from '../services/user-groups.js';
 import { settings } from '../settings/index.js';
 import { listTickets, PRIORITY_LABELS, STATUS_LABELS, TYPE_LABELS } from '../services/tickets.js';
+import { can, roleById } from '../auth/permissions.js';
 
 /**
  * People: the directory at /people, and one person at /people/:id.
@@ -40,8 +41,10 @@ export const peopleRouter = Router();
 peopleRouter.use(requireAuth());
 
 /** Whether this person may look other people up at all. */
-export function canUseDirectory(user: Pick<UserRow, 'role'>): boolean {
+export function canUseDirectory(user: Pick<UserRow, 'role' | 'role_id'>): boolean {
   if (user.role === 'admin') return true;
+  // A custom role says so itself (auth/permissions.ts); the switches are for the built-in ones.
+  if (user.role_id && roleById(user.role_id)) return can(user, 'people.directory');
   const { directory } = settings().people;
   return user.role === 'agent' ? directory.technicians : directory.users;
 }

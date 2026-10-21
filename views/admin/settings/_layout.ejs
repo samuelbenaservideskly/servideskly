@@ -48,7 +48,7 @@
     <%# The section names and their lines are constants, so they reach the
         catalogue through src/i18n/code-strings.ts rather than as text
         nodes - and they are translated here. %>
-    <% sections.forEach(function (item) { %>
+    <% sections.filter(function (item) { return !locals.canSection || canSection(item.slug); }).forEach(function (item) { %>
       <a href="/admin/settings/<%= item.slug %>"
          class="settings-nav__item<%= item.slug === section ? ' settings-nav__item--current' : '' %>"
          <%= item.slug === section ? 'aria-current=page' : '' %>>

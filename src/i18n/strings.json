@@ -19,9 +19,9 @@
   },
   "s0059798b7f": {
     "text": "(optional)",
-    "context": "Text on the page on tickets/_field",
-    "where": "views/tickets/_field.ejs",
-    "uses": 4
+    "context": "Text on the page on admin/settings/roles / Text on the page on tickets/_field",
+    "where": "views/admin/settings/roles.ejs",
+    "uses": 5
   },
   "s005a6177be": {
     "text": "Choose a group",
@@ -209,6 +209,12 @@
     "where": "views/admin/settings/mail-relay.ejs",
     "uses": 1
   },
+  "s045046582e": {
+    "text": "Give its people another role first.",
+    "context": "Text on admin/settings/roles / A message shown beside a form or after an action",
+    "where": "views/admin/settings/roles.ejs",
+    "uses": 2
+  },
   "s049ad0ea78": {
     "text": "JavaScript in requester portals",
     "context": "A heading on admin/settings/advanced-javascript",
@@ -391,9 +397,9 @@
   },
   "s07ed6ccf6b": {
     "text": "Mail",
-    "context": "A section of Settings, in the list on the left / A label for a screen reader on admin/settings/_mail-tabs / The title of a page, in the browser tab",
+    "context": "A section of Settings, in the list on the left / A permission a custom role can be given, a tick box on the Roles page / A label for a screen reader on admin/settings/_mail-tabs",
     "where": "src/i18n/code-strings.ts",
-    "uses": 3
+    "uses": 4
   },
   "s0842ae9138": {
     "text": "A line under the label",
@@ -445,9 +451,9 @@
   },
   "s090512d93f": {
     "text": "Integrations",
-    "context": "A section of Settings, in the list on the left / The title of a page, in the browser tab",
+    "context": "A section of Settings, in the list on the left / A permission a custom role can be given, a tick box on the Roles page / The title of a page, in the browser tab",
     "where": "src/i18n/code-strings.ts",
-    "uses": 2
+    "uses": 3
   },
   "s09327a7325": {
     "text": "As a browser writes it: cs-CZ, de, pt-BR. The region matters - cs-CZ answers a browser asking for Czech in Czechia, and cs answers any Czech.",
@@ -565,9 +571,9 @@
   },
   "s0b6a935d09": {
     "text": "Customisation",
-    "context": "A section of Settings, in the list on the left / A label for a screen reader on admin/settings/_customization-tabs / A link on admin/settings/mail-notification",
+    "context": "A section of Settings, in the list on the left / A permission a custom role can be given, a tick box on the Roles page / A label for a screen reader on admin/settings/_customization-tabs",
     "where": "src/i18n/code-strings.ts",
-    "uses": 4
+    "uses": 5
   },
   "s0b70af7a26": {
     "text": "Last sign-in",
@@ -777,12 +783,6 @@
     "text": "Shown. The requester may fill it in or leave it.",
     "context": "A message shown beside a form or after an action",
     "where": "src/services/templates.ts",
-    "uses": 1
-  },
-  "s0ee8556ea6": {
-    "text": "Only an administrator can delete a ticket.",
-    "context": "A message shown beside a form or after an action",
-    "where": "src/routes/tickets.ts",
     "uses": 1
   },
   "s0f0c52d217": {
@@ -1087,9 +1087,9 @@
   },
   "s14736a2eb9": {
     "text": "Role",
-    "context": "A heading on admin/settings/user-detail / The label of a form field on admin/settings/user-detail / A table column heading on admin/settings/users",
-    "where": "views/admin/settings/user-detail.ejs",
-    "uses": 7
+    "context": "A table column heading on admin/settings/roles / A heading on admin/settings/user-detail / The label of a form field on admin/settings/user-detail",
+    "where": "views/admin/settings/roles.ejs",
+    "uses": 8
   },
   "s148c294468": {
     "text": "+ Sub Category",
@@ -1359,7 +1359,7 @@
     "text": "Cancel",
     "context": "A button on admin/settings/_mailbox-dialog / A button on admin/settings/_relay-dialog / A button on admin/settings/advanced-data",
     "where": "views/admin/settings/_mailbox-dialog.ejs",
-    "uses": 59
+    "uses": 61
   },
   "s19e1e1c903": {
     "text": "An upper-case letter",
@@ -1445,6 +1445,12 @@
     "where": "views/reports.ejs",
     "uses": 1
   },
+  "s1b5867a4f7": {
+    "text": "Another role already has this name.",
+    "context": "A message shown beside a form or after an action",
+    "where": "src/auth/permissions.ts",
+    "uses": 1
+  },
   "s1b823a350d": {
     "text": "Dashboard - manager",
     "context": "The title of a page, in the browser tab",
@@ -1510,6 +1516,12 @@
     "context": "The label of a form field on admin/settings/group-detail / The label of a form field on admin/settings/user-group-detail",
     "where": "views/admin/settings/group-detail.ejs",
     "uses": 2
+  },
+  "s1d2940fba1": {
+    "text": "Give the role a name.",
+    "context": "A message shown beside a form or after an action",
+    "where": "src/auth/permissions.ts",
+    "uses": 1
   },
   "s1d576a7d20": {
     "text": "No change in 7 days",
@@ -1797,6 +1809,12 @@
     "text": "Password policy",
     "context": "Text on the page on admin/settings/users-other",
     "where": "views/admin/settings/users-other.ejs",
+    "uses": 1
+  },
+  "s221163d6e7": {
+    "text": "Create role",
+    "context": "A button on admin/settings/roles",
+    "where": "views/admin/settings/roles.ejs",
     "uses": 1
   },
   "s2235bc95e9": {
@@ -2465,6 +2483,12 @@
     "where": "src/services/technician-rules.ts",
     "uses": 2
   },
+  "s2ecb714812": {
+    "text": "That is the name of a built-in role. Choose another.",
+    "context": "A message shown beside a form or after an action",
+    "where": "src/auth/permissions.ts",
+    "uses": 1
+  },
   "s2eceec2d84": {
     "text": "Notify the group manager when a ticket breaches a target",
     "context": "Text on admin/settings/template-other",
@@ -2885,6 +2909,12 @@
     "where": "src/services/dashboards.ts",
     "uses": 1
   },
+  "s35a84f9d31": {
+    "text": "Your role does not allow deleting tickets.",
+    "context": "A message shown beside a form or after an action",
+    "where": "src/routes/tickets.ts",
+    "uses": 1
+  },
   "s35be9c541d": {
     "text": "Create group",
     "context": "A button on admin/settings/groups / A button on admin/settings/user-groups",
@@ -3061,9 +3091,9 @@
   },
   "s39bbb719fa": {
     "text": "Groups",
-    "context": "A section of Settings, in the list on the left / A label for a screen reader on admin/settings/_group-tabs / Text on partials/header",
+    "context": "A section of Settings, in the list on the left / A permission a custom role can be given, a tick box on the Roles page / A label for a screen reader on admin/settings/_group-tabs",
     "where": "src/i18n/code-strings.ts",
-    "uses": 4
+    "uses": 5
   },
   "s39e02c46a0": {
     "text": "Issuer",
@@ -3205,9 +3235,9 @@
   },
   "s3d131368b4": {
     "text": "Tickets",
-    "context": "A section of Settings, in the list on the left / A sort of line in the Activity feed on the dashboard / The label of a form field on boards/_widget-form",
+    "context": "A section of Settings, in the list on the left / A sort of line in the Activity feed on the dashboard / A group of permissions on the Roles page",
     "where": "src/i18n/code-strings.ts",
-    "uses": 10
+    "uses": 11
   },
   "s3d13749baf": {
     "text": "Closed automatically: no reply in 14 days.",
@@ -3375,6 +3405,12 @@
     "text": "Remove this account?",
     "context": "A heading on admin/settings/user-detail",
     "where": "views/admin/settings/user-detail.ejs",
+    "uses": 1
+  },
+  "s4075683102": {
+    "text": "Keep the name under 60 characters.",
+    "context": "A message shown beside a form or after an action",
+    "where": "src/auth/permissions.ts",
     "uses": 1
   },
   "s40a852ac6b": {
@@ -3545,6 +3581,12 @@
     "where": "src/services/boards.ts",
     "uses": 1
   },
+  "s43afe01fb1": {
+    "text": "Keep the description under 300 characters.",
+    "context": "A message shown beside a form or after an action",
+    "where": "src/auth/permissions.ts",
+    "uses": 1
+  },
   "s43c87df5ae": {
     "text": "Add a widget",
     "context": "Text on boards/_widget-form / Text on boards/show",
@@ -3705,7 +3747,7 @@
     "text": "Edit",
     "context": "A button on admin/settings/api-keys / A link on admin/settings/automation-edit / A button on admin/settings/automation-edit",
     "where": "views/admin/settings/api-keys.ejs",
-    "uses": 16
+    "uses": 17
   },
   "s4674f44604": {
     "text": "No such user.",
@@ -3977,6 +4019,12 @@
     "where": "views/admin/settings/_mailbox-dialog.ejs",
     "uses": 1
   },
+  "s4c7d016b4c": {
+    "text": "You do not have access to this part of Settings.",
+    "context": "A message shown beside a form or after an action",
+    "where": "src/routes/admin.ts",
+    "uses": 1
+  },
   "s4c91fbcb71": {
     "text": "You do not have permission to view that.",
     "context": "A message shown beside a form or after an action",
@@ -4162,6 +4210,12 @@
     "context": "An explanation behind an (i) mark on admin/settings/users",
     "where": "views/admin/settings/users.ejs",
     "uses": 1
+  },
+  "s500f2f9d39": {
+    "text": "New role",
+    "context": "Text on admin/settings/roles / A link on admin/settings/roles / A heading on admin/settings/roles",
+    "where": "views/admin/settings/roles.ejs",
+    "uses": 3
   },
   "s501269dbce": {
     "text": "Each location is shown only to the user groups chosen under Locations. A requester who may not see one sees the status without it.",
@@ -4925,6 +4979,12 @@
     "where": "views/admin/settings/users-other.ejs",
     "uses": 1
   },
+  "s5f3026cf06": {
+    "text": "Service desk lead",
+    "context": "The grey example inside an input on admin/settings/roles",
+    "where": "views/admin/settings/roles.ejs",
+    "uses": 1
+  },
   "s5f3368b227": {
     "text": "Never deletes a person's tickets.",
     "context": "Text on the page on admin/settings/provisioning",
@@ -5567,6 +5627,12 @@
     "where": "src/i18n/code-strings.ts",
     "uses": 1
   },
+  "s695cb19231": {
+    "text": "Build automations and connections",
+    "context": "A permission a custom role can be given, a tick box on the Roles page",
+    "where": "src/i18n/code-strings.ts",
+    "uses": 1
+  },
   "s69672da941": {
     "text": "Share \"{0}\"",
     "context": "A heading on boards/show",
@@ -5681,6 +5747,12 @@
     "where": "views/admin/settings/template-edit.ejs",
     "uses": 1
   },
+  "s6b7c804d2c": {
+    "text": "Manage API keys",
+    "context": "A permission a custom role can be given, a tick box on the Roles page",
+    "where": "src/i18n/code-strings.ts",
+    "uses": 1
+  },
   "s6b8aa53c3a": {
     "text": "The template it is based on no longer exists.",
     "context": "A message shown beside a form or after an action",
@@ -5722,6 +5794,12 @@
     "context": "A message shown after an action / A message shown beside a form or after an action",
     "where": "src/routes/boards.ts",
     "uses": 2
+  },
+  "s6c5302ecc0": {
+    "text": "Delete tickets",
+    "context": "A permission a custom role can be given, a tick box on the Roles page",
+    "where": "src/i18n/code-strings.ts",
+    "uses": 1
   },
   "s6c8ff7e692": {
     "text": "My tickets",
@@ -6053,6 +6131,12 @@
     "where": "src/routes/tickets.ts",
     "uses": 1
   },
+  "s72c8853c72": {
+    "text": "Search the people directory",
+    "context": "A permission a custom role can be given, a tick box on the Roles page",
+    "where": "src/i18n/code-strings.ts",
+    "uses": 1
+  },
   "s72e9a59f5a": {
     "text": "Port",
     "context": "The label of a form field on admin/settings/_relay-dialog",
@@ -6127,9 +6211,9 @@
   },
   "s74a883a037": {
     "text": "Settings",
-    "context": "Text on the page on admin/settings/_layout / A tooltip on boards/show / Read only by a screen reader on boards/show",
-    "where": "views/admin/settings/_layout.ejs",
-    "uses": 5
+    "context": "A group of permissions on the Roles page / Text on the page on admin/settings/_layout / A tooltip on boards/show",
+    "where": "src/i18n/code-strings.ts",
+    "uses": 6
   },
   "s74d0d158e2": {
     "text": "Add task template",
@@ -6621,7 +6705,7 @@
     "text": "Close",
     "context": "A label for a screen reader on admin/settings/_mailbox-dialog / A label for a screen reader on admin/settings/_relay-dialog / A label for a screen reader on admin/settings/advanced-data",
     "where": "views/admin/settings/_mailbox-dialog.ejs",
-    "uses": 113
+    "uses": 117
   },
   "s7da11212ed": {
     "text": "Thu",
@@ -6631,9 +6715,9 @@
   },
   "s7db2089705": {
     "text": "People",
-    "context": "Text on partials/header / A heading on people/index / A heading on search",
-    "where": "views/partials/header.ejs",
-    "uses": 4
+    "context": "A table column heading on admin/settings/roles / Text on partials/header / A heading on people/index",
+    "where": "views/admin/settings/roles.ejs",
+    "uses": 5
   },
   "s7db7d1d9a5": {
     "text": "Attachments are turned off.",
@@ -6707,6 +6791,12 @@
     "where": "views/admin/settings/advanced-javascript.ejs",
     "uses": 1
   },
+  "s7e6d356772": {
+    "text": "Ticking \"Work on tickets as a technician\" makes the role's people technicians: they see the queue and can be assigned tickets. Without it they raise tickets like a user. Roles themselves, and giving them to people, stay with administrators.",
+    "context": "Text on the page on admin/settings/roles",
+    "where": "views/admin/settings/roles.ejs",
+    "uses": 1
+  },
   "s7e83f765af": {
     "text": "Tickets open, in progress or on hold.",
     "context": "A message shown beside a form or after an action",
@@ -6721,9 +6811,9 @@
   },
   "s7eab122c2b": {
     "text": "Delete {0}",
-    "context": "Read only by a screen reader on admin/settings/template-edit",
-    "where": "views/admin/settings/template-edit.ejs",
-    "uses": 1
+    "context": "Text on admin/settings/roles. Keep each {0}, {1}...: it is a value / Read only by a screen reader on admin/settings/template-edit",
+    "where": "views/admin/settings/roles.ejs",
+    "uses": 2
   },
   "s7eb644a2b8": {
     "text": "Breached",
@@ -7211,6 +7301,12 @@
     "where": "views/admin/settings/mail.ejs",
     "uses": 1
   },
+  "s89039ded4b": {
+    "text": "Automation and API",
+    "context": "A group of permissions on the Roles page",
+    "where": "src/i18n/code-strings.ts",
+    "uses": 1
+  },
   "s8956f3e5cf": {
     "text": "Signing in asks for your password and then a code from the app. {0}",
     "context": "Text on the page on profile",
@@ -7281,6 +7377,12 @@
     "text": "Change your password",
     "context": "A heading on profile",
     "where": "views/profile.ejs",
+    "uses": 1
+  },
+  "s8a6b73ea3e": {
+    "text": "Work on tickets as a technician",
+    "context": "A permission a custom role can be given, a tick box on the Roles page",
+    "where": "src/i18n/code-strings.ts",
     "uses": 1
   },
   "s8a7e7f1bc5": {
@@ -7424,6 +7526,12 @@
   "s8d4b4c93ff": {
     "text": ", a placeholder account nobody can sign in to:\n              {0} ticket{1}\n              and {2} comment{3}.",
     "context": "Text on admin/settings/user-detail",
+    "where": "views/admin/settings/user-detail.ejs",
+    "uses": 1
+  },
+  "s8d638aa7ae": {
+    "text": "Only an administrator changes a role.",
+    "context": "A note under a control on admin/settings/user-detail",
     "where": "views/admin/settings/user-detail.ejs",
     "uses": 1
   },
@@ -8815,9 +8923,9 @@
   },
   "sa53bcafb67": {
     "text": "Dashboards",
-    "context": "A section of Settings, in the list on the left / A label for a screen reader on admin/settings/_dashboard-tabs / Text on admin/settings/portal-edit",
+    "context": "A section of Settings, in the list on the left / A permission a custom role can be given, a tick box on the Roles page / A label for a screen reader on admin/settings/_dashboard-tabs",
     "where": "src/i18n/code-strings.ts",
-    "uses": 5
+    "uses": 6
   },
   "sa5462e1a6a": {
     "text": "Usually default. Enter the ID of a custom authorisation server, or leave empty to use the org authorisation server.",
@@ -9171,6 +9279,12 @@
     "text": "Your sign-in attempt expired. Please try again.",
     "context": "A message shown beside a form or after an action",
     "where": "src/routes/auth.ts",
+    "uses": 1
+  },
+  "sabccc78cc9": {
+    "text": "Permissions",
+    "context": "A table column heading on admin/settings/roles",
+    "where": "views/admin/settings/roles.ejs",
     "uses": 1
   },
   "sac02fd18f9": {
@@ -10369,9 +10483,9 @@
   },
   "sc1ada08ce1": {
     "text": "Audit trail",
-    "context": "A section of Settings, in the list on the left / The title of a page, in the browser tab",
+    "context": "A section of Settings, in the list on the left / A permission a custom role can be given, a tick box on the Roles page / The title of a page, in the browser tab",
     "where": "src/i18n/code-strings.ts",
-    "uses": 2
+    "uses": 3
   },
   "sc1b8ff3698": {
     "text": "Switch it on and send a POST to its address. The trigger's popup shows the exact address.",
@@ -10431,6 +10545,12 @@
     "text": "request.json.status",
     "context": "The grey example inside an input on admin/settings/automation-edit",
     "where": "views/admin/settings/automation-edit.ejs",
+    "uses": 1
+  },
+  "sc253370554": {
+    "text": "Roles",
+    "context": "A link on admin/settings/_user-tabs",
+    "where": "views/admin/settings/_user-tabs.ejs",
     "uses": 1
   },
   "sc253f451bd": {
@@ -10625,6 +10745,12 @@
     "where": "src/services/dashboards.ts",
     "uses": 1
   },
+  "sc703c7f9cb": {
+    "text": "Custom roles",
+    "context": "Text on admin/settings/user-detail",
+    "where": "views/admin/settings/user-detail.ejs",
+    "uses": 1
+  },
   "sc709f6676f": {
     "text": "Local users",
     "context": "A link on admin/settings/_user-tabs",
@@ -10633,9 +10759,9 @@
   },
   "sc7523b152e": {
     "text": "Save role",
-    "context": "A button on admin/settings/user-detail",
-    "where": "views/admin/settings/user-detail.ejs",
-    "uses": 1
+    "context": "A button on admin/settings/roles / A button on admin/settings/user-detail",
+    "where": "views/admin/settings/roles.ejs",
+    "uses": 2
   },
   "sc76498b3ed": {
     "text": "Enable this account",
@@ -10904,6 +11030,12 @@
   "scdccf734b4": {
     "text": "On behalf of",
     "context": "A field on the form a ticket is raised with",
+    "where": "src/i18n/code-strings.ts",
+    "uses": 1
+  },
+  "sce48377e8b": {
+    "text": "Users (not roles)",
+    "context": "A permission a custom role can be given, a tick box on the Roles page",
     "where": "src/i18n/code-strings.ts",
     "uses": 1
   },
@@ -11675,6 +11807,12 @@
     "where": "views/admin/settings/group-detail.ejs",
     "uses": 1
   },
+  "sdc937b5989": {
+    "text": "None",
+    "context": "Text on admin/settings/roles",
+    "where": "views/admin/settings/roles.ejs",
+    "uses": 1
+  },
   "sdca5fa430c": {
     "text": "Not sure",
     "context": "One choice in a dropdown on tickets/_field",
@@ -11691,7 +11829,7 @@
     "text": "Name",
     "context": "The label of a form field on admin/settings/_mailbox-dialog / A table column heading on admin/settings/_member-picker / The label of a form field on admin/settings/_relay-dialog",
     "where": "views/admin/settings/_mailbox-dialog.ejs",
-    "uses": 47
+    "uses": 48
   },
   "sdce880ecdd": {
     "text": "Make another template the default first.",
@@ -11933,6 +12071,12 @@
     "where": "views/admin/settings/api-keys.ejs",
     "uses": 1
   },
+  "se0a4db485a": {
+    "text": "Tickets: forms, catalogue and service levels",
+    "context": "A permission a custom role can be given, a tick box on the Roles page",
+    "where": "src/i18n/code-strings.ts",
+    "uses": 1
+  },
   "se0e7120664": {
     "text": "Put them all back to the design they ship with",
     "context": "A button on admin/settings/mail-notifications",
@@ -11973,6 +12117,12 @@
     "text": "Shown with the value this template sets, and not editable.",
     "context": "A message shown beside a form or after an action",
     "where": "src/services/templates.ts",
+    "uses": 1
+  },
+  "se149d98879": {
+    "text": "Reports and people",
+    "context": "A group of permissions on the Roles page",
+    "where": "src/i18n/code-strings.ts",
     "uses": 1
   },
   "se159b06187": {
@@ -12713,6 +12863,12 @@
     "where": "src/routes/approvals.ts",
     "uses": 2
   },
+  "sf33c6b4d50": {
+    "text": "Open Reports",
+    "context": "A permission a custom role can be given, a tick box on the Roles page",
+    "where": "src/i18n/code-strings.ts",
+    "uses": 1
+  },
   "sf3784b0a48": {
     "text": "New custom field",
     "context": "Text on admin/settings/custom-fields / A link on admin/settings/custom-fields",
@@ -12904,6 +13060,12 @@
     "context": "The label of a form field on partials/header",
     "where": "views/partials/header.ejs",
     "uses": 1
+  },
+  "sf78ee545f2": {
+    "text": "That role no longer exists.",
+    "context": "A message shown beside a form or after an action",
+    "where": "src/auth/permissions.ts",
+    "uses": 2
   },
   "sf793de205e": {
     "text": "Low",
@@ -13291,9 +13453,9 @@
   },
   "sfdd9d5053c": {
     "text": "Edit {0}",
-    "context": "Read only by a screen reader on admin/settings/catalogue",
+    "context": "Read only by a screen reader on admin/settings/catalogue / Text on admin/settings/roles. Keep each {0}, {1}...: it is a value",
     "where": "views/admin/settings/catalogue.ejs",
-    "uses": 2
+    "uses": 3
   },
   "sfddfea5bca": {
     "text": "Choose a technician",
@@ -13365,12 +13527,18 @@
     "text": "Actions",
     "context": "A table column heading on admin/settings/_member-picker / Read only by a screen reader on admin/settings/api-keys / Read only by a screen reader on admin/settings/automations",
     "where": "views/admin/settings/_member-picker.ejs",
-    "uses": 17
+    "uses": 18
   },
   "sff82a31ee6": {
     "text": "For an email",
     "context": "Text on admin/settings/custom-images",
     "where": "views/admin/settings/custom-images.ejs",
+    "uses": 1
+  },
+  "sff8a989fd7": {
+    "text": "Advanced settings: portal scripting, data",
+    "context": "A permission a custom role can be given, a tick box on the Roles page",
+    "where": "src/i18n/code-strings.ts",
     "uses": 1
   },
   "sff96fa9fee": {

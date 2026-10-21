@@ -90,6 +90,7 @@ import {
   ticketCounts,
   updateTicket,
 } from '../services/tickets.js';
+import { can } from '../auth/permissions.js';
 
 export const ticketRouter = Router();
 
@@ -1717,8 +1718,8 @@ ticketRouter.post(
   asyncHandler(async (req, res) => {
     const { viewer, ticket } = await loadTicket(req);
 
-    if (viewer.role !== 'admin') {
-      throw forbidden('Only an administrator can delete a ticket.', 'not_admin');
+    if (!can(viewer, 'tickets.delete')) {
+      throw forbidden('Your role does not allow deleting tickets.', 'not_admin');
     }
 
     const raw = (req.body ?? {}) as Record<string, unknown>;

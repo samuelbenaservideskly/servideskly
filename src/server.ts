@@ -18,6 +18,7 @@ import { announceSlaBreaches, notifySlaBreaches } from './services/sla-alerts.js
 import { pollAllMailboxes } from './services/mail/inbound.js';
 import { flushAudit } from './lib/audit.js';
 import { settleAutomations } from './services/automation.js';
+import { loadRoles } from './auth/permissions.js';
 
 const log = logger.child({ module: 'server' });
 
@@ -44,6 +45,8 @@ await loadSettings();
 // The languages this service desk serves, in memory beside the settings:
 // t() is called a few hundred times a page and cannot go to the database.
 await loadLanguages();
+// Custom roles, likewise: can() is asked on every page (auth/permissions.ts).
+await loadRoles();
 await adoptLegacyRelay();
 // Once: what automations wrote before migration 56 stops counting as a response.
 await markPastAutomationWrites();

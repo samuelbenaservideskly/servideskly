@@ -2074,6 +2074,23 @@ What it has to get right, and does:
    arrives as the loopback address, and behind an untrusted proxy as the
    proxy. The card names the address and whether the list covers it.
 
+### Custom roles (21 Oct 2026)
+
+`auth/permissions.ts`, migration 65 (`roles`, `users.role_id`), Settings -
+Users - Roles. A role is a name and ticked permissions (PERMISSIONS: ticket
+work and deleting, Reports, the directory, each Settings section,
+automations, API keys). **Everybody keeps a base role** in `users.role`,
+which every older check reads: a role with "Work on tickets as a
+technician" makes its people agents, any other makes them users, none an
+administrator. The ticks are checked through `can()` where each thing is:
+the Settings entrance (`routes/admin.ts`, by the path's first part),
+Reports, deleting a ticket, the directory, the sidebar and Settings list.
+Built-ins keep what they had (admin everything, agent ticket work and
+Reports). **Only an administrator** opens Roles, gives anybody a role, or
+creates or imports anything but a user - somebody with Users cannot raise
+anybody, themselves included. Roles are cached in memory like settings().
+Not yet finer: which tickets a technician sees, editing, internal notes.
+
 ### An authenticator app after the password (21 Oct 2026)
 
 `auth/authenticator.ts`, migration 64 (`user_authenticators`), the same as

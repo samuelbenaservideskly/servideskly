@@ -8,7 +8,7 @@ import { badRequest, notFound } from '../lib/errors.js';
 import { contrastRatio, parseColour, toHex } from '../lib/color.js';
 import { assertCsrfToken } from '../middleware/csrf.js';
 import { writeLimiter } from '../middleware/security.js';
-import { settingsView } from './settings-shared.js';
+import { settingsView, SETTINGS_SECTIONS } from './settings-shared.js';
 import { searchSettings } from '../services/settings-search.js';
 import { languageAdminRouter, languageLocals } from './languages-admin.js';
 import { userAdminRouter } from './users-admin.js';
@@ -48,6 +48,7 @@ import {
   modeColours,
   FONTS,
 } from '../services/branding.js';
+import { can } from '../auth/permissions.js';
 
 /**
  * Runtime configuration UI.
@@ -159,8 +160,15 @@ settingsRouter.use('/attachments', (req: Request, res: Response) => {
   );
 });
 
-settingsRouter.get('/', (_req: Request, res: Response) => {
-  res.redirect('/admin/settings/integrations');
+settingsRouter.get('/', (req: Request, res: Response) => {
+  // The first section this person may open (custom roles, 21 Oct 2026).
+  const canSection = res.locals.canSection as ((slug: string) => boolean) | undefined;
+  const first = SETTINGS_SECTIONS.find((sec) => !canSection || canSection(sec.slug));
+  if (first?.slug === 'advanced' && req.currentUser?.role !== 'admin' && !can(req.currentUser, 'settings.advanced')) {
+    res.redirect(can(req.currentUser, 'automation.manage') ? '/admin/settings/advanced/automation' : '/admin/settings/advanced/api-keys');
+    return;
+  }
+  res.redirect('/admin/settings/' + (first?.slug ?? 'integrations'));
 });
 
 /** The search bar above the sections: a GET, so a result list is an address. */

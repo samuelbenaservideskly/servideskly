@@ -344,7 +344,7 @@
 
         <div class="tk-props__actions">
           <button type="submit" class="btn btn--primary">Save changes</button>
-          <% if (locals.isAdmin) { %>
+          <% if (locals.can && can('tickets.delete')) { %>
             <a class="btn btn--quiet btn--danger btn--small" href="#delete">Delete</a>
           <% } %>
         </div>
@@ -462,7 +462,7 @@
         </ul>
       </details>
 
-      <% if (locals.isAdmin) { %>
+      <% if (locals.can && can('tickets.delete')) { %>
         <%#
           A :target dialog, like every other create-or-confirm popup here. It
           is reopened by the server (.dialog--open) when the delete was

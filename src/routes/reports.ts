@@ -11,6 +11,7 @@ import {
 import { STATUS_LABELS } from '../services/tickets.js';
 import { settings } from '../settings/index.js';
 import { words, wordsWith } from '../i18n/current.js';
+import { can } from '../auth/permissions.js';
 
 /**
  * /reports - a group's figures over a period (services/reports.ts); the
@@ -23,6 +24,9 @@ import { words, wordsWith } from '../i18n/current.js';
 export const reportsRouter = Router();
 
 reportsRouter.use(requireAuth());
+// Open Reports (custom roles, 21 Oct 2026): a technician may by default; a
+// custom role only when ticked. Not found rather than refused, as before.
+reportsRouter.use((req, _res, next) => next(can(req.currentUser, 'reports.view') ? undefined : notFound()));
 
 function inputFrom(req: Request): ReportInput {
   const q = req.query;

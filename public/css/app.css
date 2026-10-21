@@ -4642,3 +4642,8 @@ h1 { font-weight: 700; letter-spacing: -0.015em; }
 /* New user (21 Oct 2026): every box as wide as the password one, which is
    capped at 24rem for its eye, so the column reads as one. */
 #new-account .field > input, #new-account .field > select { width: 100%; max-width: 24rem; }
+/* Custom roles (21 Oct 2026): the permissions as four groups of tick boxes. */
+.role-permissions { display: grid; gap: 0.9rem 1.5rem; grid-template-columns: repeat(auto-fit, minmax(15rem, 1fr)); }
+.role-permissions__group { margin: 0; padding: 0; border: 0; display: grid; gap: 0.35rem; align-content: start; }
+.role-permissions__group legend { margin-bottom: 0.35rem; font-weight: 600; font-size: 0.9rem; }
+.dialog__panel--wide { width: min(46rem, calc(100vw - 2rem)); }

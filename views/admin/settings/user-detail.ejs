@@ -90,13 +90,22 @@
           <label for="role">Role</label>
           <%- include('../../partials/info', { text: 'Roles are managed only here; groups and roles from the identity provider are ignored. A change takes effect on the next request of the user.' }) %>
         </div>
-        <select id="role" name="role">
-          <option value="user"<%= user.role === 'user' ? ' selected' : '' %>>User - raises tickets, sees only their own</option>
-          <option value="agent"<%= user.role === 'agent' ? ' selected' : '' %>>Agent (technician) - sees and triages the whole queue</option>
+        <%# Custom roles (Settings - Users - Roles) after the built-in ones; only an administrator changes a role. %>
+        <select id="role" name="role"<%= locals.isAdmin ? '' : ' disabled' %>>
+          <option value="user"<%= !user.role_id && user.role === 'user' ? ' selected' : '' %>>User - raises tickets, sees only their own</option>
+          <option value="agent"<%= !user.role_id && user.role === 'agent' ? ' selected' : '' %>>Agent (technician) - sees and triages the whole queue</option>
           <% if (!locals.adminsInPortal || user.role === 'admin') { %>
           <option value="admin"<%= user.role === 'admin' ? ' selected' : '' %>>Administrator - also reaches these settings</option>
           <% } %>
+          <% if ((locals.customRoles || []).length) { %>
+            <optgroup label="<%= t('Custom roles') %>">
+              <% customRoles.forEach(function (r) { %>
+                <option value="role:<%= r.id %>"<%= user.role_id === r.id && user.role !== 'admin' ? ' selected' : '' %>><%= r.name %></option>
+              <% }); %>
+            </optgroup>
+          <% } %>
         </select>
+        <% if (!locals.isAdmin) { %><p class="hint muted">Only an administrator changes a role.</p><% } %>
         <% if (locals.adminsInPortal && user.role !== 'admin') { %><p class="hint muted"><%= adminsInPortal %></p><% } %>
         <% if (isSelf) { %>
           <p class="hint muted">This is your own account: you cannot remove your own administrator role.</p>

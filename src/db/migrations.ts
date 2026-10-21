@@ -1972,4 +1972,33 @@ export const migrations: readonly Migration[] = [
       );
     `,
   },
+  {
+    version: 65,
+    name: 'custom roles',
+    sql: `
+      -- auth/permissions.ts (21 Oct 2026): a role is a name and the
+      -- permissions ticked on it, as JSON text. A person with one still has
+      -- a base role in users.role, which the role sets.
+      CREATE TABLE IF NOT EXISTS roles (
+        id          TEXT PRIMARY KEY,
+        name        TEXT NOT NULL,
+        description TEXT NOT NULL DEFAULT '',
+        permissions TEXT NOT NULL DEFAULT '[]',
+        created_at  TEXT NOT NULL,
+        updated_at  TEXT NOT NULL
+      );
+      ALTER TABLE users ADD COLUMN role_id TEXT REFERENCES roles(id) ON DELETE SET NULL;
+    `,
+    pg: `
+      CREATE TABLE IF NOT EXISTS roles (
+        id          TEXT PRIMARY KEY,
+        name        TEXT NOT NULL,
+        description TEXT NOT NULL DEFAULT '',
+        permissions TEXT NOT NULL DEFAULT '[]',
+        created_at  TEXT NOT NULL,
+        updated_at  TEXT NOT NULL
+      );
+      ALTER TABLE users ADD COLUMN IF NOT EXISTS role_id TEXT REFERENCES roles(id) ON DELETE SET NULL;
+    `,
+  },
 ];

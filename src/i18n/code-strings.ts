@@ -7,6 +7,7 @@ import { REPORT_METRICS, SCOPES, WIDGET_KINDS } from '../services/boards.js';
 import { AGE_BUCKETS, DRILL_METRICS, METRIC_DEFINITIONS, PERIODS } from '../services/reports.js';
 import { ACTIVITY_KINDS } from '../services/work-dashboard.js';
 import { BUILTIN_FIELDS } from '../services/templates.js';
+import { PERMISSIONS } from '../auth/permissions.js';
 
 /**
  * Reader text that lives in code rather than in a view.
@@ -107,6 +108,12 @@ export function codeStrings(): CodeString[] {
     if (f.placeholder && !f.placeholder.includes('@')) {
       out.push({ text: f.placeholder, context: 'The example shown inside the "' + f.label + '" box until something is typed' });
     }
+  }
+  for (const p of PERMISSIONS) {
+    out.push({ text: p.label, context: 'A permission a custom role can be given, a tick box on the Roles page' });
+  }
+  for (const g of new Set(PERMISSIONS.map((p) => p.group))) {
+    out.push({ text: g, context: 'A group of permissions on the Roles page' });
   }
   for (const month of MONTHS) {
     out.push({ text: month, context: 'A month, shortened, in a date such as "21 Oct 2026"' });

@@ -115,7 +115,7 @@
       <% if (locals.showWorkDashboard) { %>
         <%- link('/dashboard', 'grid', t('Dashboard'), path.indexOf('/dashboard') === 0) %>
       <% } %>
-      <% if (locals.isAdmin || locals.showWorkDashboard) { %>
+      <% if (locals.can && can('reports.view')) { %>
         <%- link('/reports', 'chart', t('Reports'), path.indexOf('/reports') === 0 && !(locals.sidebarPins || []).some(function (p) { return p.href === locals.currentUrl; })) %>
       <% } %>
       <%# Only for somebody the directory is open to; see routes/people.ts. %>
@@ -145,11 +145,11 @@
     <div class="sidebar__foot">
       <%# Everything that is set up rather than worked in: the ways into
           Settings, apart from the daily work above. %>
-      <% if (locals.isAdmin) { %>
+      <% if (locals.isAdmin || (locals.canOpenSettings && canOpenSettings())) { %>
         <nav class="sidebar__nav sidebar__nav--setup" aria-label="Settings">
-          <%- link('/admin/settings/advanced/automation', 'workflow', t('Automation'), path.indexOf('/admin/settings/advanced/automation') === 0) %>
-          <%- link('/admin/settings/groups', 'users', t('Groups'), path.indexOf('/admin/settings/groups') === 0) %>
-          <%- link('/admin/settings/users', 'user', t('Users'), path.indexOf('/admin/settings/users') === 0) %>
+          <% if (locals.isAdmin || can('automation.manage')) { %><%- link('/admin/settings/advanced/automation', 'workflow', t('Automation'), path.indexOf('/admin/settings/advanced/automation') === 0) %><% } %>
+          <% if (locals.isAdmin || can('settings.groups')) { %><%- link('/admin/settings/groups', 'users', t('Groups'), path.indexOf('/admin/settings/groups') === 0) %><% } %>
+          <% if (locals.isAdmin || can('settings.users')) { %><%- link('/admin/settings/users', 'user', t('Users'), path.indexOf('/admin/settings/users') === 0) %><% } %>
           <%- link('/admin/settings', 'settings', t('Settings'), path.indexOf('/admin/settings') === 0
                 && path.indexOf('/admin/settings/advanced/automation') !== 0
                 && path.indexOf('/admin/settings/groups') !== 0
@@ -160,7 +160,7 @@
       <div class="sidebar__me">
         <a class="sidebar__person" href="/profile" title="<%= user.email %>"<%= path === '/profile' ? ' aria-current=page' : '' %>>
           <span class="avatar" aria-hidden="true"><%= initials %></span>
-          <span class="sidebar__who"><b><%= user.display_name %></b><small><%= roleLabel(user.role) %></small></span>
+          <span class="sidebar__who"><b><%= user.display_name %></b><small><%= locals.roleName || roleLabel(user.role) %></small></span>
         </a>
         <form method="post" action="/auth/logout" class="inline-form">
           <input type="hidden" name="_csrf" value="<%= locals.csrfToken %>">

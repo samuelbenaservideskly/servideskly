@@ -12,6 +12,8 @@ export type UserStatus = 'active' | 'disabled';
 export type UserSource = 'jit' | 'sync' | 'manual' | 'dev';
 
 export interface UserRow {
+  /** A custom role (auth/permissions.ts), which set `role`; null for a built-in one. */
+  role_id?: string | null;
   /**
    * Which sorts of line this person keeps in the dashboard's Activity feed
    * (services/work-dashboard.ts). Empty: everything they may see.

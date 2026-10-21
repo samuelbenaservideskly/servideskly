@@ -16,6 +16,12 @@
      class="<%= tab === 'break-glass' ? 'subtabs__item--current' : '' %>"
      <%- tab === 'break-glass' ? 'aria-current="page"' : '' %>>Break-glass account</a>
   <% } %>
+  <%# Custom roles: an administrator's only. %>
+  <% if (locals.isAdmin) { %>
+  <a href="/admin/settings/users/roles"
+     class="<%= tab === 'roles' ? 'subtabs__item--current' : '' %>"
+     <%- tab === 'roles' ? 'aria-current="page"' : '' %>>Roles</a>
+  <% } %>
   <a href="/admin/settings/users/other"
      class="<%= tab === 'other' ? 'subtabs__item--current' : '' %>"
      <%- tab === 'other' ? 'aria-current="page"' : '' %>>Other settings</a>
