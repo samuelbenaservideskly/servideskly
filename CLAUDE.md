@@ -2088,7 +2088,12 @@ Built-ins keep what they had (admin everything, agent ticket work and
 Reports). **Only an administrator** opens Roles, gives anybody a role, or
 creates or imports anything but a user - somebody with Users cannot raise
 anybody, themselves included. Roles are cached in memory like settings().
-Not yet finer: which tickets a technician sees, editing, internal notes.
+Part 2 (same day): **See every ticket** (without it, `ticketScope()` limits
+listTickets, ticketCounts and `canSeeTicket()` to the person's groups'
+tickets and their own; anything else is a 404), **Change tickets** (update
+and Assign to me; without it the panel reads only), **Internal notes**
+(`seesInternal()`: listComments, listAttachments, the download, the reply
+box's tab). The built-in agent has all three, as before.
 
 ### An authenticator app after the password (21 Oct 2026)
 

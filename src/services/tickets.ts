@@ -8,6 +8,7 @@ import { audit } from '../lib/audit.js';
 import { removeStoredFile } from './attachments.js';
 import { isStaff, type UserRow } from './users.js';
 import { loadSlaFacts, slaFromFacts, slaMatches, type SlaFilter } from './sla.js';
+import { can } from '../auth/permissions.js';
 
 export const TICKET_STATUSES = [
   'open',
@@ -684,6 +685,15 @@ export async function listTickets(viewer: UserRow, filters: TicketFilters): Prom
     }
   }
 
+  // A technician whose role does not see every ticket (custom roles, part 2):
+  // their groups' tickets and their own, whatever else the filters say.
+  const limitedTo = await ticketScope(viewer);
+  if (limitedTo) {
+    const groupClause = limitedTo.length ? 't.group_id IN (' + limitedTo.map(placeholder).join(', ') + ') OR ' : '';
+    params.push(...limitedTo, viewer.id, viewer.id, viewer.id);
+    where.push('(' + groupClause + 't.assignee_id = ? OR t.requester_id = ? OR t.raised_by = ?)');
+  }
+
   if (filters.groupId) {
     params.push(filters.groupId);
     where.push('t.group_id = ' + placeholder());
@@ -807,11 +817,39 @@ export function canViewTicket(viewer: UserRow, ticket: TicketRow): boolean {
 }
 
 /**
+ * The technician groups a technician is limited to, or null for every
+ * ticket (custom roles, part 2, 21 Oct 2026). Null for an administrator, a
+ * built-in agent, a role with "See every ticket", and a requester (whose
+ * own rule is stricter and applied separately).
+ */
+export async function ticketScope(viewer: UserRow): Promise<string[] | null> {
+  if (!isStaff(viewer.role) || can(viewer, 'tickets.view_all')) return null;
+  const rows = await query<{ group_id: string }>('SELECT group_id FROM technician_group_members WHERE user_id = ?', [viewer.id]);
+  return rows.map((r) => r.group_id);
+}
+
+/** canViewTicket, and the role's limit to its groups' tickets and its own. */
+export async function canSeeTicket(viewer: UserRow, ticket: TicketRow): Promise<boolean> {
+  if (!canViewTicket(viewer, ticket)) return false;
+  const limitedTo = await ticketScope(viewer);
+  if (!limitedTo) return true;
+  return (
+    ticket.requester_id === viewer.id ||
+    ticket.raised_by === viewer.id ||
+    ticket.assignee_id === viewer.id ||
+    (ticket.group_id !== null && ticket.group_id !== undefined && limitedTo.includes(ticket.group_id))
+  );
+}
+
+/** Whether this person reads and writes internal notes: staff whose role allows it. */
+export const seesInternal = (viewer: UserRow): boolean => isStaff(viewer.role) && can(viewer, 'tickets.internal');
+
+/**
  * Comments for a ticket. Internal notes are filtered out in SQL for
  * requesters, so they cannot leak through a template change.
  */
 export function listComments(ticketId: string, viewer: UserRow): Promise<CommentRow[]> {
-  const internalClause = isStaff(viewer.role) ? '' : ' AND c.is_internal = 0';
+  const internalClause = seesInternal(viewer) ? '' : ' AND c.is_internal = 0';
   return query<CommentRow>(
     `SELECT c.*, u.display_name AS author_name, u.role AS author_role
        FROM ticket_comments c
@@ -1074,6 +1112,13 @@ export async function ticketCounts(viewer: UserRow): Promise<Record<string, numb
     return { active: row?.active ?? 0, total: row?.total ?? 0 };
   }
 
+  // Counted over what this person may see (custom roles, part 2): their
+  // groups' tickets and their own when their role does not see every ticket.
+  const limitedTo = await ticketScope(viewer);
+  const within = limitedTo
+    ? ' AND (' + (limitedTo.length ? 'group_id IN (' + limitedTo.map(() => '?').join(', ') + ') OR ' : '') + 'assignee_id = ? OR requester_id = ? OR raised_by = ?)'
+    : '';
+  const scope = limitedTo ? [...limitedTo, viewer.id, viewer.id, viewer.id] : [];
   const row = await queryOne<{
     active: number;
     unassigned: number;
@@ -1082,13 +1127,13 @@ export async function ticketCounts(viewer: UserRow): Promise<Record<string, numb
   }>(
     `SELECT
        (SELECT count(*) FROM tickets
-         WHERE status IN ('open', 'in_progress', 'pending')) AS active,
+         WHERE status IN ('open', 'in_progress', 'pending')` + within + `) AS active,
        (SELECT count(*) FROM tickets
-         WHERE assignee_id IS NULL AND status IN ('open', 'in_progress', 'pending')) AS unassigned,
+         WHERE assignee_id IS NULL AND status IN ('open', 'in_progress', 'pending')` + within + `) AS unassigned,
        (SELECT count(*) FROM tickets
          WHERE assignee_id = ? AND status IN ('open', 'in_progress', 'pending')) AS mine,
-       (SELECT count(*) FROM tickets) AS total`,
-    [viewer.id],
+       (SELECT count(*) FROM tickets WHERE 1 = 1` + within + `) AS total`,
+    [...scope, ...scope, viewer.id, ...scope],
   );
   return {
     active: row?.active ?? 0,

@@ -10,6 +10,7 @@ import { execute, queryOne } from '../src/db/index.js';
 import { createRole, loadRoles, permissionForSettingsPath, setCustomRole } from '../src/auth/permissions.js';
 import { findUserById } from '../src/services/users.js';
 import { createGroup, setMembers } from '../src/services/groups.js';
+import { addComment, createTicket } from '../src/services/tickets.js';
 
 /**
  * Custom roles (auth/permissions.ts, 21 Oct 2026): ticked permissions, each
@@ -139,5 +140,50 @@ describe('a role never grows itself', () => {
     assert.equal((await findUserById(lead.user.id))!.role_id, null);
     await request(app).post('/admin/settings/users/roles/' + role.id + '/delete').set('Cookie', admin.cookie).type('form').send({ _csrf: admin.csrfToken });
     assert.equal(await queryOne('SELECT id FROM roles WHERE id = ?', [role.id]), undefined);
+  });
+});
+
+describe('ticket permissions (part 2)', () => {
+  test("without 'see every ticket': their groups' tickets and their own, and nothing else is found", async () => {
+    const limited = await withRole('roles.limited@example.com', ['tickets.work', 'tickets.edit', 'tickets.internal']);
+    const requester = await signInAs('roles.requester@example.com', 'user');
+    const desk = await createGroup({ name: 'Limited desk', description: '', isActive: true }, null);
+    const other = await createGroup({ name: 'Other desk', description: '', isActive: true }, null);
+    await setMembers(desk.id, [limited.user.id], null);
+    const ours = await createTicket({ title: 'Ours', description: 'In the limited desk', priority: 'normal', category: 'other', requesterId: requester.user.id, groupId: desk.id });
+    const theirs = await createTicket({ title: 'Theirs', description: 'In the other desk', priority: 'normal', category: 'other', requesterId: requester.user.id, groupId: other.id });
+
+    await get('/tickets/' + ours.id, limited).expect(200);
+    assert.equal((await get('/tickets/' + theirs.id, limited)).status, 404);
+    const list = await get('/tickets?scope=all&status=any', limited);
+    assert.match(list.text, /Ours/);
+    assert.doesNotMatch(list.text, /Theirs/);
+    // A built-in agent still sees everything.
+    const agent = await signInAs('roles.agent2@example.com', 'agent');
+    await get('/tickets/' + theirs.id, agent).expect(200);
+  });
+
+  test('without "change tickets" the details read only and a change is refused', async () => {
+    const viewer = await withRole('roles.viewer@example.com', ['tickets.work', 'tickets.view_all']);
+    const requester = await signInAs('roles.requester2@example.com', 'user');
+    const ticket = await createTicket({ title: 'Look only', description: 'Not to be changed', priority: 'normal', category: 'other', requesterId: requester.user.id });
+    const page = await get('/tickets/' + ticket.id, viewer).expect(200);
+    assert.doesNotMatch(page.text, /id="properties"/);
+    const change = await request(app).post('/tickets/' + ticket.id + '/update').set('Cookie', viewer.cookie).type('form').send({ _csrf: viewer.csrfToken, status: 'closed' });
+    assert.equal(change.status, 403);
+  });
+
+  test('without "internal notes" they are not shown, and one cannot be written', async () => {
+    const outside = await withRole('roles.nonotes@example.com', ['tickets.work', 'tickets.view_all', 'tickets.edit']);
+    const requester = await signInAs('roles.requester3@example.com', 'user');
+    const ticket = await createTicket({ title: 'Notes', description: 'Has an internal note', priority: 'normal', category: 'other', requesterId: requester.user.id });
+    await addComment({ ticketId: ticket.id, authorId: admin.user.id, body: 'Secret internal remark', isInternal: true });
+    const page = await get('/tickets/' + ticket.id, outside).expect(200);
+    assert.doesNotMatch(page.text, /Secret internal remark/);
+    assert.doesNotMatch(page.text, /id="reply-internal"/);
+    await request(app).post('/tickets/' + ticket.id + '/comments').set('Cookie', outside.cookie).type('form')
+      .send({ _csrf: outside.csrfToken, internal: 'on', body: 'Trying to hide this' }).expect(302);
+    const written = await queryOne<{ is_internal: boolean }>("SELECT is_internal FROM ticket_comments WHERE body = 'Trying to hide this'");
+    assert.equal(written?.is_internal, false, 'posted as a public reply, not a note');
   });
 });

@@ -385,6 +385,8 @@
     var from = parent.hasAttribute('data-search')
       ? 1
       : Number(parent.getAttribute('data-search-from')) || FROM;
+    // data-no-search opts a list out, as it does a dropdown (the role form, 21 Oct 2026).
+    if (parent.hasAttribute('data-no-search')) return;
     if (rows.length <= from || parent._listSearch) return;
     parent._listSearch = true;
     var box = document.createElement('input');

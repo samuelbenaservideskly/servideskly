@@ -77,7 +77,7 @@ import {
   TYPE_LABELS,
   type TicketType,
   addComment,
-  canViewTicket,
+  canSeeTicket, seesInternal,
   approvalBlocks,
   tasksBlock,
   createTicket,
@@ -948,7 +948,7 @@ async function loadTicket(req: Request) {
   const ticket = await getTicketById(id.data);
   // Unauthorised access is reported as 404, so ticket ids are not confirmed to
   // people who should not see them.
-  if (!ticket || !canViewTicket(viewer, ticket)) throw notFound('That ticket does not exist.');
+  if (!ticket || !(await canSeeTicket(viewer, ticket))) throw notFound('That ticket does not exist.');
 
   return { viewer, ticket };
 }
@@ -1061,8 +1061,8 @@ ticketRouter.post(
 
     const raw = (req.body ?? {}) as Record<string, unknown>;
     const text = typeof raw.body === 'string' ? normaliseText(raw.body).trim() : '';
-    // Only staff may write internal notes, whatever the form claims.
-    const isInternal = isStaff(viewer.role) && raw.internal === 'on';
+    // Only staff whose role reads internal notes may write one, whatever the form claims.
+    const isInternal = seesInternal(viewer) && raw.internal === 'on';
     // "Email the requester" (21 Oct 2026): unticked, a reply and its files are
     // only added to the ticket. A form without the box (`notifyChoice` absent)
     // emails as replies always did.
@@ -1165,6 +1165,7 @@ ticketRouter.post(
   asyncHandler(async (req, res) => {
     const { viewer, ticket } = await loadTicket(req);
     if (!isStaff(viewer.role)) throw forbidden('Only service desk staff can take a ticket.', 'not_staff');
+    if (!can(viewer, 'tickets.edit')) throw forbidden('Your role does not allow changing tickets.', 'not_permitted');
     const mine = (await groupsForUser(viewer.id)).filter((g) => g.is_active);
     const asked = typeof (req.body as Record<string, unknown>)?.groupId === 'string' ? String((req.body as Record<string, unknown>).groupId) : '';
     let groupId: string | null = null;
@@ -1202,6 +1203,8 @@ ticketRouter.post(
     if (!isStaff(viewer.role)) {
       throw forbidden('Only service desk staff can change ticket fields.', 'not_staff');
     }
+    // "Change status, priority, assignee, group and category" (custom roles, part 2).
+    if (!can(viewer, 'tickets.edit')) throw forbidden('Your role does not allow changing tickets.', 'not_permitted');
 
     const parsed = updateBody.safeParse(req.body ?? {});
     if (!parsed.success) throw badRequest('That change is not valid.', 'bad_update');
@@ -1624,7 +1627,7 @@ ticketRouter.get(
     // Reported as 404 rather than 403, so attachment ids belonging to other
     // tickets are not confirmed.
     if (!row || row.ticket_id !== ticket.id) throw notFound('That attachment does not exist.');
-    if (row.is_internal && !isStaff(viewer.role)) throw notFound('That attachment does not exist.');
+    if (row.is_internal && !seesInternal(viewer)) throw notFound('That attachment does not exist.');
 
     auditRequest(req, {
       action: 'ticket.attachment.downloaded',

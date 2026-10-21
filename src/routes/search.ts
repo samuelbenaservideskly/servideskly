@@ -2,7 +2,7 @@ import { Router } from 'express';
 import { asyncHandler } from '../lib/async-handler.js';
 import { forbidden } from '../lib/errors.js';
 import { requireAuth } from '../middleware/auth.js';
-import { canViewTicket, getTicketById, listTickets, PRIORITY_LABELS, STATUS_LABELS, TYPE_LABELS } from '../services/tickets.js';
+import { canSeeTicket, getTicketById, listTickets, PRIORITY_LABELS, STATUS_LABELS, TYPE_LABELS } from '../services/tickets.js';
 import { listUsers } from '../services/users.js';
 import { ticketFor } from './hooks.js';
 import { canUseDirectory } from './people.js';
@@ -60,7 +60,7 @@ searchRouter.get(
     const referenced = await ticketFor(q);
     if (referenced) {
       const ticket = await getTicketById(referenced);
-      if (ticket && canViewTicket(viewer, ticket)) {
+      if (ticket && (await canSeeTicket(viewer, ticket))) {
         res.redirect('/tickets/' + ticket.id);
         return;
       }

@@ -833,6 +833,12 @@
     "where": "views/admin/settings/group-detail.ejs",
     "uses": 1
   },
+  "s103c69c37f": {
+    "text": "See every ticket, not only their groups' and their own",
+    "context": "A permission a custom role can be given, a tick box on the Roles page",
+    "where": "src/i18n/code-strings.ts",
+    "uses": 1
+  },
   "s104334bc28": {
     "text": "15-30 days",
     "context": "How long a ticket has been open, a column in Reports",
@@ -928,6 +934,12 @@
     "context": "A button on boards/show",
     "where": "views/boards/show.ejs",
     "uses": 2
+  },
+  "s11a6d5d40c": {
+    "text": "Change status, priority, assignee, group and category",
+    "context": "A permission a custom role can be given, a tick box on the Roles page",
+    "where": "src/i18n/code-strings.ts",
+    "uses": 1
   },
   "s11b39c9377": {
     "text": "Agent",
@@ -1877,6 +1889,12 @@
     "where": "views/people/show.ejs",
     "uses": 2
   },
+  "s232f1f97cf": {
+    "text": "Read and write internal notes",
+    "context": "A permission a custom role can be given, a tick box on the Roles page",
+    "where": "src/i18n/code-strings.ts",
+    "uses": 1
+  },
   "s233c0db994": {
     "text": "IMAP host",
     "context": "The label of a form field on admin/settings/_mailbox-dialog",
@@ -2668,6 +2686,12 @@
     "context": "The grey example inside an input on admin/settings/integration-google",
     "where": "views/admin/settings/integration-google.ejs",
     "uses": 1
+  },
+  "s31896e4537": {
+    "text": "Your role does not allow changing tickets.",
+    "context": "A message shown beside a form or after an action",
+    "where": "src/routes/tickets.ts",
+    "uses": 2
   },
   "s3196de36ee": {
     "text": "A mail from the same sender with the same subject, while the ticket this rule raised for it is still open, is added to that ticket instead of raising another. 0 turns this off. Replies are always added to their ticket, whatever this says.",

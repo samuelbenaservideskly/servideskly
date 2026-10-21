@@ -35,7 +35,7 @@
   <div class="page-head__actions">
     <%# Assign to me: one click with one group (or none); a popup to pick
         the group when the technician is in several. %>
-    <% if (locals.isStaff && locals.currentUser && ticket.assignee_id !== currentUser.id && ticket.status !== 'closed' && ticket.status !== 'cancelled') { %>
+    <% if (locals.isStaff && locals.can && can('tickets.edit') && locals.currentUser && ticket.assignee_id !== currentUser.id && ticket.status !== 'closed' && ticket.status !== 'cancelled') { %>
       <% if (myGroups.length > 1) { %>
         <a class="btn btn--primary" href="#assign-me"><%- include('../partials/icon', { name: 'userPlus' }) %> <%= t('Assign to me') %></a>
       <% } else { %>
@@ -161,7 +161,7 @@
           class="card tk-reply" id="reply" data-file-form
           data-remove-label="<%= t('Remove') %>">
       <input type="hidden" name="_csrf" value="<%= locals.csrfToken %>">
-      <% if (locals.isStaff) { %>
+      <% if (locals.isStaff && can('tickets.internal')) { %>
         <input type="radio" name="internal" value="" id="reply-public" class="kind-radio tk-reply__public"<%= draft && draft.internal ? '' : ' checked' %>>
         <input type="radio" name="internal" value="on" id="reply-internal" class="kind-radio tk-reply__internal"<%= draft && draft.internal ? ' checked' : '' %>>
         <div class="tk-tabs">
@@ -252,7 +252,8 @@
       </div>
     <% } %>
 
-    <% if (locals.isStaff) { %>
+    <%# Changing a ticket is a permission (custom roles, part 2); without it, the details read only. %>
+    <% if (locals.isStaff && can('tickets.edit')) { %>
       <form method="post" action="/tickets/<%= ticket.id %>/update" class="card tk-props" id="properties">
         <input type="hidden" name="_csrf" value="<%= locals.csrfToken %>">
 

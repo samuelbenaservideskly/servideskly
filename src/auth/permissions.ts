@@ -33,6 +33,9 @@ export interface Permission {
 /** Every permission a role can be given, in the order the role page lists them. */
 export const PERMISSIONS: readonly Permission[] = [
   { key: 'tickets.work', label: 'Work on tickets as a technician', group: 'Tickets' },
+  { key: 'tickets.view_all', label: "See every ticket, not only their groups' and their own", group: 'Tickets' },
+  { key: 'tickets.edit', label: 'Change status, priority, assignee, group and category', group: 'Tickets' },
+  { key: 'tickets.internal', label: 'Read and write internal notes', group: 'Tickets' },
   { key: 'tickets.delete', label: 'Delete tickets', group: 'Tickets' },
   { key: 'reports.view', label: 'Open Reports', group: 'Reports and people' },
   { key: 'people.directory', label: 'Search the people directory', group: 'Reports and people' },
@@ -52,7 +55,7 @@ export const PERMISSIONS: readonly Permission[] = [
 const KNOWN = new Set(PERMISSIONS.map((p) => p.key));
 
 /** What a technician (agent) could always do, without a custom role. */
-const AGENT_DEFAULT = ['tickets.work', 'reports.view'];
+const AGENT_DEFAULT = ['tickets.work', 'tickets.view_all', 'tickets.edit', 'tickets.internal', 'reports.view'];
 
 export interface RoleRow {
   id: string;

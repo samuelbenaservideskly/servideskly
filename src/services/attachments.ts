@@ -11,6 +11,7 @@ import { newId, nowIso } from '../lib/util.js';
 import { isStaff, type UserRow } from './users.js';
 import { downscaleImage } from './image-downscale.js';
 import { openFile, sealFile } from '../lib/field-crypto.js';
+import { can } from '../auth/permissions.js';
 
 const log = logger.child({ module: 'attachments' });
 
@@ -286,7 +287,8 @@ export function listAttachments(
   ticketId: string,
   viewer: UserRow,
 ): Promise<AttachmentListItem[]> {
-  const internalClause = isStaff(viewer.role) ? '' : ' AND a.is_internal = 0';
+  // Internal files are for those who read internal notes (custom roles, part 2).
+  const internalClause = isStaff(viewer.role) && can(viewer, 'tickets.internal') ? '' : ' AND a.is_internal = 0';
   return query<AttachmentListItem>(
     `SELECT a.*, u.display_name AS uploader_name
        FROM ticket_attachments a
