@@ -37,10 +37,10 @@ before(async () => {
   await addComment({ ticketId: t.id, authorId: agent.user.id, body: 'Root cause: log rotation off.', isInternal: true });
   other = (await createTicket({ title: 'Printer jammed', description: 'Tray 2 again.', priority: 'low', category: 'other', requesterId: agent.user.id })).reference;
 
-  reader = (await createApiKey('Reader', ['read_tickets'], null)).secret;
-  insider = (await createApiKey('Insider', ['read_tickets', 'read_internal'], null)).secret;
+  reader = (await createApiKey('Reader', ['read_tickets'], agent.user.id)).secret;
+  insider = (await createApiKey('Insider', ['read_tickets', 'read_internal'], agent.user.id)).secret;
   writer = (await createApiKey('Writer only', ['set_status'], null)).secret;
-  narrow = (await createApiKey('Default template only', ['read_tickets'], null, [template.id])).secret;
+  narrow = (await createApiKey('Default template only', ['read_tickets'], agent.user.id, [template.id])).secret;
 });
 
 describe('GET /api/v1', () => {

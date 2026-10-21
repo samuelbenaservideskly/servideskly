@@ -118,11 +118,17 @@ export function canOpenSettings(user: (Pick<UserRow, 'role'> & { role_id?: strin
  * page is open to anybody who may open any part of it.
  */
 export function permissionForSettingsPath(path: string): string | 'admin' | 'any' {
-  const parts = path.replace(/^\/+/, '').split('/');
+  // Lower case: Express matches routes whatever their case, so /users/ROLES
+  // reaches the Roles page and must be judged as /users/roles.
+  const parts = path.toLowerCase().replace(/^\/+/, '').split('/');
   if (parts[0] === 'settings') parts.shift();
   const section = parts[0] ?? '';
   if (section === '' || section === 'search') return 'any';
   if (section === 'users' && parts[1] === 'roles') return 'admin';
+  // How everybody signs in stays an administrator's: the break-glass account,
+  // local sign-in, sign-in codes and conditional access (review, 21 Oct 2026).
+  if (section === 'users' && ['break-glass', 'local-signin', 'sign-in-codes'].includes(parts[1] ?? '')) return 'admin';
+  if (section === 'users' && parts[1] === 'other' && parts[2] === 'access') return 'admin';
   if (section === 'advanced' && (parts[1] === 'automation' || parts[1] === 'connections')) return 'automation.manage';
   if (section === 'advanced' && parts[1] === 'api-keys') return 'api.manage';
   return 'settings.' + section;

@@ -8,7 +8,8 @@ import { apiKeyGuessLimiter, hookLimiter } from '../middleware/security.js';
 import { keyForSecret, markKeyUsed, type ApiKeyRow } from '../services/api-keys.js';
 import { categoryPath } from '../services/catalogue.js';
 import { slaFor } from '../services/sla.js';
-import { PRIORITY_LABELS, STATUS_LABELS, TICKET_PRIORITIES, TICKET_STATUSES, TICKET_TYPES, TYPE_LABELS, type TicketPriority, type TicketStatus, type TicketType } from '../services/tickets.js';
+import { canSeeTicket, getTicketById, PRIORITY_LABELS, seesInternal, STATUS_LABELS, TICKET_PRIORITIES, TICKET_STATUSES, TICKET_TYPES, ticketScope, TYPE_LABELS, type TicketPriority, type TicketStatus, type TicketType } from '../services/tickets.js';
+import { findUserById, type UserRow } from '../services/users.js';
 import { ticketFor } from './hooks.js';
 
 const log = logger.child({ module: 'api' });
@@ -21,6 +22,11 @@ const log = logger.child({ module: 'api' });
  * **Read internal notes** for those. A key limited to some templates sees
  * only their tickets - anything else is "not found", exactly like a ticket
  * that does not exist, so a key cannot learn what it may not read.
+ *
+ * **A key reads as the person who made it** (review, 21 Oct 2026): they must
+ * still be an active administrator or technician, a custom role limited to
+ * its groups' tickets limits the key the same way, and internal notes and
+ * files need a role that reads them as well as the tick on the key.
  *
  * A machine API: bearer key, no session, no CSRF, JSON out, mounted beside
  * /hooks ahead of the browser pipeline, with the same rate limit.
@@ -47,8 +53,14 @@ async function authenticate(req: Request, res: Response, next: NextFunction): Pr
       refuse(res, 403, 'This key may not read tickets. Tick "Read tickets" on it under Settings - Advanced - API keys.');
       return;
     }
+    const author = key.created_by ? await findUserById(key.created_by) : undefined;
+    if (!author || author.status !== 'active' || (author.role !== 'admin' && author.role !== 'agent')) {
+      refuse(res, 403, 'The person who made this key is no longer an active administrator or technician. Make a new key.');
+      return;
+    }
     await markKeyUsed(key.id);
     res.locals.key = key;
+    res.locals.author = author;
     next();
   } catch (err) {
     next(err);
@@ -103,7 +115,7 @@ function allowedFor(key: ApiKeyRow, row: { template_id: string | null }): boolea
 }
 
 /** One ticket as the API gives it; `full` adds what a list leaves out. */
-async function shape(row: Row, full: boolean) {
+async function shape(row: Row, full: boolean, internal = false) {
   const base = {
     reference: ticketReference(Number(row.ref_seq), row.ref_prefix),
     id: row.id,
@@ -131,7 +143,7 @@ async function shape(row: Row, full: boolean) {
 
   const sla = await slaFor({ ...row, resolved_at: row.resolved_at, closed_at: row.closed_at });
   const files = await query<{ filename: string; content_type: string; byte_size: number; is_internal: number; created_at: string }>(
-    'SELECT filename, content_type, byte_size, is_internal, created_at FROM ticket_attachments WHERE ticket_id = ? AND deleted_at IS NULL ORDER BY created_at',
+    'SELECT filename, content_type, byte_size, is_internal, created_at FROM ticket_attachments WHERE ticket_id = ? AND deleted_at IS NULL' + (internal ? '' : ' AND is_internal = 0') + ' ORDER BY created_at',
     [row.id],
   );
   const parent = row.parent_id
@@ -164,7 +176,9 @@ async function findReadable(req: Request, res: Response): Promise<Row | undefine
   const key = res.locals.key as ApiKeyRow;
   const id = await ticketFor(String(req.params.ref));
   const row = id ? await queryOne<Row>(SELECT + ' WHERE t.id = ?', [id]) : undefined;
-  if (!row || !allowedFor(key, row)) {
+  const author = res.locals.author as UserRow;
+  const ticket = row ? await getTicketById(row.id) : undefined;
+  if (!row || !ticket || !allowedFor(key, row) || !(await canSeeTicket(author, ticket))) {
     refuse(res, 404, 'There is no such ticket.');
     return undefined;
   }
@@ -176,7 +190,7 @@ apiReadRouter.get('/tickets/:ref', async (req, res, next) => {
   try {
     const row = await findReadable(req, res);
     if (!row) return;
-    res.json(await shape(row, true));
+    res.json(await shape(row, true, (res.locals.key as ApiKeyRow).allowed_actions.includes('read_internal') && seesInternal(res.locals.author as UserRow)));
   } catch (err) {
     next(err);
   }
@@ -188,7 +202,7 @@ apiReadRouter.get('/tickets/:ref/comments', async (req, res, next) => {
     const key = res.locals.key as ApiKeyRow;
     const row = await findReadable(req, res);
     if (!row) return;
-    const internal = key.allowed_actions.includes('read_internal');
+    const internal = key.allowed_actions.includes('read_internal') && seesInternal(res.locals.author as UserRow);
     const comments = await query<{ body: string; is_internal: number; created_at: string; author_name: string }>(
       `SELECT c.body, c.is_internal, c.created_at, u.display_name AS author_name
          FROM ticket_comments c JOIN users u ON u.id = c.author_id
@@ -294,6 +308,13 @@ apiReadRouter.get('/tickets', async (req, res, next) => {
     if (key.template_ids.length > 0) {
       where.push('t.template_id IN (' + key.template_ids.map(() => '?').join(', ') + ')');
       params.push(...key.template_ids);
+    }
+    // The author's own limit: their groups' tickets and their own.
+    const author = res.locals.author as UserRow;
+    const limitedTo = await ticketScope(author);
+    if (limitedTo) {
+      where.push('(' + (limitedTo.length ? 't.group_id IN (' + limitedTo.map(() => '?').join(', ') + ') OR ' : '') + 't.assignee_id = ? OR t.requester_id = ? OR t.raised_by = ?)');
+      params.push(...limitedTo, author.id, author.id, author.id);
     }
 
     const limit = Math.min(MAX_LIMIT, Math.max(1, Number.parseInt(q('limit') || '50', 10) || 50));

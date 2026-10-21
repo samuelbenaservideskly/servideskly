@@ -162,21 +162,22 @@ export async function useAuthenticatorCode(userId: string, typed: string): Promi
   }
   const step = matchStep(secret, typed, Number(row.last_step));
   if (step !== null) {
-    // Only moves forward, so two sign-ins racing with one code cannot both win.
-    await execute('UPDATE user_authenticators SET last_step = ? WHERE user_id = ? AND last_step < ?', [step, userId, step]);
-    const after = await queryOne<{ last_step: number }>('SELECT last_step FROM user_authenticators WHERE user_id = ?', [userId]);
-    return Number(after?.last_step) === step ? 'code' : null;
+    // Only moves forward, and only the sign-in whose write moved it wins:
+    // reading the step back let two racing with one code both through.
+    const moved = await execute('UPDATE user_authenticators SET last_step = ? WHERE user_id = ? AND last_step < ?', [step, userId, step]);
+    return moved === 1 ? 'code' : null;
   }
   if (!/[A-Za-z]/.test(typed)) return null;
   const hashes = JSON.parse(row.recovery) as string[];
   const hash = hashRecovery(typed);
   if (!hashes.includes(hash)) return null;
-  await execute('UPDATE user_authenticators SET recovery = ? WHERE user_id = ? AND recovery = ?', [
+  // Used up only if the list is still the one read; a sign-in that lost the race is refused.
+  const used = await execute('UPDATE user_authenticators SET recovery = ? WHERE user_id = ? AND recovery = ?', [
     JSON.stringify(hashes.filter((h) => h !== hash)),
     userId,
     row.recovery,
   ]);
-  return 'recovery';
+  return used === 1 ? 'recovery' : null;
 }
 
 /** How many recovery codes somebody has left, for their profile page. */

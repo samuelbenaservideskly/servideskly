@@ -12,9 +12,13 @@ import { sendNotification, type AutomationRecipient } from '../services/mail/out
 import { systemRequesterId } from '../services/mail/inbound.js';
 import { raiseFromRule } from '../services/mail/rules.js';
 import { createTemplateFrom, findTemplate, findTemplateByName, isUsable } from '../services/templates.js';
+import { can } from '../auth/permissions.js';
+import { findUserById, type UserRow } from '../services/users.js';
 import {
   addComment,
   approvalBlocks,
+  canSeeTicket,
+  seesInternal,
   TICKET_PRIORITIES,
   TICKET_STATUSES,
   TICKET_TYPES,
@@ -70,6 +74,8 @@ const no = (status: number, message: string): never => {
 interface Ctx {
   key: ApiKeyRow;
   actorId: string;
+  /** The key's author: the key never does more than their role allows. */
+  actor: UserRow;
 }
 
 async function authenticate(req: Request, res: Response, next: NextFunction): Promise<void> {
@@ -79,12 +85,10 @@ async function authenticate(req: Request, res: Response, next: NextFunction): Pr
     const key = await keyForSecret(secret);
     if (!key) return refuse(res, 401, 'Access denied.');
     // Who the change is made as: the key's author, while they may still make it.
-    const actor = key.created_by
-      ? await queryOne<{ id: string }>("SELECT id FROM users WHERE id = ? AND status = 'active' AND role IN ('admin', 'agent')", [key.created_by])
-      : undefined;
-    if (!actor) return refuse(res, 403, 'The person who made this key is no longer an active administrator or technician. Make a new key.');
+    const actor = key.created_by ? await findUserById(key.created_by) : undefined;
+    if (!actor || actor.status !== 'active' || (actor.role !== 'admin' && actor.role !== 'agent')) return refuse(res, 403, 'The person who made this key is no longer an active administrator or technician. Make a new key.');
     await markKeyUsed(key.id);
-    res.locals.ctx = { key, actorId: actor.id } satisfies Ctx;
+    res.locals.ctx = { key, actorId: actor.id, actor } satisfies Ctx;
     next();
   } catch (err) {
     next(err);
@@ -130,14 +134,19 @@ function oneOf<T extends string>(value: unknown, allowed: readonly T[], aliases:
 }
 const STATUS_ALIASES: Record<string, TicketStatus> = { on_hold: 'pending', onhold: 'pending', hold: 'pending', inprogress: 'in_progress' };
 
-/** The ticket named in the address, if this key may act on it. */
+/** The ticket named in the address, if this key - and its author - may act on it. */
 async function ticketOf(ref: string, ctx: Ctx): Promise<TicketRow & { template_id: string | null }> {
   const id = await ticketFor(ref);
   const row = id ? await queryOne<TicketRow & { template_id: string | null }>('SELECT * FROM tickets WHERE id = ?', [id]) : undefined;
-  if (!row || (ctx.key.template_ids.length > 0 && !(row.template_id && ctx.key.template_ids.includes(row.template_id)))) {
+  if (!row || (ctx.key.template_ids.length > 0 && !(row.template_id && ctx.key.template_ids.includes(row.template_id))) || !(await canSeeTicket(ctx.actor, row))) {
     no(404, 'No such ticket.');
   }
   return row!;
+}
+
+/** What the key's author's role allows, checked as the pages check it. */
+function author(ctx: Ctx, permission: string, label: string): void {
+  if (!can(ctx.actor, permission)) no(403, 'The role of the person who made this key does not allow ' + label + '.');
 }
 
 const referenceOf = (row: { ref_prefix: string; ref_seq: number | string }) => ticketReference(Number(row.ref_seq), row.ref_prefix);
@@ -259,6 +268,8 @@ apiWriteRouter.patch('/tickets/:ref', handle(async (req, _res, ctx) => {
   const body = bodyOf(req);
   const { update, note, internal } = await changesFrom(body, ctx, ticket);
   if (Object.keys(update).length === 0) no(400, 'Nothing to change: send status, priority, group or assignee.');
+  author(ctx, 'tickets.edit', 'changing tickets');
+  if (internal && note && !seesInternal(ctx.actor)) no(403, 'The role of the person who made this key does not allow internal notes.');
   const changes = await updateTicket(ticket.id, ctx.actorId, update);
   if (update.status && update.status !== ticket.status) await noteFor(ticket.id, ctx, update.status, note, internal);
   audit({ action: 'api.ticket.updated', actorId: ctx.actorId, targetType: 'ticket', targetId: ticket.id, detail: { key: ctx.key.name, fields: changes.map((c) => c.field) } });
@@ -272,6 +283,7 @@ apiWriteRouter.post('/tickets/:ref/comments', handle(async (req, res, ctx) => {
   const body = bodyOf(req);
   const message = text(body.body ?? body.message, 20000);
   if (!message) no(400, 'Send the comment as "body".');
+  if (truthy(body.internal) && !seesInternal(ctx.actor)) no(403, 'The role of the person who made this key does not allow internal notes.');
   await addComment({ ticketId: ticket.id, authorId: ctx.actorId, body: message, isInternal: truthy(body.internal) });
   audit({ action: 'api.comment.added', actorId: ctx.actorId, targetType: 'ticket', targetId: ticket.id, detail: { key: ctx.key.name, internal: truthy(body.internal) } });
   res.status(201);
@@ -309,6 +321,7 @@ const TEMPLATE_TYPES = TICKET_TYPES.filter((t) => t !== 'task');
 /** A ticket template: a copy of another, or the standard five fields. Not offered to requesters unless "offer" is true. */
 apiWriteRouter.post('/templates', handle(async (req, res, ctx) => {
   need(ctx, 'create_template', 'create ticket templates');
+  author(ctx, 'settings.templates', 'creating templates');
   const body = bodyOf(req);
   const name = text(body.name, 120).replace(/\s+/g, ' ');
   if (!name) no(400, 'Send the template\'s name as "name".');
@@ -327,6 +340,7 @@ apiWriteRouter.post('/templates', handle(async (req, res, ctx) => {
 /** A custom notification, sent later by Send notification (an automation, or the endpoint above). */
 apiWriteRouter.post('/notifications', handle(async (req, res, ctx) => {
   need(ctx, 'create_notification', 'create notifications');
+  author(ctx, 'settings.mail', 'creating notifications');
   const body = bodyOf(req);
   const name = text(body.name, 120).replace(/\s+/g, ' ');
   if (!name) no(400, 'Send the notification\'s name as "name".');

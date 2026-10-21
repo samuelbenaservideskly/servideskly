@@ -9,7 +9,7 @@ import { bootstrapTestDatabase } from './support/bootstrap.js';
 import { createLocalAccount } from '../src/auth/local-accounts.js';
 import { settings, updateSettings } from '../src/settings/index.js';
 import { findUserByEmail } from '../src/services/users.js';
-import { codeAt, currentStep, matchStep, newSecret } from '../src/auth/authenticator.js';
+import { codeAt, currentStep, enableAuthenticator, matchStep, newSecret, useAuthenticatorCode } from '../src/auth/authenticator.js';
 
 /**
  * An authenticator app after the password (auth/authenticator.ts, 21 Oct
@@ -68,6 +68,18 @@ describe('the codes', () => {
     const step = matchStep(secret, codeAt(secret, currentStep(now)), 0, now);
     assert.equal(step, currentStep(now));
     assert.equal(matchStep(secret, codeAt(secret, currentStep(now)), step!, now), null, 'not twice');
+  });
+
+  test('two sign-ins racing with one code, or one recovery code: only one gets in', async () => {
+    const person = await signInAs('authenticator.race@example.com', 'user');
+    const secret = newSecret();
+    const codes = await enableAuthenticator(person.user.id, secret, person.user);
+    // enableAuthenticator records the current step as used; the next one is fresh.
+    const code = codeAt(secret, currentStep() + 1);
+    const both = await Promise.all([useAuthenticatorCode(person.user.id, code), useAuthenticatorCode(person.user.id, code)]);
+    assert.deepEqual(both.filter((r) => r === 'code').length, 1, 'one code, one sign-in');
+    const recovery = await Promise.all([useAuthenticatorCode(person.user.id, codes[0]!), useAuthenticatorCode(person.user.id, codes[0]!)]);
+    assert.deepEqual(recovery.filter((r) => r === 'recovery').length, 1, 'one recovery code, one sign-in');
   });
 });
 

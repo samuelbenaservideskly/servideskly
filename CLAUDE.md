@@ -2095,11 +2095,34 @@ and Assign to me; without it the panel reads only), **Internal notes**
 (`seesInternal()`: listComments, listAttachments, the download, the reply
 box's tab). The built-in agent has all three, as before.
 
+**The security review (same day)** closed three ways round the ticks:
+
+- **An administrator's account is changed only by an administrator.**
+  `load()` in users-admin.ts refuses any POST about an administrator (or
+  break-glass) from anybody else: with Users alone, a password set or an
+  address changed there was that administrator's account.
+- **How everybody signs in stays an administrator's**: break-glass, local
+  sign-in, sign-in codes and conditional access (`permissionForSettingsPath`).
+  The path is **lower-cased first** - Express routes ignore case, so
+  `/users/ROLES` reached the Roles page while the gate read "users".
+- **An API key never does more than its author's role** (api-read.ts,
+  api-write.ts): the author must still be an active administrator or
+  technician (reads too, now), `canSeeTicket` and `ticketScope` limit it,
+  internal notes and files need `seesInternal` as well as the key's tick,
+  changes need `tickets.edit`, templates `settings.templates`,
+  notifications `settings.mail`.
+
+Still by design, and worth knowing: **Build automations** and **Groups** are
+powers over every ticket (an automation acts on any ticket; a group's
+members see its tickets), so give them as you would administration.
+
 ### An authenticator app after the password (21 Oct 2026)
 
 `auth/authenticator.ts`, migration 64 (`user_authenticators`), the same as
 the customer portal's src/mfa.ts: RFC 6238 (SHA-1, 30 s, six digits), the
-secret sealed with secret-box, the last step kept so **a code works once**,
+secret sealed with secret-box, the last step kept so **a code works once**
+(only the sign-in whose update moved it wins - reading it back let two
+racing with one code both in),
 ten recovery codes stored as hashes. Set up on /profile (password accounts
 only; an identity provider's account has its own second step, a code
 account already has one). At sign-in it comes after the password and the

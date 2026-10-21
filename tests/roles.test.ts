@@ -11,6 +11,7 @@ import { createRole, loadRoles, permissionForSettingsPath, setCustomRole } from 
 import { findUserById } from '../src/services/users.js';
 import { createGroup, setMembers } from '../src/services/groups.js';
 import { addComment, createTicket } from '../src/services/tickets.js';
+import { createApiKey } from '../src/services/api-keys.js';
 
 /**
  * Custom roles (auth/permissions.ts, 21 Oct 2026): ticked permissions, each
@@ -185,5 +186,54 @@ describe('ticket permissions (part 2)', () => {
       .send({ _csrf: outside.csrfToken, internal: 'on', body: 'Trying to hide this' }).expect(302);
     const written = await queryOne<{ is_internal: boolean }>("SELECT is_internal FROM ticket_comments WHERE body = 'Trying to hide this'");
     assert.equal(written?.is_internal, false, 'posted as a public reply, not a note');
+  });
+});
+
+describe('the security review of 21 Oct 2026', () => {
+  test('somebody with Users changes nothing on an administrator: password, address, authenticator', async () => {
+    const manager = await withRole('review.users@example.com', ['settings.users']);
+    const boss = await signInAs('review.boss@example.com', 'admin');
+    const post = (path: string, body: Record<string, string>) =>
+      request(app).post('/admin/settings/users/' + boss.user.id + path).set('Cookie', manager.cookie).type('form').send({ _csrf: manager.csrfToken, ...body });
+    assert.equal((await post('/password', { password: 'Taken-over-passphrase-1!' })).status, 403);
+    assert.equal((await post('/email', { email: 'review.mine@example.com' })).status, 403);
+    assert.equal((await post('/authenticator/reset', {})).status, 403);
+    assert.equal((await post('/status', { status: 'disabled' })).status, 403);
+    assert.equal((await findUserById(boss.user.id))!.email, 'review.boss@example.com');
+    // A user's page still works for them, and an administrator's page can be read.
+    await get('/admin/settings/users/' + boss.user.id, manager).expect(200);
+  });
+
+  test('how everybody signs in stays an administrator\'s, and the path is judged whatever its case', async () => {
+    const manager = await withRole('review.users2@example.com', ['settings.users']);
+    for (const path of ['/users/break-glass', '/users/local-signin', '/users/sign-in-codes', '/users/other/access', '/users/ROLES', '/Users/Roles']) {
+      assert.equal(permissionForSettingsPath('/settings' + path), 'admin', path);
+    }
+    assert.equal((await get('/admin/settings/users/ROLES', manager)).status, 403);
+    assert.equal((await get('/admin/settings/users/break-glass', manager)).status, 403);
+  });
+
+  test('an API key does no more than the role of the person who made it', async () => {
+    const limited = await withRole('review.api@example.com', ['tickets.work', 'api.manage']);
+    const requester = await signInAs('review.api.requester@example.com', 'user');
+    const desk = await createGroup({ name: 'API desk', description: '', isActive: true }, null);
+    const other = await createGroup({ name: 'API other desk', description: '', isActive: true }, null);
+    await setMembers(desk.id, [limited.user.id], null);
+    const ours = await createTicket({ title: 'API ours', description: 'In the desk', priority: 'normal', category: 'other', requesterId: requester.user.id, groupId: desk.id });
+    const theirs = await createTicket({ title: 'API theirs', description: 'Elsewhere', priority: 'normal', category: 'other', requesterId: requester.user.id, groupId: other.id });
+    await addComment({ ticketId: ours.id, authorId: admin.user.id, body: 'API secret note', isInternal: true });
+    const { secret } = await createApiKey('Limited author', ['read_tickets', 'read_internal', 'set_status', 'add_comment'], limited.user.id);
+    const api = (method: 'get' | 'patch' | 'post', path: string) => request(app)[method]('/api/v1' + path).set('Authorization', 'Bearer ' + secret);
+
+    await api('get', '/tickets/' + ours.reference).expect(200);
+    assert.equal((await api('get', '/tickets/' + theirs.reference)).status, 404);
+    const list = await api('get', '/tickets?limit=100').expect(200);
+    const refs = (list.body.items as { reference: string }[]).map((i) => i.reference);
+    assert.ok(refs.includes(ours.reference) && !refs.includes(theirs.reference));
+    const comments = await api('get', '/tickets/' + ours.reference + '/comments').expect(200);
+    assert.equal(comments.body.includesInternal, false);
+    assert.doesNotMatch(JSON.stringify(comments.body), /API secret note/);
+    assert.equal((await api('patch', '/tickets/' + ours.reference).send({ status: 'closed' })).status, 403);
+    assert.equal((await api('post', '/tickets/' + ours.reference + '/comments').send({ body: 'hidden', internal: true })).status, 403);
   });
 });

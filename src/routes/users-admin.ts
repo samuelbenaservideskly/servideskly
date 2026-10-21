@@ -219,11 +219,17 @@ const createBody = z.object({
   password: z.string().min(1, 'Set a password.').max(200),
 });
 
-async function load(req: { params: Record<string, unknown> }) {
+async function load(req: { params: Record<string, unknown>; method?: string; currentUser?: UserRow | null }) {
   const id = uuid.safeParse(req.params.id);
   if (!id.success) throw notFound('No such user.');
   const user = await findUserById(id.data);
   if (!user) throw notFound('No such user.');
+  // Somebody given Users by a custom role may read an administrator's page but
+  // change nothing on it: a password, an address or an authenticator set here
+  // is a way into that administrator's account (review, 21 Oct 2026).
+  if (req.method && req.method !== 'GET' && req.currentUser?.role !== 'admin' && (user.role === 'admin' || isLocalAdmin(user))) {
+    throw forbidden("Only an administrator changes an administrator's account.", 'not_admin');
+  }
   return user;
 }
 
