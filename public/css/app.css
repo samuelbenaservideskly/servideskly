@@ -3265,6 +3265,8 @@ td.row-actions { text-align: right; }
   .template-picker__row:has(> .field:not([hidden]) + .field) { grid-template-columns: minmax(0, 1fr) minmax(0, 2fr); }
 }
 [data-needs-script][hidden] { display: none; }
+/* "Open this form" sits in an .actions row, whose display: flex beat [hidden]. */
+[data-has-script][hidden] { display: none; }
 
 /* The error page (404, 403, 500): the number large and centred, nothing else
    competing with it. */

@@ -467,8 +467,10 @@ Five things that are easy to get wrong:
 0. **A field on the form must render even when it has nothing to offer.**
    Category with an empty catalogue used to render nothing at all, so a field
    an administrator had placed silently vanished - reported as a bug. It now
-   renders disabled with the reason. The same trap applies to any field whose
-   options come from elsewhere.
+   renders disabled. The line under it explaining why ("Nothing has been set
+   up at this level yet") was removed on 21 Oct 2026 - "not needed at all";
+   the disabled box says enough to a requester. The same trap applies to any
+   field whose options come from elsewhere.
 1. **A field the form does not offer must not be settable by posting it.**
    This is the security-relevant one. `readonly` and `disabled` are display
    hints and a browser can post anything, so `routes/tickets.ts` computes

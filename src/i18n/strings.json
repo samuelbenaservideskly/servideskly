@@ -323,12 +323,6 @@
     "where": "views/admin/settings/_list-search.ejs",
     "uses": 1
   },
-  "s0a2be83cd3": {
-    "text": "Nothing has been set up at this level yet, so there is nothing to\n          choose from.",
-    "context": "A note under a control on tickets/_field",
-    "where": "views/tickets/_field.ejs",
-    "uses": 1
-  },
   "s0a36d3dd1a": {
     "text": "Name or email",
     "context": "The grey example inside an input on admin/settings/users / The grey example inside an input on people/index",

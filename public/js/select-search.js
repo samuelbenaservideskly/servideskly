@@ -345,6 +345,7 @@
     if (!target) return;
     target._kindFrom = from;
     from.addEventListener('change', function () {
+      var before = target.value;
       // A choice of the wrong kind no longer stands.
       var current = target.querySelector('option:checked');
       if (current && current.value && from.value && current.getAttribute('data-kind') !== from.value) target.value = '';
@@ -355,6 +356,14 @@
       if (target.selectedIndex < 0) {
         var first = target.querySelector('option');
         if (first) target.value = first.value;
+      }
+      // The stand-in is a choice too. New ticket's Form opens what is chosen
+      // (data-autosubmit), and without this the narrowed list showed the new
+      // kind's form while the page below still held the old one - choosing
+      // the form it already showed changed nothing, so only the button got
+      // anybody further (reported 21 Oct 2026).
+      if (target.value && target.value !== before && target.hasAttribute('data-autosubmit') && target.form) {
+        target.form.submit();
       }
     });
     apply(target);
