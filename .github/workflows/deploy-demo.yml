@@ -1,0 +1,39 @@
+# After CI passes on main in the maintainer's private copy, starts the
+# hosting repository's "Deploy to a customer" for the demo helpdesk on the
+# development channel.
+#
+# Runs in the private copy only: in this public repository the job is
+# skipped, and nothing here names an app or Azure resource. Those are
+# settings of the private copy:
+#   secret   DEPLOY_DISPATCH_TOKEN  fine-grained token, the hosting repository
+#                                   only, Actions: read and write
+#   variable HOSTING_REPO           owner/name of the hosting repository
+#   variable DEMO_APP_NAME          the demo's web app name
+#   variable DEMO_RESOURCE_GROUP    its resource group
+name: Deploy the demo
+
+on:
+  workflow_run:
+    workflows: [CI]
+    types: [completed]
+    branches: [main]
+
+permissions: {}
+
+jobs:
+  dispatch:
+    if: github.repository == 'servideskly/servideskly-dev' && github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.event == 'push'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Start the deployment
+        env:
+          GH_TOKEN: ${{ secrets.DEPLOY_DISPATCH_TOKEN }}
+          HOSTING_REPO: ${{ vars.HOSTING_REPO }}
+          APP_NAME: ${{ vars.DEMO_APP_NAME }}
+          RESOURCE_GROUP: ${{ vars.DEMO_RESOURCE_GROUP }}
+          SHA: ${{ github.event.workflow_run.head_sha }}
+        run: |
+          [ -n "$GH_TOKEN" ] && [ -n "$HOSTING_REPO" ] && [ -n "$APP_NAME" ] || { echo "DEPLOY_DISPATCH_TOKEN, HOSTING_REPO or DEMO_APP_NAME is not set"; exit 1; }
+          gh workflow run deploy-customer.yml --repo "$HOSTING_REPO" --ref main \
+            -f app_name="$APP_NAME" -f resource_group="$RESOURCE_GROUP" -f channel=development
+          echo "Deployment of ${SHA:0:7} to the demo started in the hosting repository." >> "$GITHUB_STEP_SUMMARY"
