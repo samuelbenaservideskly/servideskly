@@ -8,6 +8,7 @@ import { signInAs } from './support/session.js';
 import { bootstrapTestDatabase } from './support/bootstrap.js';
 import { query, queryOne } from '../src/db/index.js';
 import { buildTimeline } from '../src/services/ticket-timeline.js';
+import { queuedMail } from './support/outbox.js';
 
 /**
  * The ticket page's redesign (21 Oct 2026): one conversation with each file
@@ -120,6 +121,51 @@ describe('a reply with files', () => {
     assert.ok(entry, 'the reply is in the conversation');
     assert.match(entry[0], /Here is the driver/);
     assert.match(entry[0], /driver\.txt/, 'with its file beside it');
+  });
+
+  test('unticked "Email the requester": on the ticket for the requester to read, and no mail', async () => {
+    const requester = await signIn('quiet.requester@example.com', 'user');
+    const ticketId = await raiseTicket(requester.agent, 'Shared drive slow');
+    const tech = await signIn('quiet.tech@example.com', 'agent');
+    const page = await tech.agent.get('/tickets/' + ticketId).expect(200);
+    assert.match(page.text, /name="notify" value="on" checked/, 'ticked unless somebody unticks it');
+    const before = (await queuedMail((m) => m.ticket_id === ticketId)).length;
+
+    await tech.agent
+      .post('/tickets/' + ticketId + '/comments')
+      .field('_csrf', csrfFrom(page.text))
+      .field('internal', '')
+      .field('notifyChoice', '1')
+      .field('body', 'Measurements from this morning, for the record.')
+      .attach('files', TEXT('latency figures'), { filename: 'latency.txt', contentType: 'text/plain' })
+      .expect(302);
+
+    const file = await queryOne<{ is_internal: boolean; emailed_at: string | null }>(
+      'SELECT is_internal, emailed_at FROM ticket_attachments WHERE ticket_id = ?',
+      [ticketId],
+    );
+    assert.equal(file?.is_internal, false, 'the requester may see it');
+    assert.equal(file?.emailed_at, null, 'but it was not sent');
+    assert.equal((await queuedMail((m) => m.ticket_id === ticketId)).length, before, 'no mail queued');
+
+    const theirs = await requester.agent.get('/tickets/' + ticketId).expect(200);
+    assert.match(theirs.text, /Measurements from this morning/);
+    assert.match(theirs.text, /latency\.txt/);
+  });
+
+  test('a form without the box still emails, as replies always did', async () => {
+    const requester = await signIn('legacy.requester@example.com', 'user');
+    const ticketId = await raiseTicket(requester.agent, 'Old form');
+    const tech = await signIn('legacy.tech@example.com', 'agent');
+    const page = await tech.agent.get('/tickets/' + ticketId).expect(200);
+    await tech.agent
+      .post('/tickets/' + ticketId + '/comments')
+      .field('_csrf', csrfFrom(page.text))
+      .field('body', 'With a file, from a form that has no checkbox.')
+      .attach('files', TEXT('x'), { filename: 'x.txt', contentType: 'text/plain' })
+      .expect(302);
+    const file = await queryOne<{ emailed_at: string | null }>('SELECT emailed_at FROM ticket_attachments WHERE ticket_id = ?', [ticketId]);
+    assert.ok(file?.emailed_at);
   });
 
   test('an internal note\'s files are internal, and nobody is emailed', async () => {

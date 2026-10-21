@@ -1060,10 +1060,14 @@ ticketRouter.post(
     const text = typeof raw.body === 'string' ? normaliseText(raw.body).trim() : '';
     // Only staff may write internal notes, whatever the form claims.
     const isInternal = isStaff(viewer.role) && raw.internal === 'on';
+    // "Email the requester" (21 Oct 2026): unticked, a reply and its files are
+    // only added to the ticket. A form without the box (`notifyChoice` absent)
+    // emails as replies always did.
+    const emailIt = raw.notifyChoice === '1' ? raw.notify === 'on' : true;
 
     const refuse = (message: string): void => {
       flash(req, 'error', message, 'reply');
-      req.session.replyDraft = { ticketId: ticket.id, body: text, internal: isInternal };
+      req.session.replyDraft = { ticketId: ticket.id, body: text, internal: isInternal, notify: emailIt };
       res.redirect(back);
     };
 
@@ -1113,13 +1117,16 @@ ticketRouter.post(
       // the requester - that is the whole point of marking one internal.
       if (!isInternal) {
         if (isStaff(viewer.role)) {
-          // Recorded when the decision is made; the outbox shows a failure to deliver.
-          if (stored.length) await markEmailed(stored);
-          await notifyTicket('comment.added.requester', ticket.id, {
-            comment: text,
-            authorName: viewer.display_name,
-            ...(stored.length ? { attachmentIds: stored } : {}),
-          });
+          // Unticked "Email the requester": on the ticket, where they can read it, and no mail.
+          if (emailIt) {
+            // Recorded when the decision is made; the outbox shows a failure to deliver.
+            if (stored.length) await markEmailed(stored);
+            await notifyTicket('comment.added.requester', ticket.id, {
+              comment: text,
+              authorName: viewer.display_name,
+              ...(stored.length ? { attachmentIds: stored } : {}),
+            });
+          }
         } else {
           await notifyTicket('comment.added.technician', ticket.id, { comment: text, authorName: viewer.display_name });
         }
@@ -1133,9 +1140,11 @@ ticketRouter.post(
         ? stored.length === 1 ? 'File attached.' : 'Files attached.'
         : isInternal
           ? 'Internal note added.'
-          : isStaff(viewer.role) && stored.length
-            ? 'Reply sent, with its files.'
-            : 'Comment added.',
+          : isStaff(viewer.role) && !emailIt
+            ? 'Added to the ticket. Nobody was emailed.'
+            : isStaff(viewer.role) && stored.length
+              ? 'Reply sent, with its files.'
+              : 'Comment added.',
     );
     res.redirect(back);
   }),

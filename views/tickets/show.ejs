@@ -194,18 +194,34 @@
             }) %>
           </div>
         <% } %>
-        <button type="submit" class="btn btn--primary tk-reply__send">
+        <div class="tk-reply__go">
           <% if (locals.isStaff) { %>
-            <span class="tk-send--public"><%= t('Send reply') %></span>
-            <span class="tk-send--internal"><%= t('Add internal note') %></span>
-          <% } else { %>
-            <%= t('Send') %>
+            <%#
+              Unticked, a reply and its files are only added to the ticket
+              (21 Oct 2026). notifyChoice says this form has the box, so a
+              form without it still emails, as replies always did.
+            %>
+            <input type="hidden" name="notifyChoice" value="1">
+            <label class="check tk-notify">
+              <input type="checkbox" name="notify" value="on"<%= draft && draft.notify === false ? '' : ' checked' %>>
+              <%= t('Email the requester') %>
+            </label>
           <% } %>
-        </button>
+          <button type="submit" class="btn btn--primary tk-reply__send">
+            <% if (locals.isStaff) { %>
+              <span class="tk-send--public tk-when--emailed"><%= t('Send reply') %></span>
+              <span class="tk-send--public tk-when--quiet"><%= t('Add to ticket') %></span>
+              <span class="tk-send--internal"><%= t('Add internal note') %></span>
+            <% } else { %>
+              <%= t('Send') %>
+            <% } %>
+          </button>
+        </div>
       </div>
       <p class="tk-reply__hint">
         <% if (locals.isStaff) { %>
-          <span class="tk-send--public"><%= t('The requester is emailed your reply and its files.') %></span>
+          <span class="tk-send--public tk-when--emailed"><%= t('The requester is emailed your reply and its files.') %></span>
+          <span class="tk-send--public tk-when--quiet"><%= t('Nobody is emailed: the reply and its files are only added to the ticket, where the requester can read them.') %></span>
           <span class="tk-send--internal"><%= t('Only the service desk sees a note and its files.') %></span>
         <% } %>
         <%= t('Do not attach anything containing passwords or other credentials.') %>

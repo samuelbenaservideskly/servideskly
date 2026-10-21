@@ -4589,3 +4589,13 @@ h1 { font-weight: 700; letter-spacing: -0.015em; }
 /* A file's name keeps room on a phone: the size and links move under it rather than squeezing it to "si...". */
 .tk-file { flex-wrap: wrap; row-gap: 0.15rem; }
 .tk-file__name { flex: 1 1 9rem; }
+/* "Email the requester" (21 Oct 2026): beside the button, for a reply only;
+   unticked, the button and the line under the box say nobody is emailed. */
+.tk-reply__go { display: flex; align-items: center; gap: 0.85rem; flex-wrap: wrap; margin-left: auto; }
+.tk-notify { margin: 0; font-size: 0.85rem; }
+.tk-reply__internal:checked ~ .tk-reply__bar .tk-notify { display: none; }
+.tk-when--quiet { display: none; }
+.tk-reply:has(.tk-notify input:not(:checked)) .tk-reply__public:checked ~ .tk-reply__bar .tk-when--emailed,
+.tk-reply:has(.tk-notify input:not(:checked)) .tk-reply__public:checked ~ .tk-reply__hint .tk-when--emailed { display: none; }
+.tk-reply:has(.tk-notify input:not(:checked)) .tk-reply__public:checked ~ .tk-reply__bar .tk-when--quiet,
+.tk-reply:has(.tk-notify input:not(:checked)) .tk-reply__public:checked ~ .tk-reply__hint .tk-when--quiet { display: inline; }

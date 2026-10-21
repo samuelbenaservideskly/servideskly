@@ -173,6 +173,12 @@
     "where": "views/admin/settings/automation-edit.ejs",
     "uses": 1
   },
+  "s034acb51e3": {
+    "text": "Added to the ticket. Nobody was emailed.",
+    "context": "A message shown beside a form or after an action",
+    "where": "src/routes/tickets.ts",
+    "uses": 1
+  },
   "s03693698f0": {
     "text": "Remove favicon",
     "context": "A button on admin/settings/customization",
@@ -3155,6 +3161,12 @@
     "where": "views/admin/settings/automation-edit.ejs",
     "uses": 1
   },
+  "s3d3fc2e439": {
+    "text": "Add to ticket",
+    "context": "Text on tickets/show",
+    "where": "views/tickets/show.ejs",
+    "uses": 1
+  },
   "s3d71d7f3a9": {
     "text": "are all accepted.",
     "context": "Text on admin/settings/customization",
@@ -5571,6 +5583,12 @@
     "text": "Shown",
     "context": "A table column heading on admin/settings/dashboard-edit",
     "where": "views/admin/settings/dashboard-edit.ejs",
+    "uses": 1
+  },
+  "s6ba4487369": {
+    "text": "Nobody is emailed: the reply and its files are only added to the ticket, where the requester can read them.",
+    "context": "Text on tickets/show",
+    "where": "views/tickets/show.ejs",
     "uses": 1
   },
   "s6becfb711c": {
@@ -12063,6 +12081,12 @@
     "text": "Anonymous",
     "context": "Text on admin/settings/user-detail",
     "where": "views/admin/settings/user-detail.ejs",
+    "uses": 1
+  },
+  "se7b4b78486": {
+    "text": "Email the requester",
+    "context": "Text on tickets/show",
+    "where": "views/tickets/show.ejs",
     "uses": 1
   },
   "se7cf3ef4f1": {
