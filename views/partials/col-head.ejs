@@ -1,0 +1,87 @@
+<%#
+  A table header with an Excel-like menu (lib/column-filters.ts).
+
+  locals:
+    key       the column's key (sort key and filter key alike)
+    label     its heading, already translated
+    path      the page's address, e.g. /tickets
+    state     every current parameter of the page: filters, sort, cf_*
+    sortable  whether the column sorts (default true)
+    menu      { values: [{ value, label, count }], selected: [...] }, or
+              absent for a column that only sorts
+    cls       an extra class for the <th>
+
+  The label still sorts when pressed, as it always did. The chevron opens a
+  <details> menu: sort either way, the column's values as tick boxes in a
+  GET form that carries every other parameter, Apply and Clear filter. No
+  script; a long list of values gets select-search.js's search box.
+%>
+<%
+  var st = locals.state || {};
+  var sortable = locals.sortable !== false;
+  var cfKey = 'cf_' + key;
+  var selected = (locals.menu && menu.selected) || [];
+  var filtered = selected.length > 0;
+  var sorted = st.sort === key;
+  var copy = function (over, drop) {
+    var out = {};
+    for (var k in st) if (k !== 'page' && (!drop || drop.indexOf(k) < 0)) out[k] = st[k];
+    for (var o in over) out[o] = over[o];
+    return out;
+  };
+  var href = function (params) { return path + queryString(params); };
+  var nextDir = sorted && st.dir !== 'desc' ? 'desc' : 'asc';
+  // Hidden inputs for the filter form: everything but this column's filter and the page.
+  var keep = copy({}, [cfKey]);
+  var ariaSort = !sorted ? 'none' : st.dir === 'desc' ? 'descending' : 'ascending';
+%>
+<th scope="col" class="col-<%= key %><%= locals.cls ? ' ' + cls : '' %><%= filtered ? ' th-filter--on' : '' %>" aria-sort="<%= ariaSort %>">
+  <div class="th-head">
+    <% if (sortable) { %>
+      <a class="th-sort<%= sorted ? ' th-sort--on' : '' %>" href="<%= href(copy({ sort: key, dir: nextDir })) %>">
+        <%= label %>
+        <span class="th-sort__mark" aria-hidden="true"></span>
+      </a>
+    <% } else { %>
+      <span class="th-sort"><%= label %></span>
+    <% } %>
+    <details class="colfilter">
+      <summary class="colfilter__button" title="<%= filtered ? tx('{0}: filtered', [label]) : tx('Sort and filter {0}', [label]) %>">
+        <%- include('icon', { name: filtered ? 'funnel' : 'chevronDown', cls: 'ico colfilter__icon' }) %>
+        <span class="visually-hidden"><%= filtered ? tx('{0}: filtered', [label]) : tx('Sort and filter {0}', [label]) %></span>
+      </summary>
+      <div class="colfilter__panel">
+        <% if (sortable) { %>
+          <a class="colfilter__sort<%= sorted && st.dir !== 'desc' ? ' colfilter__sort--on' : '' %>" href="<%= href(copy({ sort: key, dir: 'asc' })) %>"><%= t('Sort A to Z') %></a>
+          <a class="colfilter__sort<%= sorted && st.dir === 'desc' ? ' colfilter__sort--on' : '' %>" href="<%= href(copy({ sort: key, dir: 'desc' })) %>"><%= t('Sort Z to A') %></a>
+        <% } %>
+        <% if (locals.menu) { %>
+          <form method="get" action="<%= path %>" class="colfilter__form">
+            <% for (var k in keep) { var v = keep[k]; if (v === undefined || v === null || v === '') continue; (Array.isArray(v) ? v : [v]).forEach(function (one) { %>
+              <input type="hidden" name="<%= k %>" value="<%= one %>">
+            <% }); } %>
+            <fieldset class="colfilter__values" data-search-from="8">
+              <legend class="visually-hidden"><%= tx('Values of {0}', [label]) %></legend>
+              <% if (!menu.values.length) { %>
+                <p class="small muted"><%= t('No values.') %></p>
+              <% } %>
+              <% menu.values.forEach(function (item) { %>
+                <label class="check colfilter__value">
+                  <input type="checkbox" name="<%= cfKey %>" value="<%= item.value %>"<%= selected.indexOf(item.value) >= 0 ? ' checked' : '' %>>
+                  <span><%= item.label || t('(blank)') %></span>
+                  <span class="colfilter__count"><%= item.count %></span>
+                </label>
+              <% }); %>
+            </fieldset>
+            <div class="colfilter__actions">
+              <button type="submit" class="btn btn--primary btn--small"><%= t('Apply') %></button>
+              <% if (filtered) { %>
+                <a class="btn btn--quiet btn--small" href="<%= href(copy({}, [cfKey])) %>"><%= t('Clear filter') %></a>
+              <% } %>
+            </div>
+          </form>
+        <% } %>
+      </div>
+    </details>
+  </div>
+</th>

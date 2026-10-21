@@ -1397,6 +1397,12 @@
     "where": "views/admin/settings/template-edit.ejs",
     "uses": 1
   },
+  "s1a156702f8": {
+    "text": "{0}: filtered",
+    "context": "Text on partials/col-head. Keep each {0}, {1}...: it is a value",
+    "where": "views/partials/col-head.ejs",
+    "uses": 2
+  },
   "s1a1ad3993c": {
     "text": "It was already yours.",
     "context": "A message shown beside a form or after an action",
@@ -2737,9 +2743,9 @@
   },
   "s31e392d1c0": {
     "text": "Apply",
-    "context": "A button on admin/settings/_member-picker / A button on tickets/index",
+    "context": "A button on admin/settings/_member-picker / Text on partials/col-head / A button on tickets/index",
     "where": "views/admin/settings/_member-picker.ejs",
-    "uses": 2
+    "uses": 3
   },
   "s31fbef1625": {
     "text": "Continue",
@@ -3046,6 +3052,12 @@
     "context": "A button on admin/settings/dashboard-edit",
     "where": "views/admin/settings/dashboard-edit.ejs",
     "uses": 1
+  },
+  "s386d2d0d4f": {
+    "text": "Sort and filter {0}",
+    "context": "Text on partials/col-head. Keep each {0}, {1}...: it is a value",
+    "where": "views/partials/col-head.ejs",
+    "uses": 2
   },
   "s38a186bb32": {
     "text": "Updated {0}",
@@ -5049,6 +5061,12 @@
     "text": "Remove this connection",
     "context": "A button on admin/settings/automation-edit",
     "where": "views/admin/settings/automation-edit.ejs",
+    "uses": 1
+  },
+  "s5fe6cdc651": {
+    "text": "Sort Z to A",
+    "context": "Text on partials/col-head",
+    "where": "views/partials/col-head.ejs",
     "uses": 1
   },
   "s6007acbe30": {
@@ -8225,6 +8243,12 @@
     "where": "views/admin/settings/users.ejs",
     "uses": 1
   },
+  "s980a966aff": {
+    "text": "No values.",
+    "context": "Text on partials/col-head",
+    "where": "views/partials/col-head.ejs",
+    "uses": 1
+  },
   "s981e0f789e": {
     "text": "Service catalogue",
     "context": "A link on admin/settings/_template-tabs",
@@ -8811,6 +8835,12 @@
     "text": "Save usual week",
     "context": "A button on partials/availability",
     "where": "views/partials/availability.ejs",
+    "uses": 1
+  },
+  "sa0a4a1d7ba": {
+    "text": "Values of {0}",
+    "context": "Text on partials/col-head. Keep each {0}, {1}...: it is a value",
+    "where": "views/partials/col-head.ejs",
     "uses": 1
   },
   "sa0b66e62bf": {
@@ -10127,6 +10157,12 @@
     "where": "views/admin/settings/template-edit.ejs",
     "uses": 1
   },
+  "sba59e2d4a5": {
+    "text": "Clear filter",
+    "context": "Text on partials/col-head",
+    "where": "views/partials/col-head.ejs",
+    "uses": 1
+  },
   "sba5caa4285": {
     "text": "Header",
     "context": "The label of a form field on admin/settings/connections",
@@ -10701,6 +10737,12 @@
     "text": "Does",
     "context": "A table column heading on admin/settings/api-keys",
     "where": "views/admin/settings/api-keys.ejs",
+    "uses": 1
+  },
+  "sc3c513fbfa": {
+    "text": "(blank)",
+    "context": "Text on partials/col-head",
+    "where": "views/partials/col-head.ejs",
     "uses": 1
   },
   "sc43f56b980": {
@@ -12753,6 +12795,12 @@
     "text": "Outage",
     "context": "How serious an announcement is",
     "where": "src/i18n/code-strings.ts",
+    "uses": 1
+  },
+  "sece29997e9": {
+    "text": "Sort A to Z",
+    "context": "Text on partials/col-head",
+    "where": "views/partials/col-head.ejs",
     "uses": 1
   },
   "secf80221c0": {

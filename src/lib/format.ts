@@ -196,10 +196,19 @@ export function detailPairs(detail: unknown): [string, string][] {
   ]);
 }
 
-/** Builds a query string, dropping empty values, for filter and page links. */
-export function queryString(params: Record<string, string | number | undefined>): string {
+/**
+ * Builds a query string, dropping empty values, for filter and page links.
+ * A list is written once per value - a column filter's ticked values
+ * (lib/column-filters.ts) - and a blank inside a list is kept, since a
+ * ticked blank means "empty cells".
+ */
+export function queryString(params: Record<string, string | number | readonly string[] | undefined>): string {
   const search = new URLSearchParams();
   for (const [key, value] of Object.entries(params)) {
+    if (Array.isArray(value)) {
+      for (const v of value) search.append(key, String(v));
+      continue;
+    }
     if (value === undefined || value === '' || value === null) continue;
     search.set(key, String(value));
   }

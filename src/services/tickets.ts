@@ -9,6 +9,7 @@ import { removeStoredFile } from './attachments.js';
 import { isStaff, type UserRow } from './users.js';
 import { loadSlaFacts, slaFromFacts, slaMatches, type SlaFilter } from './sla.js';
 import { can } from '../auth/permissions.js';
+import { BLANK, columnClauses, MAX_VALUES, withoutColumn, type ColumnFilters, type ColumnValue } from '../lib/column-filters.js';
 
 export const TICKET_STATUSES = [
   'open',
@@ -630,6 +631,8 @@ export interface TicketFilters {
   /** Staff only, and only while SLA is on: worked out per ticket, not in SQL. */
   sla?: SlaFilter;
   search?: string;
+  /** Excel-like column filters: ticked values per column (TICKET_FILTER_COLUMNS). */
+  columns?: ColumnFilters;
   /** A column from SORTABLE, or absent for the default (most recent first). */
   sort?: TicketSort;
   dir?: 'asc' | 'desc';
@@ -651,13 +654,27 @@ export interface TicketPage {
 export const SLA_FILTER_CAP = 2000;
 
 /**
- * Lists tickets the viewer is allowed to see.
+ * Column filters on the queue (lib/column-filters.ts): the column a header
+ * names, and the stored value it filters on. A stranger's mail hangs on one
+ * hidden account, so a requester is their address when they have one.
+ */
+export const TICKET_FILTER_COLUMNS: Record<string, string> = {
+  type: 't.type',
+  status: 't.status',
+  priority: 't.priority',
+  requester: "coalesce(nullif(t.external_email, ''), t.requester_id)",
+  assignee: 't.assignee_id',
+};
+
+/**
+ * The WHERE clause of the queue, for listTickets and for counting a column's
+ * values (ticketColumnValues): one place decides who sees what.
  *
  * Row-level authorisation is applied in SQL, not in the template: a requester
  * can only ever match their own tickets, so a crafted filter cannot widen the
  * result set.
  */
-export async function listTickets(viewer: UserRow, filters: TicketFilters): Promise<TicketPage> {
+async function ticketWhere(viewer: UserRow, filters: Omit<TicketFilters, 'page' | 'perPage'>): Promise<{ whereSql: string; params: unknown[] }> {
   const where: string[] = [];
   const params: unknown[] = [];
   const placeholder = () => "?";
@@ -751,7 +768,24 @@ export async function listTickets(viewer: UserRow, filters: TicketFilters): Prom
     );
   }
 
+  // Column filters (lib/column-filters.ts), on the stored values only, so the
+  // count below needs no joins.
+  if (filters.columns) {
+    const cf = columnClauses(filters.columns, TICKET_FILTER_COLUMNS);
+    where.push(...cf.where);
+    params.push(...cf.params);
+  }
+
   const whereSql = where.length > 0 ? ' WHERE ' + where.join(' AND ') : '';
+  return { whereSql, params };
+}
+
+/**
+ * Lists tickets the viewer is allowed to see (see ticketWhere).
+ */
+export async function listTickets(viewer: UserRow, filters: TicketFilters): Promise<TicketPage> {
+  const placeholder = () => "?";
+  const { whereSql, params } = await ticketWhere(viewer, filters);
 
   // The SLA filter: the clocks are worked out from each ticket's dates and
   // history (nothing is stored), so the other filters choose the tickets in
@@ -808,6 +842,33 @@ export async function listTickets(viewer: UserRow, filters: TicketFilters): Prom
   );
 
   return { items: rows.map(withReference), total, page, perPage, pageCount };
+}
+
+/**
+ * One column's values for its header menu, counted over the tickets every
+ * other filter leaves - the column's own filter is left out, as in Excel.
+ * The most frequent MAX_VALUES; labels for people are their names.
+ */
+export async function ticketColumnValues(
+  viewer: UserRow,
+  filters: Omit<TicketFilters, 'page' | 'perPage'>,
+  key: string,
+): Promise<ColumnValue[]> {
+  const expr = TICKET_FILTER_COLUMNS[key];
+  if (!expr) return [];
+  const { whereSql, params } = await ticketWhere(viewer, { ...filters, columns: withoutColumn(filters.columns ?? {}, key) });
+  const label =
+    key === 'requester' ? "max(coalesce(nullif(t.external_email, ''), requester.display_name))"
+    : key === 'assignee' ? 'max(assignee.display_name)'
+    : 'max(' + expr + ')';
+  const rows = await query<{ v: string | null; label: string | null; n: number }>(
+    'SELECT ' + expr + ' AS v, ' + label + ' AS label, count(*) AS n FROM tickets t' +
+      ' JOIN users requester ON requester.id = t.requester_id' +
+      ' LEFT JOIN users assignee ON assignee.id = t.assignee_id' +
+      whereSql + ' GROUP BY ' + expr + ' ORDER BY n DESC LIMIT ' + MAX_VALUES,
+    params,
+  );
+  return rows.map((r) => ({ value: r.v ?? BLANK, label: r.label ?? '', count: Number(r.n) }));
 }
 
 /** True when the viewer may open this ticket at all. */

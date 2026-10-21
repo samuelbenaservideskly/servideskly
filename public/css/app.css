@@ -4696,3 +4696,47 @@ h1 { font-weight: 700; letter-spacing: -0.015em; }
   .shell--compact .sidebar__person { justify-content: center; padding: 0.3rem; flex: none; }
   .shell--compact .sidebar__who { display: none; }
 }
+
+/* Assets (views/assets, 21 Oct 2026). A field of several lines spans the
+   two-column grid; a comment keeps its line breaks. */
+.grid-2 > .field--full { grid-column: 1 / -1; }
+.asset-comments { list-style: none; margin: 0; padding: 0; display: grid; gap: 0.9rem; }
+.asset-comments__body { margin: 0.2rem 0 0; white-space: pre-wrap; overflow-wrap: anywhere; }
+.asset-table td:first-child a { font-weight: 600; }
+
+/* Excel-like column headers (partials/col-head.ejs, lib/column-filters.ts,
+   21 Oct 2026): the label sorts, the chevron opens a menu to sort and to
+   filter by the column's values. No script:
+   - the menu is position: fixed with no offsets, so it opens where it
+     stands yet is not clipped by the table's scroll box;
+   - while it is open its summary covers the page invisibly, so a click
+     anywhere else closes it, as in Excel. */
+.th-head { display: flex; align-items: center; gap: 0.15rem; }
+.colfilter { position: relative; flex: none; }
+.colfilter__button { list-style: none; cursor: pointer; display: grid; place-items: center; width: 1.5rem; height: 1.5rem; border-radius: 6px; color: var(--text-muted); }
+.colfilter__button::-webkit-details-marker { display: none; }
+.colfilter__button:hover, .colfilter[open] > .colfilter__button { background: var(--surface-2); color: var(--text); }
+.colfilter__icon { width: 0.85rem; height: 0.85rem; }
+.colfilter[open] > .colfilter__button::before { content: ''; position: fixed; inset: 0; z-index: 60; cursor: default; }
+.colfilter__panel {
+  position: fixed; z-index: 61; margin-top: 0.3rem;
+  width: 16rem; max-width: calc(100vw - 2rem); max-height: min(26rem, 70vh); overflow-y: auto;
+  display: grid; gap: 0.15rem; padding: 0.5rem;
+  background: var(--surface); border: 1px solid var(--border); border-radius: 10px;
+  box-shadow: 0 12px 32px rgba(16, 24, 40, 0.18);
+  font-weight: 500; text-transform: none; letter-spacing: normal; text-align: left; white-space: normal;
+}
+.colfilter__sort { display: block; padding: 0.4rem 0.55rem; border-radius: 6px; color: var(--text); text-decoration: none !important; font-size: 0.88rem; }
+.colfilter__sort:hover { background: var(--surface-2); }
+.colfilter__sort--on { font-weight: 650; }
+.colfilter__form { display: grid; gap: 0.4rem; margin-top: 0.25rem; padding-top: 0.4rem; border-top: 1px solid var(--border); }
+.colfilter__values { display: grid; gap: 0.1rem; margin: 0; padding: 0; border: 0; min-width: 0; }
+.colfilter__values .select-search { margin-bottom: 0.3rem; }
+.colfilter__value { display: flex; align-items: center; gap: 0.5rem; padding: 0.3rem 0.4rem; border-radius: 6px; font-size: 0.88rem; font-weight: 500; }
+.colfilter__value:hover { background: var(--surface-2); }
+.colfilter__value > span:first-of-type { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.colfilter__count { color: var(--text-muted); font-size: 0.75rem; font-variant-numeric: tabular-nums; }
+.colfilter__actions { display: flex; gap: 0.4rem; align-items: center; }
+/* A filtered column says so: its header is tinted and its icon is the funnel. */
+th.th-filter--on { background: color-mix(in srgb, var(--brand) 9%, var(--surface)); }
+th.th-filter--on .colfilter__button { color: var(--brand); }

@@ -38,6 +38,8 @@
 <% } %>
 
 <form method="get" action="/tickets" class="filters">
+  <%# Column filters (the header menus) survive a change in this bar. %>
+  <% Object.keys(columnFilters || {}).forEach(function (k) { columnFilters[k].forEach(function (v) { %><input type="hidden" name="cf_<%= k %>" value="<%= v %>"><% }); }); %>
   <% if (locals.requesterFilter) { %><input type="hidden" name="requester" value="<%= requesterFilter.id %>"><% } %>
   <% if (locals.isStaff) { %>
     <span class="filters__field">
@@ -181,14 +183,10 @@
             }
             columns.push({ key: 'updated', label: t('Updated') });
           %>
+          <%# Excel-like headers (partials/col-head.ejs): sort, and filter by the
+              column's values; the filters combine and live in the address. %>
           <% columns.forEach(function (column) { %>
-            <th scope="col" class="col-<%= column.key %>" aria-sort="<%= ariaSort(column.key) %>">
-              <a class="th-sort<%= filters.sort === column.key ? ' th-sort--on' : '' %>"
-                 href="<%= sortLink(column.key) %>">
-                <%= column.label %>
-                <span class="th-sort__mark" aria-hidden="true"></span>
-              </a>
-            </th>
+            <%- include('../partials/col-head', { key: column.key, label: column.label, path: '/tickets', state: queueState, menu: columnMenus[column.key] }) %>
           <% }); %>
         </tr>
       </thead>
@@ -273,11 +271,11 @@
   <% if (page.pageCount > 1) { %>
     <nav class="pagination" aria-label="Pagination">
       <% if (page.page > 1) { %>
-        <a class="btn btn--quiet" href="/tickets<%= queryString({ scope: filters.scope, group: filters.group, type: filters.type, category: filters.category, status: filters.status, priority: filters.priority, sla: filters.sla, q: filters.q, requester: filters.requester, sort: filters.sort, dir: filters.dir, page: page.page - 1 }) %>">Previous</a>
+        <a class="btn btn--quiet" href="/tickets<%= queryString(Object.assign({}, queueState, { page: page.page - 1 })) %>">Previous</a>
       <% } %>
       <span class="muted">Page <%= page.page %> of <%= page.pageCount %> &middot; <%= page.total %> ticket(s)</span>
       <% if (page.page < page.pageCount) { %>
-        <a class="btn btn--quiet" href="/tickets<%= queryString({ scope: filters.scope, group: filters.group, type: filters.type, category: filters.category, status: filters.status, priority: filters.priority, sla: filters.sla, q: filters.q, requester: filters.requester, sort: filters.sort, dir: filters.dir, page: page.page + 1 }) %>">Next</a>
+        <a class="btn btn--quiet" href="/tickets<%= queryString(Object.assign({}, queueState, { page: page.page + 1 })) %>">Next</a>
       <% } %>
     </nav>
   <% } %>

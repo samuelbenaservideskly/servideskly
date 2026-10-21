@@ -16,6 +16,7 @@ import { buildTimeline } from '../services/ticket-timeline.js';
 import { flash } from '../middleware/view-locals.js';
 import { isStaff, listAssignableStaff, findUserById, findUserByEmail, type UserRow } from '../services/users.js';
 import { mayRaiseFor } from '../services/teams.js';
+import { BLANK, filterParams, menuValues, readColumnFilters, type ColumnValue } from '../lib/column-filters.js';
 import { findGroup, groupManagers, groupsForUser, listActiveGroups, type GroupRow } from '../services/groups.js';
 import { userGroupIdsFor } from '../services/user-groups.js';
 import { notifyTicket } from '../services/mail/outbox.js';
@@ -88,6 +89,7 @@ import {
   listEvents,
   listTasks,
   listTickets,
+  ticketColumnValues,
   ticketCounts,
   updateTicket,
 } from '../services/tickets.js';
@@ -201,25 +203,49 @@ ticketRouter.get(
       ? await groupsForUser(viewer.id)
       : [];
 
-    const [page, counts, allGroups] = await Promise.all([
+    // Excel-like column filters (lib/column-filters.ts): the people columns
+    // are staff's only, as the columns themselves are.
+    const filterable = isStaff(viewer.role) ? ['type', 'status', 'priority', 'requester', 'assignee'] : ['type', 'status', 'priority'];
+    const columns = readColumnFilters(req.query as Record<string, unknown>, filterable);
+    const query = {
+      scope: filters.scope,
+      status: filters.status,
+      priority: filters.priority,
+      ...(filters.sla !== 'any' ? { sla: filters.sla } : {}),
+      ...(filters.q ? { search: filters.q } : {}),
+      ...(filters.group ? { groupId: filters.group } : {}),
+      ...(filters.requester && isStaff(viewer.role) ? { requesterId: filters.requester } : {}),
+      ...(filters.type !== 'any' ? { type: filters.type } : {}),
+      ...(filters.category ? { categoryIds: await withDescendants(filters.category) } : {}),
+      viewerGroupIds: viewerGroups.map((g) => g.id),
+      columns,
+    } as const;
+
+    const [page, counts, allGroups, menuRows] = await Promise.all([
       listTickets(viewer, {
-        scope: filters.scope,
-        status: filters.status,
-        priority: filters.priority,
-        ...(filters.sla !== 'any' ? { sla: filters.sla } : {}),
-        ...(filters.q ? { search: filters.q } : {}),
-        ...(filters.group ? { groupId: filters.group } : {}),
-        ...(filters.requester && isStaff(viewer.role) ? { requesterId: filters.requester } : {}),
-        ...(filters.type !== 'any' ? { type: filters.type } : {}),
-        ...(filters.category ? { categoryIds: await withDescendants(filters.category) } : {}),
-        viewerGroupIds: viewerGroups.map((g) => g.id),
+        ...query,
         ...(filters.sort ? { sort: filters.sort, dir: filters.dir ?? 'asc' } : {}),
         page: filters.page,
         perPage: 25,
       }),
       ticketCounts(viewer),
       isStaff(viewer.role) ? listActiveGroups() : Promise.resolve([]),
+      Promise.all(filterable.map((key) => ticketColumnValues(viewer, query, key))),
     ]);
+
+    // Each header's menu: its values with their labels, and what is ticked.
+    const labelFor: Record<string, (v: string, fallback: string) => string> = {
+      type: (v) => TYPE_LABELS[v as TicketType] ?? v,
+      status: (v) => STATUS_LABELS[v as keyof typeof STATUS_LABELS] ?? v,
+      priority: (v) => PRIORITY_LABELS[v as keyof typeof PRIORITY_LABELS] ?? v,
+      requester: (_v, fallback) => fallback,
+      assignee: (v, fallback) => (v === BLANK ? 'Unassigned' : fallback),
+    };
+    const columnMenus: Record<string, { values: ColumnValue[]; selected: string[] }> = {};
+    filterable.forEach((key, i) => {
+      const rows = menuRows[i]!.map((r) => ({ ...r, label: labelFor[key]!(r.value, r.label || r.value) }));
+      columnMenus[key] = { values: menuValues(rows, columns[key] ?? [], (v) => labelFor[key]!(v, v)), selected: columns[key] ?? [] };
+    });
 
     // SLA is the service desk's measure, so only staff see it. One
     // query per row, on a page of 25.
@@ -248,6 +274,15 @@ ticketRouter.get(
       // The SLA filter: staff only, while SLA is on.
       slaFilterOffered: isStaff(viewer.role) && settings().sla.enabled,
       filters,
+      columnFilters: columns,
+      columnMenus,
+      // Everything the address says, for header links and filter forms that keep it all.
+      queueState: {
+        scope: filters.scope, group: filters.group, type: filters.type, category: filters.category,
+        status: filters.status, priority: filters.priority, sla: filters.sla, q: filters.q,
+        requester: filters.requester, sort: filters.sort, dir: filters.dir,
+        ...filterParams(columns),
+      },
       groups: allGroups,
       viewerGroups,
       categoryOptions: await selectableCategories(),
