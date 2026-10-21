@@ -16,7 +16,7 @@
       <p class="locked-value"><%= template.title || template.name %></p>
     <% } else { %>
       <input id="title" name="title" type="text"<%- locals.inConditional ? '' : ' required' %> minlength="3" maxlength="200"
-             value="<%= values.title %>" placeholder="<%= field.ghost %>">
+             value="<%= values.title %>" placeholder="<%= t(field.ghost || '') %>">
     <% } %>
     <% if (errors.title) { %><p class="field-error" role="alert"><%= errors.title %></p><% } %>
   </div>
@@ -38,14 +38,14 @@
 
   <% if (locked) { %>
     <div class="field">
-      <label><%= field.shown %></label>
+      <label><%= t(field.shown) %></label>
       <%# This level's own name: all three share one stored node. %>
-      <p class="locked-value"><%= levelTrail[field.key] || 'Not set' %></p>
+      <p class="locked-value"><%= levelTrail[field.key] || t('Not set') %></p>
     </div>
   <% } else { %>
     <div class="field">
       <label for="<%= field.input %>">
-        <%= field.shown %><% if (must && any) { %> <span class="required">*</span><% } %>
+        <%= t(field.shown) %><% if (must && any) { %> <span class="required">*</span><% } %>
       </label>
       <select id="<%= field.input %>" name="<%= field.input %>"
               <%= req && any ? ' required' : '' %><%= any ? '' : ' disabled' %>>
@@ -84,14 +84,14 @@
 <% } else if (field.key === 'description') { %>
   <div class="field">
     <label for="description">
-      <%= field.shown %><% if (must) { %> <span class="required">*</span><% } %>
+      <%= t(field.shown) %><% if (must) { %> <span class="required">*</span><% } %>
     </label>
     <% if (locked) { %>
-      <p class="locked-value"><%= template.body || 'Nothing to add.' %></p>
+      <p class="locked-value"><%= template.body || t('Nothing to add.') %></p>
     <% } else { %>
       <textarea id="description" name="description" rows="6"
                 <%= req ? 'required' : '' %> maxlength="20000"
-                placeholder="<%= field.ghost %>"><%= values.description %></textarea>
+                placeholder="<%= t(field.ghost || '') %>"><%= values.description %></textarea>
     <% } %>
     <% if (errors.description) { %><p class="field-error" role="alert"><%= errors.description %></p><% } %>
   </div>
@@ -104,8 +104,7 @@
           Attach files<% if (must) { %> <span class="required">*</span><% } else { %> <span class="hint-inline">(optional)</span><% } %>
         </label>
         <%- include('../partials/info', {
-          text: 'Up to ' + attachmentMaxPerTicket + ' files, ' + attachmentMaxLabel +
-            ' each. Accepted: ' + attachmentAccept.split(',').join(' ') + '.',
+          text: tx('Up to {0} files, {1} each. Accepted: {2}.', [attachmentMaxPerTicket, attachmentMaxLabel, attachmentAccept.split(',').join(' ')]),
         }) %>
       </div>
       <input id="files" name="files" type="file" multiple<%= req ? ' required' : '' %>
@@ -127,7 +126,7 @@
     </div>
     <input id="approval" name="approval" type="email" maxlength="200"
            <%= req ? 'required' : '' %>
-           placeholder="<%= field.ghost %>"
+           placeholder="<%= t(field.ghost || '') %>"
            value="<%= answers.approval || '' %>">
     <% if (errors.approval) { %><p class="field-error" role="alert"><%= errors.approval %></p><% } %>
   </div>
@@ -135,7 +134,7 @@
 <% } else if (field.key === 'requester') { %>
   <%# Who is asking, as the service desk will see it. Nothing is posted. %>
   <div class="field">
-    <span class="field-label"><%= field.shown %></span>
+    <span class="field-label"><%= t(field.shown) %></span>
     <div class="requester-card">
       <strong><%= locals.currentUser ? currentUser.display_name : '' %></strong>
       <% (locals.requesterLines || []).forEach(function (d) { %>
@@ -148,7 +147,7 @@
   <%# Which team the ticket goes to. View only shows where it will land -
       the template's own group, or the one its category names. %>
   <div class="field">
-    <label for="groupId"><%= field.shown %><% if (must) { %> <span class="required">*</span><% } %></label>
+    <label for="groupId"><%= t(field.shown) %><% if (must) { %> <span class="required">*</span><% } %></label>
     <% if (locked) { %>
       <p class="locked-value"><%= locals.templateGroupName || t('Decided by the service desk') %></p>
     <% } else if ((locals.groups || []).length === 0) { %>
@@ -168,7 +167,7 @@
   <%# Who picks it up. Only active agents and administrators are listed, and
       the server checks the same thing - a select is a display hint. %>
   <div class="field">
-    <label for="assigneeId"><%= field.shown %></label>
+    <label for="assigneeId"><%= t(field.shown) %></label>
     <% if (locked) { %>
       <p class="locked-value"><%= t('Whoever the team assigns it to') %></p>
     <% } else if ((locals.assignees || []).length === 0) { %>
@@ -187,10 +186,10 @@
 <% } else if (field.key === 'onbehalf') { %>
   <div class="field">
     <label for="onBehalfOf">
-      <%= field.shown %><% if (must) { %> <span class="required">*</span><% } else { %> <span class="hint-inline">(optional)</span><% } %>
+      <%= t(field.shown) %><% if (must) { %> <span class="required">*</span><% } else { %> <span class="hint-inline">(optional)</span><% } %>
     </label>
     <input id="onBehalfOf" name="onBehalfOf" type="email" maxlength="200"<%- req ? ' required' : '' %>
-           placeholder="<%= field.ghost %>" value="<%= values.onBehalfOf || '' %>" autocomplete="off">
+           placeholder="<%= t(field.ghost || '') %>" value="<%= values.onBehalfOf || '' %>" autocomplete="off">
     <% if (errors.onBehalfOf) { %><p class="field-error" role="alert"><%= errors.onBehalfOf %></p><% } %>
   </div>
 
@@ -198,14 +197,14 @@
   <%# A question the template asks. %>
   <div class="field">
     <label for="<%= field.input %>">
-      <%= field.shown %><% if (must) { %> <span class="required">*</span><% } else if (!locked) { %> <span class="hint-inline">(optional)</span><% } %>
+      <%= t(field.shown) %><% if (must) { %> <span class="required">*</span><% } else if (!locked) { %> <span class="hint-inline">(optional)</span><% } %>
     </label>
     <% var answer = answers[field.input] || ''; var options = field.options || []; %>
     <% if (locked) { %>
       <p class="locked-value"><%= field.value || '-' %></p>
     <% } else if (field.fieldType === 'textarea') { %>
       <textarea id="<%= field.input %>" name="<%= field.input %>" rows="4" maxlength="2000"<%- req ? ' required' : '' %>
-                placeholder="<%= field.ghost %>"><%= answer %></textarea>
+                placeholder="<%= t(field.ghost || '') %>"><%= answer %></textarea>
     <% } else if (field.fieldType === 'select') { %>
       <select id="<%= field.input %>" name="<%= field.input %>"<%- req ? ' required' : '' %>>
         <option value="">Choose</option>
@@ -225,11 +224,11 @@
       <input id="<%= field.input %>" name="<%= field.input %>" type="date"<%- req ? ' required' : '' %> value="<%= answer %>">
     <% } else if (field.fieldType === 'number') { %>
       <input id="<%= field.input %>" name="<%= field.input %>" type="text" inputmode="decimal" maxlength="40"<%- req ? ' required' : '' %>
-             placeholder="<%= field.ghost %>" value="<%= answer %>">
+             placeholder="<%= t(field.ghost || '') %>" value="<%= answer %>">
     <% } else { %>
       <input id="<%= field.input %>" name="<%= field.input %>" type="text" maxlength="2000"
              <%= req ? 'required' : '' %>
-             placeholder="<%= field.ghost %>"
+             placeholder="<%= t(field.ghost || '') %>"
              value="<%= answer %>">
     <% } %>
   </div>

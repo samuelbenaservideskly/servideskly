@@ -111,7 +111,7 @@
         <details class="<%= cls %> form-section--foldable" data-section="<%= section.key %>"<%- section.collapse === 'open' ? ' open' : '' %>>
           <summary class="form-section__title"><%= section.title %></summary>
       <% } else { %>
-        <section class="<%= cls %>" data-section="<%= section.key %>"<%- section.title ? '' : ' aria-label="Request details"' %>>
+        <section class="<%= cls %>" data-section="<%= section.key %>"<% if (!section.title) { %> aria-label="<%= t('Request details') %>"<% } %>>
           <% if (section.title) { %><h2 class="form-section__title"><%= section.title %></h2><% } %>
       <% } %>
         <div class="form-section__grid">

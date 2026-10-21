@@ -371,6 +371,17 @@ function lastOpenTag(html: string, carry: string): string {
  */
 const T_CALL = /\bt\(\s*(?:'((?:[^'\\]|\\.)*)'|"((?:[^"\\]|\\.)*)")\s*\)/g;
 
+/**
+ * Two more ways a view hands over its own words, both read like `t()`:
+ *
+ * - `tx('Up to {0} files', [n])` - a sentence with values in it, as plain
+ *   text, for a place that escapes what it is given (an attribute, the ⓘ).
+ * - `include('.../info', { text: '...' })` - the ⓘ translates its own
+ *   `text`, so its explanation only has to be found here.
+ */
+const TX_CALL = /\btx\(\s*(?:'((?:[^'\\]|\\.)*)'|"((?:[^"\\]|\\.)*)")\s*,/g;
+const INFO_TEXT = /['/]info'\s*,\s*\{\s*text:\s*(?:'((?:[^'\\]|\\.)*)'|"((?:[^"\\]|\\.)*)")\s*\}/g;
+
 function callsIn(source: string, where: string): Found[] {
   const out: Found[] = [];
   const page = where.replace(/^views\//, '').replace(/\.ejs$/, '');
@@ -379,13 +390,21 @@ function callsIn(source: string, where: string): Found[] {
   while ((tag = EJS_TAG.exec(source))) {
     // Not a comment: <%# %> is a note to whoever reads the code.
     if (tag[0].startsWith('<%#')) continue;
-    T_CALL.lastIndex = 0;
-    let call: RegExpExecArray | null;
-    while ((call = T_CALL.exec(tag[0]))) {
-      const raw = call[1] ?? call[2] ?? '';
-      const text = raw.replace(/\\(['"\\])/g, '$1');
-      if (!worthTranslating(text)) continue;
-      out.push({ id: stringId(text), text, context: 'Text on ' + page });
+    for (const pattern of [T_CALL, TX_CALL, INFO_TEXT]) {
+      pattern.lastIndex = 0;
+      let call: RegExpExecArray | null;
+      while ((call = pattern.exec(tag[0]))) {
+        const raw = call[1] ?? call[2] ?? '';
+        const text = raw.replace(/\\(['"\\])/g, '$1');
+        if (!worthTranslating(text)) continue;
+        const context =
+          pattern === TX_CALL
+            ? 'Text on ' + page + '. Keep each {0}, {1}...: it is a value'
+            : pattern === INFO_TEXT
+              ? 'An explanation behind an (i) mark on ' + page
+              : 'Text on ' + page;
+        out.push({ id: stringId(text), text, context });
+      }
     }
   }
   return out;

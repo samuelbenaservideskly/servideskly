@@ -3,7 +3,8 @@ import { audit } from '../lib/audit.js';
 import { conflict, notFound } from '../lib/errors.js';
 import { newId, nowIso } from '../lib/util.js';
 import { settings } from '../settings/index.js';
-import { formatDateIn } from '../lib/format.js';
+import { formatDateIn, MONTHS, WEEKDAYS_SHORT } from '../lib/format.js';
+import { words } from '../i18n/current.js';
 import { userGroupsFor } from './user-groups.js';
 import type { UserRow } from './users.js';
 import { STATUS_LABELS, type TicketStatus } from './tickets.js';
@@ -573,7 +574,8 @@ function cellMarkup(
   if (!cell) return '<span class="availability__status availability__status--unset">-</span>';
   const spec = AVAILABILITY_STATUSES.find((s) => s.key === cell.status);
   const named = options.statuses.includes(cell.status);
-  const label = named ? statusLabel(cell.status) : spec?.available ? 'Available' : 'Not available';
+  const t = words();
+  const label = named ? t(statusLabel(cell.status)) : spec?.available ? t('Available') : t('Not available');
   const cls = named ? cell.status : spec?.available ? 'available' : 'unavailable';
   let out = '<span class="availability__status availability__status--' + cls + '">' + escapeHtml(label) + '</span>';
   const canSee = cell.locationId && (locations.allowed === null || locations.allowed.has(cell.locationId));
@@ -583,13 +585,17 @@ function cellMarkup(
   return out;
 }
 
+/**
+ * "Wednesday 21 Oct" / "Wed 21 Oct", from the reader's own words for the
+ * day and the month (i18n/current.ts) - Intl would need a locale the
+ * service desk may not have, and the words are already in the catalogue.
+ */
 function dayLabel(date: string, long: boolean): string {
-  return new Intl.DateTimeFormat('en-GB', {
-    weekday: long ? 'long' : 'short',
-    day: 'numeric',
-    month: 'short',
-    timeZone: 'UTC',
-  }).format(new Date(date + 'T12:00:00Z'));
+  const t = words();
+  const d = new Date(date + 'T12:00:00Z');
+  const weekday = (d.getUTCDay() + 6) % 7;
+  const name = long ? WEEKDAYS[weekday]! : WEEKDAYS_SHORT[weekday]!;
+  return t(name) + ' ' + d.getUTCDate() + ' ' + t(MONTHS[d.getUTCMonth()]!);
 }
 
 /** Everything a design can place, for one reader. */
@@ -600,8 +606,9 @@ async function availabilityParts(row: DashboardRow, viewer: UserRow | null, now:
   const todayData = await availabilityData({ ...options, view: 'today' }, today);
   const todayRows = todayData.rows.filter((r) => r.cells[0] !== null);
 
+  const t = words();
   const list = todayRows.length === 0
-    ? '<p class="availability__empty">Nobody has shared their availability for today.</p>'
+    ? '<p class="availability__empty">' + escapeHtml(t('Nobody has shared their availability for today.')) + '</p>'
     : '<ul class="availability-list">' +
       todayRows.map((r) =>
         '<li class="availability"><span class="availability__name">' + escapeHtml(r.name) + '</span> ' +
@@ -612,8 +619,8 @@ async function availabilityParts(row: DashboardRow, viewer: UserRow | null, now:
   const weekData = await availabilityData({ ...options, view: 'week' }, today);
   const weekRows = weekData.rows.filter((r) => r.cells.some((c) => c !== null));
   const week = weekRows.length === 0
-    ? '<p class="availability__empty">Nobody has shared their availability for this week.</p>'
-    : '<div class="table-scroll"><table class="table availability-week"><thead><tr><th scope="col">Technician</th>' +
+    ? '<p class="availability__empty">' + escapeHtml(t('Nobody has shared their availability for this week.')) + '</p>'
+    : '<div class="table-scroll"><table class="table availability-week"><thead><tr><th scope="col">' + escapeHtml(t('Technician')) + '</th>' +
       weekData.days.map((d) =>
         '<th scope="col"' + (d === today ? ' class="availability-week__today"' : '') + '>' + escapeHtml(dayLabel(d, false)) + '</th>',
       ).join('') +
@@ -633,7 +640,7 @@ async function availabilityParts(row: DashboardRow, viewer: UserRow | null, now:
   }
   return {
     options,
-    title: escapeHtml(row.name),
+    title: escapeHtml(t(row.name)),
     date: escapeHtml(formatDateIn(new Date(today + 'T12:00:00Z'), { ...settings().locale, timeZone: 'UTC' })),
     dateLong: escapeHtml(dayLabel(today, true)),
     list,
@@ -700,12 +707,14 @@ function stat(value: string | number, label: string): string {
 }
 
 function head(title: string): string {
+  // `title` is escaped already; a built-in dashboard's own name is translated by its drawer.
   return '<div class="dashboard__head"><h2 class="dashboard__title">' + title + '</h2></div>';
 }
 
 /** The reader's own tickets. Shown as an empty example in the settings preview. */
 async function drawMyTickets(row: DashboardRow, viewer: UserRow | null): Promise<Drawn> {
-  const title = escapeHtml(row.name);
+  const t = words();
+  const title = escapeHtml(t(row.name));
   const id = viewer?.id ?? '';
   const since = new Date(Date.now() - 30 * 86_400_000).toISOString();
   const counts = await queryOne<{ open: number; hold: number; resolved: number }>(
@@ -721,11 +730,11 @@ async function drawMyTickets(row: DashboardRow, viewer: UserRow | null): Promise
     [id],
   );
   const list = recent.length === 0
-    ? '<p class="dashboard__empty">' + (viewer ? 'You have no tickets yet.' : 'The reader\'s own tickets appear here.') + '</p>'
+    ? '<p class="dashboard__empty">' + escapeHtml(viewer ? t('You have no tickets yet.') : t('The reader\'s own tickets appear here.')) + '</p>'
     : '<ul class="dashboard-list">' +
-      recent.map((t) =>
-        '<li><a href="/tickets/' + escapeHtml(t.id) + '">' + escapeHtml(t.title) + '</a> <span class="dashboard-list__meta">' +
-          escapeHtml(ticketReference(Number(t.ref_seq), t.ref_prefix)) + ' - ' + escapeHtml(STATUS_LABELS[t.status] ?? t.status) + '</span></li>',
+      recent.map((ticket) =>
+        '<li><a href="/tickets/' + escapeHtml(ticket.id) + '">' + escapeHtml(ticket.title) + '</a> <span class="dashboard-list__meta">' +
+          escapeHtml(ticketReference(Number(ticket.ref_seq), ticket.ref_prefix)) + ' - ' + escapeHtml(t(STATUS_LABELS[ticket.status] ?? ticket.status)) + '</span></li>',
       ).join('') +
       '</ul>';
   const open = Number(counts?.open ?? 0);
@@ -734,7 +743,7 @@ async function drawMyTickets(row: DashboardRow, viewer: UserRow | null): Promise
   return {
     standard:
       head(title) +
-      '<div class="dashboard-stats">' + stat(open, 'Open') + stat(hold, 'On hold') + stat(resolved, 'Resolved, 30 days') + '</div>' +
+      '<div class="dashboard-stats">' + stat(open, t('Open')) + stat(hold, t('On hold')) + stat(resolved, t('Resolved, 30 days')) + '</div>' +
       list,
     vars: { title, open_count: String(open), on_hold_count: String(hold), resolved_count: String(resolved), list },
   };
@@ -747,13 +756,14 @@ export const SEVERITIES = (Object.keys(SEVERITY_LABELS) as Severity[]).map((key)
 
 /** Current announcements; with none, nothing is shown at all. */
 async function drawAnnouncements(row: DashboardRow, now: Date): Promise<Drawn> {
-  const title = escapeHtml(row.name);
+  const t = words();
+  const title = escapeHtml(t(row.name));
   const today = todayIn(settings().locale.timeZone, now);
   const current = (await activeAnnouncements(today, row.id)).sort((a, b) => SEVERITY_ORDER[a.severity] - SEVERITY_ORDER[b.severity]);
   const list = current
     .map((a) =>
       '<div class="announcement announcement--' + a.severity + '"><p class="announcement__title"><span class="announcement__severity">' +
-        SEVERITY_LABELS[a.severity] + '</span> ' + escapeHtml(a.title) + '</p>' +
+        escapeHtml(t(SEVERITY_LABELS[a.severity])) + '</span> ' + escapeHtml(a.title) + '</p>' +
         (a.body ? '<p class="announcement__body">' + escapeHtml(a.body).replace(/\n/g, '<br>') + '</p>' : '') + '</div>',
     )
     .join('');
@@ -765,7 +775,8 @@ async function drawAnnouncements(row: DashboardRow, now: Date): Promise<Drawn> {
 
 /** How busy the service desk is: nothing about anybody in particular. */
 async function drawServiceDesk(row: DashboardRow, now: Date): Promise<Drawn> {
-  const title = escapeHtml(row.name);
+  const t = words();
+  const title = escapeHtml(t(row.name));
   const today = todayIn(settings().locale.timeZone, now);
   // Scoped to chosen technician groups: one condition, its own parameters,
   // added to each query below.
@@ -795,7 +806,7 @@ async function drawServiceDesk(row: DashboardRow, now: Date): Promise<Drawn> {
   return {
     standard:
       head(title) +
-      '<div class="dashboard-stats">' + stat(open, 'Open now') + stat(raisedToday, 'Raised today') + stat(typical, 'Typical resolution') + '</div>',
+      '<div class="dashboard-stats">' + stat(open, t('Open now')) + stat(raisedToday, t('Raised today')) + stat(typical, t('Typical resolution')) + '</div>',
     vars: { title, open_count: String(open), today_count: String(raisedToday), typical_resolution: escapeHtml(typical) },
   };
 }

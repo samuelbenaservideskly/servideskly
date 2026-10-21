@@ -4,6 +4,7 @@ import { isStaff, type UserRow } from './users.js';
 import { slaFor, type SlaState } from './sla.js';
 import { settings } from '../settings/index.js';
 import { formatDate, formatDuration } from '../lib/format.js';
+import { words, wordsWith } from '../i18n/current.js';
 import type { TicketPriority, TicketStatus } from './tickets.js';
 
 /**
@@ -103,7 +104,8 @@ function dueText(due: Date, now: Date): string {
   const time = new Intl.DateTimeFormat('en-GB', { timeZone: tz, hour: '2-digit', minute: '2-digit', hourCycle: 'h23' }).format(due);
   if (day(due) === day(now)) return time;
   const weekday = new Intl.DateTimeFormat('en-GB', { timeZone: tz, weekday: 'short' }).format(due);
-  return due.getTime() - now.getTime() < 6 * DAY ? weekday + ' ' + time : formatDate(due.toISOString());
+  // 'Thu' as Intl writes it in English - the same word as WEEKDAYS_SHORT, so it translates.
+  return due.getTime() - now.getTime() < 6 * DAY ? words()(weekday) + ' ' + time : formatDate(due.toISOString(), words());
 }
 
 /** The worse running clock (when at risk or breached), and the clock in words. */
@@ -112,18 +114,20 @@ async function slaOf(row: Row, now: Date): Promise<{ sla: SlaState | null; clock
   if (!s) return { sla: null, clock: null };
   const states = [s.response, s.resolution].filter((c) => !c.doneAt).map((c) => c.state);
   const sla = states.includes('breached') ? 'breached' : states.includes('at_risk') ? 'at_risk' : null;
+  const t = words();
+  const tx = wordsWith();
   let clock: string;
   if (!s.response.doneAt) {
     const left = s.response.due.getTime() - now.getTime();
-    clock = left >= 0 ? 'Responds in ' + formatDuration(left) : 'Response ' + formatDuration(left) + ' late';
+    clock = left >= 0 ? tx('Responds in {0}', [formatDuration(left)]) : tx('Response {0} late', [formatDuration(left)]);
   } else if (s.resolution.state === 'paused') {
-    clock = 'Paused - on hold';
+    clock = t('Paused - on hold');
   } else if (!s.resolution.doneAt) {
     const left = s.resolution.due.getTime() - now.getTime();
-    clock = left >= 0 ? 'Due ' + dueText(s.resolution.due, now) : formatDuration(left) + ' overdue';
+    clock = left >= 0 ? tx('Due {0}', [dueText(s.resolution.due, now)]) : tx('{0} overdue', [formatDuration(left)]);
   } else {
     const spare = s.resolution.due.getTime() - s.resolution.doneAt.getTime();
-    clock = spare >= 0 ? 'Met by ' + formatDuration(spare) : 'Missed by ' + formatDuration(spare);
+    clock = spare >= 0 ? tx('Met by {0}', [formatDuration(spare)]) : tx('Missed by {0}', [formatDuration(spare)]);
   }
   return { sla, clock };
 }

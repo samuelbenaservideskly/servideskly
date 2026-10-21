@@ -463,6 +463,27 @@ export function interpolate(translate: Translate, pattern: string, parts: readon
   });
 }
 
+/**
+ * The same sentence as **plain text**: `tx('Up to {0} files', [n])`.
+ *
+ * For a place that escapes what it is handed - an attribute, `<%= %>`, the
+ * ⓘ's `text` - where the HTML `interpolate()` returns would be escaped twice.
+ * Nothing here is escaped, so it must never go out through `<%- %>`.
+ */
+export function interpolateText(translate: Translate, pattern: string, parts: readonly unknown[]): string {
+  const offered = translate(pattern);
+  const markers = (text: string) => (text.match(/\{\d\}/g) ?? []).sort().join('');
+  const chosen = markers(offered) === markers(pattern) ? offered : pattern;
+  return chosen.replace(/\{(\d)\}/g, (_whole, index: string) => {
+    const value = parts[Number(index)];
+    return value === undefined || value === null ? '' : String(value);
+  });
+}
+
+export function textInterpolatorFor(translate: Translate): Interpolate {
+  return (pattern, parts) => interpolateText(translate, pattern, parts);
+}
+
 /** The `tr` a template calls, bound to one language. */
 export function interpolatorFor(translate: Translate): Interpolate {
   return (pattern, parts) => interpolate(translate, pattern, parts);

@@ -2,7 +2,15 @@ import { settings, type DateFormat, type LocaleSettings } from '../settings/inde
 
 /** Template helpers. Every value they return is escaped again by EJS. */
 
-const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+/** Month names as the "21 Oct 2026" format spells them; translated through t() (i18n/localise.ts). */
+export const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+
+/** Days of the week, shortened, Monday first: "Due Thu 12:00". Translated through t(). */
+export const WEEKDAYS_SHORT = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+
+/** The reader's language, or English: these helpers are also called outside a page. */
+type Words = (text: string) => string;
+const asIs: Words = (text) => text;
 
 /** The calendar and clock of an instant in a time zone. */
 function partsIn(date: Date, timeZone: string) {
@@ -21,7 +29,7 @@ function partsIn(date: Date, timeZone: string) {
 
 const pad = (n: number) => String(n).padStart(2, '0');
 
-function datePart(p: { y: number; m: number; d: number }, format: DateFormat): string {
+function datePart(p: { y: number; m: number; d: number }, format: DateFormat, t: Words = asIs): string {
   switch (format) {
     case 'dd.MM.yyyy':
       return pad(p.d) + '.' + pad(p.m) + '.' + p.y;
@@ -34,7 +42,7 @@ function datePart(p: { y: number; m: number; d: number }, format: DateFormat): s
     case 'yyyy-MM-dd':
       return p.y + '-' + pad(p.m) + '-' + pad(p.d);
     default:
-      return pad(p.d) + ' ' + MONTHS[p.m - 1] + ' ' + p.y;
+      return pad(p.d) + ' ' + t(MONTHS[p.m - 1]!) + ' ' + p.y;
   }
 }
 
@@ -45,20 +53,20 @@ function timePart(p: { h: number; min: number }, format: '24h' | '12h'): string 
 }
 
 /** A date and time as Settings - Customisation - Locale says to write it. */
-export function formatDateTimeIn(date: Date, locale: LocaleSettings): string {
+export function formatDateTimeIn(date: Date, locale: LocaleSettings, t: Words = asIs): string {
   const p = partsIn(date, locale.timeZone);
-  return datePart(p, locale.dateFormat) + ' ' + timePart(p, locale.timeFormat);
+  return datePart(p, locale.dateFormat, t) + ' ' + timePart(p, locale.timeFormat);
 }
 
 /**
  * Accepts the ISO text the database stores, or a Date, so a view never has
  * to know which it holds.
  */
-export function formatDateTime(value: string | Date | null | undefined): string {
+export function formatDateTime(value: string | Date | null | undefined, t: Words = asIs): string {
   if (!value) return '-';
   const date = value instanceof Date ? value : new Date(value);
   if (Number.isNaN(date.getTime())) return '-';
-  return formatDateTimeIn(date, settings().locale);
+  return formatDateTimeIn(date, settings().locale, t);
 }
 
 /** Just the date, as a given locale writes it. */
@@ -67,12 +75,12 @@ export function formatDateIn(date: Date, locale: LocaleSettings): string {
 }
 
 /** Just the date, in the Locale's format. */
-export function formatDate(value: string | Date | null | undefined): string {
+export function formatDate(value: string | Date | null | undefined, t: Words = asIs): string {
   if (!value) return '-';
   const date = value instanceof Date ? value : new Date(value);
   if (Number.isNaN(date.getTime())) return '-';
   const locale = settings().locale;
-  return datePart(partsIn(date, locale.timeZone), locale.dateFormat);
+  return datePart(partsIn(date, locale.timeZone), locale.dateFormat, t);
 }
 
 const UNITS: [limit: number, seconds: number, name: string][] = [
@@ -117,16 +125,27 @@ export function shortFileName(name: string, limit = 52): string {
   return text.slice(0, head) + '…' + text.slice(text.length - tail);
 }
 
-export function formatRelative(iso: string | null | undefined): string {
+/**
+ * "5 minutes ago", as patterns so a translation can put the number where its
+ * grammar wants it. Listed whole, one and many, for the translator's document.
+ */
+export const RELATIVE_PATTERNS = [
+  'just now',
+  ...UNITS.flatMap(([, , name]) => ['{0} ' + name + ' ago', '{0} ' + name + 's ago']),
+];
+
+export function formatRelative(iso: string | null | undefined, t: Words = asIs): string {
   if (!iso) return '-';
   const then = new Date(iso).getTime();
   if (Number.isNaN(then)) return '-';
   const seconds = Math.max(Math.round((Date.now() - then) / 1000), 0);
-  if (seconds < 45) return 'just now';
+  if (seconds < 45) return t('just now');
   for (const [limit, divisor, name] of UNITS) {
     if (seconds < limit) {
       const value = Math.round(seconds / divisor);
-      return value + ' ' + name + (value === 1 ? '' : 's') + ' ago';
+      const pattern = '{0} ' + name + (value === 1 ? '' : 's') + ' ago';
+      const said = t(pattern);
+      return (said.includes('{0}') ? said : pattern).replace('{0}', String(value));
     }
   }
   return '-';
@@ -163,7 +182,7 @@ const PROVISIONING_LABELS: Record<string, string> = {
   'jit+sync': 'JIT + sync',
 };
 
-const ROLE_LABELS: Record<string, string> = {
+export const ROLE_LABELS: Record<string, string> = {
   user: 'User',
   agent: 'Agent',
   admin: 'Admin',

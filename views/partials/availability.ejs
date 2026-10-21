@@ -1,7 +1,7 @@
 <%# A technician's availability, on their own profile page. Shown while the
     Technician availability dashboard is on (Settings - Dashboards). %>
 <section class="card stack" id="availability">
-  <h2 class="section-title"><%= availability.ownPage ? 'Your availability' : 'Availability' %></h2>
+  <h2 class="section-title"><%= availability.ownPage ? t('Your availability') : t('Availability') %></h2>
   <% (locals.flashMessages || []).filter(function (m) { return m.where === 'availability'; }).forEach(function (m) { %>
     <div class="flash flash--<%= m.type %>" role="<%= m.type === 'error' ? 'alert' : 'status' %>"><%= m.message %></div>
   <% }); %>
@@ -17,18 +17,18 @@
         <tbody>
           <% availability.week.forEach(function (day) { %>
             <tr>
-              <th scope="row"><label for="status-<%= day.weekday %>"><%= day.name %></label></th>
+              <th scope="row"><label for="status-<%= day.weekday %>"><%= t(day.name) %></label></th>
               <td>
                 <select id="status-<%= day.weekday %>" name="status_<%= day.weekday %>">
                   <option value="">Not set</option>
                   <% availability.weeklyStatuses.forEach(function (s) { %>
-                    <option value="<%= s.key %>"<%= day.status === s.key ? ' selected' : '' %>><%= s.label %></option>
+                    <option value="<%= s.key %>"<%= day.status === s.key ? ' selected' : '' %>><%= t(s.label) %></option>
                   <% }); %>
                 </select>
               </td>
               <td>
-                <select name="location_<%= day.weekday %>" aria-label="Location on <%= day.name %>"<%- availability.locations.length === 0 ? ' disabled' : '' %>>
-                  <option value=""><%= availability.locations.length === 0 ? 'No locations set up' : 'No location' %></option>
+                <select name="location_<%= day.weekday %>" aria-label="<%= tx('Location on {0}', [t(day.name)]) %>"<%- availability.locations.length === 0 ? ' disabled' : '' %>>
+                  <option value=""><%= availability.locations.length === 0 ? t('No locations set up') : t('No location') %></option>
                   <% availability.locations.forEach(function (l) { %>
                     <option value="<%= l.id %>"<%= day.locationId === l.id ? ' selected' : '' %>><%= l.name %></option>
                   <% }); %>
@@ -47,7 +47,7 @@
 
   <h3 class="availability-form__title">Coming up</h3>
   <% if (availability.entries.length === 0) { %>
-    <p class="small muted">Nothing planned. Add vacation, a sick day or a day elsewhere with <a href="#add-availability">Add a day or period</a>.</p>
+    <p class="small muted"><%= t('Nothing planned.') %> <a href="#add-availability"><%= t('Add a day or period') %></a></p>
   <% } else { %>
     <div class="table-scroll">
       <table class="table">
@@ -56,12 +56,12 @@
           <% availability.entries.forEach(function (e) { %>
             <tr>
               <td class="small"><%= e.when %></td>
-              <td><%= e.label %></td>
+              <td><%= t(e.label) %></td>
               <td class="small"><%= e.location || '' %></td>
               <td class="row-actions">
                 <form method="post" action="<%= availability.base %>/entries/<%= e.id %>/delete" class="inline-form">
                   <input type="hidden" name="_csrf" value="<%= locals.csrfToken %>">
-                  <%- include('bin-button', { label: 'Remove ' + e.label + ', ' + e.when }) %>
+                  <%- include('bin-button', { label: tx('Remove {0}, {1}', [t(e.label), e.when]) }) %>
                 </form>
               </td>
             </tr>
@@ -96,14 +96,14 @@
         <label for="entryStatus">Status <span class="required">*</span></label>
         <select id="entryStatus" name="status" required>
           <% availability.statuses.forEach(function (s) { %>
-            <option value="<%= s.key %>"><%= s.label %></option>
+            <option value="<%= s.key %>"><%= t(s.label) %></option>
           <% }); %>
         </select>
       </div>
       <div class="field">
         <label for="entryLocation">Location</label>
         <select id="entryLocation" name="locationId"<%- availability.locations.length === 0 ? ' disabled' : '' %>>
-          <option value=""><%= availability.locations.length === 0 ? 'No locations set up' : 'No location' %></option>
+          <option value=""><%= availability.locations.length === 0 ? t('No locations set up') : t('No location') %></option>
           <% availability.locations.forEach(function (l) { %>
             <option value="<%= l.id %>"><%= l.name %></option>
           <% }); %>

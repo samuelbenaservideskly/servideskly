@@ -17,11 +17,12 @@
   - **It regains pointer events when shown**, so a long explanation can be
     moved onto and read rather than vanishing on the way.
 
-  Takes `text` (escaped) or `html` (raw, for an explanation with a link or a
-  `<code>` in it). Nothing that prevents a mistake belongs in here - a warning
+  Takes `text` (escaped, and translated here - the catalogue finds a literal
+  `text:` in the include, and `tx()` builds one with values in it) or `html`
+  (raw, for an explanation with a link or a `<code>` in it). Nothing that prevents a mistake belongs in here - a warning
   or a limit stays on the page where it cannot be missed.
 -%>
 <span class="info" tabindex="0">
   <span class="info__mark" aria-hidden="true">i</span>
-  <span class="info__bubble" role="note"><% if (locals.html) { %><%- html %><% } else { %><%= locals.text %><% } %></span>
+  <span class="info__bubble" role="note"><% if (locals.html) { %><%- html %><% } else { %><%= t(locals.text || '') %><% } %></span>
 </span>

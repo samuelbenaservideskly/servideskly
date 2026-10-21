@@ -12,7 +12,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="referrer" content="no-referrer">
   <meta name="robots" content="noindex, nofollow">
-  <title><%= locals.title || 'Error' %><%= locals.appName ? ' - ' + locals.appName : '' %></title>
+  <title><%= locals.title ? t(locals.title) : t('Error') %><%= locals.appName ? ' - ' + locals.appName : '' %></title>
   <%# The six licensed fonts, served from /assets/fonts. See
       public/fonts/NOTICES.md and ALLOWED_FONTS in services/branding.ts. %>
   <%# Inter's latin file, fetched with the page so it is ready before the
@@ -28,8 +28,8 @@
   <div class="card signin-card error-card">
     <%- include('partials/signin-mark') %>
     <p class="error-card__code"><span class="pill pill--muted">Error <%= locals.status || 500 %></span></p>
-    <h1><%= locals.title || 'Something went wrong' %></h1>
-    <p class="lede error-card__message"><%= locals.message || 'An unexpected error occurred.' %></p>
+    <h1><%= locals.title ? t(locals.title) : t('Something went wrong') %></h1>
+    <p class="lede error-card__message"><%= locals.message ? t(locals.message) : t('An unexpected error occurred.') %></p>
 
     <% if (locals.reference) { %>
       <p class="small muted">Reference: <code><%= locals.reference %></code></p>

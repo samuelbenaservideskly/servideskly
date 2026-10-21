@@ -1,7 +1,7 @@
 <%- include('partials/header') %>
 
 <div class="page-head">
-  <h1><%= q ? 'Results for "' + q + '"' : 'Search' %></h1>
+  <h1><%= q ? tx('Results for "{0}"', [q]) : t('Search') %></h1>
 </div>
 
 <%# The same field as the bar above, so a search can be changed here too. %>

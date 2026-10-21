@@ -16,6 +16,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { scan, stringId, type CatalogueEntry } from '../src/i18n/extract.js';
 import { codeStrings } from '../src/i18n/code-strings.js';
+import { codeFiles, scanCode } from '../src/i18n/code-scan.js';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 export const VIEWS_DIR = path.join(ROOT, 'views');
@@ -84,6 +85,17 @@ export function buildCatalogue(): Record<string, CatalogueEntry> {
     const source = fs.readFileSync(file, 'utf8');
     for (const found of scan(source, where)) {
       add(catalogue, found.id, found.text, found.context, where);
+    }
+  }
+  /*
+   * Sentences written in the code - refusals, flashes, page titles
+   * (src/i18n/code-scan.ts). Translated where they are shown, by
+   * src/i18n/localise.ts.
+   */
+  for (const file of codeFiles(path.join(ROOT, 'src'))) {
+    const where = path.relative(ROOT, file).replace(/\\/g, '/');
+    for (const found of scanCode(fs.readFileSync(file, 'utf8'), where)) {
+      add(catalogue, stringId(found.text), found.text, found.context, where);
     }
   }
   // Sorted by id, so two runs of the script give the same bytes.

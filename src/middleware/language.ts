@@ -1,6 +1,8 @@
 import type { RequestHandler } from 'express';
-import { enabledLanguages, interpolatorFor, translatorFor, english } from '../i18n/index.js';
+import { enabledLanguages, interpolatorFor, textInterpolatorFor, translatorFor, english } from '../i18n/index.js';
 import { languageFor } from '../i18n/resolve.js';
+import { localise } from '../i18n/localise.js';
+import { withWords } from '../i18n/current.js';
 
 /**
  * Puts `t()` in front of every page.
@@ -17,6 +19,7 @@ export function language(): RequestHandler {
     if (enabledLanguages().length === 0) {
       res.locals.t = english;
       res.locals.tr = interpolatorFor(english);
+      res.locals.tx = textInterpolatorFor(english);
       res.locals.language = '';
       next();
       return;
@@ -28,12 +31,20 @@ export function language(): RequestHandler {
         res.locals.language = tag;
         res.locals.t = translate;
         res.locals.tr = interpolatorFor(translate);
-        next();
+        res.locals.tx = textInterpolatorFor(translate);
+        if (translate === english) {
+          next();
+          return;
+        }
+        localise(res, translate);
+        // For code that draws text itself (i18n/current.ts).
+        withWords(translate, () => next());
       })
       .catch(() => {
         // Working out a language must never cost a page.
         res.locals.t = english;
         res.locals.tr = interpolatorFor(english);
+        res.locals.tx = textInterpolatorFor(english);
         res.locals.language = '';
         next();
       });

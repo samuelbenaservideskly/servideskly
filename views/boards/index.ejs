@@ -47,7 +47,7 @@
         </form>
         <span class="pin-row__link">
           <a class="small muted pin-row__href" href="<%= p.href %>"><%= p.href %></a>
-          <%- include('../partials/copy-button', { text: p.href, label: 'Copy the address of ' + p.label }) %>
+          <%- include('../partials/copy-button', { text: p.href, label: tx('Copy the address of {0}', [p.label]) }) %>
         </span>
         <span class="pin-row__tools">
           <form method="post" action="/boards/pins/<%= p.id %>/move" class="inline-form">
@@ -57,7 +57,7 @@
           </form>
           <form method="post" action="/boards/pins/<%= p.id %>/delete" class="inline-form">
             <input type="hidden" name="_csrf" value="<%= locals.csrfToken %>">
-            <%- include('../partials/bin-button', { label: 'Unpin ' + p.label }) %>
+            <%- include('../partials/bin-button', { label: tx('Unpin {0}', [p.label]) }) %>
           </form>
         </span>
       </div>

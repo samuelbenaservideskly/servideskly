@@ -10,6 +10,7 @@ import {
 } from '../services/reports.js';
 import { STATUS_LABELS } from '../services/tickets.js';
 import { settings } from '../settings/index.js';
+import { words, wordsWith } from '../i18n/current.js';
 
 /**
  * /reports - a group's figures over a period (services/reports.ts); the
@@ -90,7 +91,7 @@ reportsRouter.get(
     const own = { selected: list.selected, period: list.period, company: list.company };
     const keep = { metric, ...(filter.priority ? { priority: filter.priority } : {}), ...(filter.type ? { type: filter.type } : {}), ...(filter.category ? { category: filter.category } : {}), ...(filter.bucket ? { bucket: filter.bucket } : {}) };
     res.render('reports-tickets', {
-      title: list.title + ' - Reports',
+      title: wordsWith()('{0} - Reports', [words()(list.title)]),
       list,
       noCompany: NO_COMPANY,
       cap: REPORT_CAP,

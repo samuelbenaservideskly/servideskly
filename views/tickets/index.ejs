@@ -169,17 +169,17 @@
         <tr>
           <%
             var columns = [
-              { key: 'reference', label: 'Reference' },
-              { key: 'title', label: 'Title' },
-              { key: 'type', label: 'Type' },
-              { key: 'status', label: 'Status' },
-              { key: 'priority', label: 'Priority' },
+              { key: 'reference', label: t('Reference') },
+              { key: 'title', label: t('Title') },
+              { key: 'type', label: t('Type') },
+              { key: 'status', label: t('Status') },
+              { key: 'priority', label: t('Priority') },
             ];
             if (locals.isStaff) {
-              columns.push({ key: 'requester', label: 'Requester' });
-              columns.push({ key: 'assignee', label: 'Assignee' });
+              columns.push({ key: 'requester', label: t('Requester') });
+              columns.push({ key: 'assignee', label: t('Assignee') });
             }
-            columns.push({ key: 'updated', label: 'Updated' });
+            columns.push({ key: 'updated', label: t('Updated') });
           %>
           <% columns.forEach(function (column) { %>
             <th scope="col" class="col-<%= column.key %>" aria-sort="<%= ariaSort(column.key) %>">
@@ -212,7 +212,7 @@
               <div class="ticket-title-cell">
                 <a href="/tickets/<%= ticket.id %>" title="<%= ticket.title %>"><%= ticket.title %></a>
                 <% if (ticket.comment_count > 0) { %>
-                  <span class="chip ticket-comments" title="<%= ticket.comment_count %> comment<%= ticket.comment_count === 1 ? '' : 's' %>"><%- include('../partials/icon', { name: 'message' }) %><%= ticket.comment_count %><span class="visually-hidden"> comment<%= ticket.comment_count === 1 ? '' : 's' %></span></span>
+                  <span class="chip ticket-comments" title="<%= ticket.comment_count === 1 ? t('1 comment') : tx('{0} comments', [ticket.comment_count]) %>"><%- include('../partials/icon', { name: 'message' }) %><%= ticket.comment_count %><span class="visually-hidden"> <%= ticket.comment_count === 1 ? t('comment') : t('comments') %></span></span>
                 <% } %>
               </div>
             </td>

@@ -24,7 +24,7 @@
     <% } else { %>
       <dl class="details">
         <% details.forEach(function (line) { %>
-          <dt><%= line.label %></dt>
+          <dt><%= t(line.label) %></dt>
           <dd>
             <% if (line.href) { %><a href="<%= line.href %>"><%= line.value %></a><% } else { %><%= line.value %><% } %>
           </dd>

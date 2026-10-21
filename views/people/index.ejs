@@ -19,7 +19,7 @@
 </form>
 
 <% if (!people.length) { %>
-  <p class="empty"><%= search ? 'Nobody matches "' + search + '".' : 'Nobody to show.' %></p>
+  <p class="empty"><%= search ? tx('Nobody matches "{0}".', [search]) : t('Nobody to show.') %></p>
 <% } else { %>
   <div class="table-scroll">
     <table class="table">

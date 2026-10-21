@@ -9,7 +9,7 @@
     <h1><%= ticket.title %></h1>
     <% if (ticket.parent_id) { %>
       <p class="small muted">
-        A task under
+        <%= t('A task under') %>
         <a href="/tickets/<%= ticket.parent_id %>"><%= ticket.parent_title %></a>
       </p>
     <% } %>
@@ -19,11 +19,11 @@
         the group when the technician is in several. %>
     <% if (locals.isStaff && locals.currentUser && ticket.assignee_id !== currentUser.id && ticket.status !== 'closed' && ticket.status !== 'cancelled') { %>
       <% if (myGroups.length > 1) { %>
-        <a class="btn btn--primary" href="#assign-me"><%- include('../partials/icon', { name: 'userPlus' }) %> Assign to me</a>
+        <a class="btn btn--primary" href="#assign-me"><%- include('../partials/icon', { name: 'userPlus' }) %> <%= t('Assign to me') %></a>
       <% } else { %>
         <form method="post" action="/tickets/<%= ticket.id %>/assign-me" class="inline-form">
           <input type="hidden" name="_csrf" value="<%= locals.csrfToken %>">
-          <button type="submit" class="btn btn--primary" title="<%= myGroups.length === 1 ? 'Assign it to you, in ' + myGroups[0].name : 'Assign it to you' %>"><%- include('../partials/icon', { name: 'userPlus' }) %> Assign to me</button>
+          <button type="submit" class="btn btn--primary" title="<%= myGroups.length === 1 ? tx('Assign it to you, in {0}', [myGroups[0].name]) : t('Assign it to you') %>"><%- include('../partials/icon', { name: 'userPlus' }) %> <%= t('Assign to me') %></button>
         </form>
       <% } %>
     <% } %>
@@ -43,7 +43,7 @@
           <div class="check-list">
             <% var preset = myGroups.some(function (g) { return g.id === ticket.group_id; }) ? ticket.group_id : myGroups[0].id; %>
             <% myGroups.forEach(function (g) { %>
-              <label class="check"><input type="radio" name="groupId" value="<%= g.id %>"<%= g.id === preset ? ' checked' : '' %> required><span><%= g.name %><%= g.id === ticket.group_id ? ' (its group now)' : '' %></span></label>
+              <label class="check"><input type="radio" name="groupId" value="<%= g.id %>"<%= g.id === preset ? ' checked' : '' %> required><span><%= g.name %><%= g.id === ticket.group_id ? ' ' + t('(its group now)') : '' %></span></label>
             <% }); %>
           </div>
         </fieldset>
@@ -136,7 +136,7 @@
                     action="/tickets/<%= ticket.id %>/attachments/<%= file.id %>/delete"
                     class="inline-form">
                 <input type="hidden" name="_csrf" value="<%= locals.csrfToken %>">
-                <%- include('../partials/bin-button', { label: 'Remove ' + file.filename }) %>
+                <%- include('../partials/bin-button', { label: tx('Remove {0}', [file.filename]) }) %>
               </form>
             <% } %>
           </li>
@@ -154,8 +154,7 @@
           <div class="label-row">
             <label for="files">Attach files</label>
             <%- include('../partials/info', {
-              text: 'Up to ' + attachmentMaxPerTicket + ' files per ticket, ' + attachmentMaxLabel +
-                ' each. Accepted: ' + attachmentAccept.split(',').join(' ') + '.',
+              text: tx('Up to {0} files per ticket, {1} each. Accepted: {2}.', [attachmentMaxPerTicket, attachmentMaxLabel, attachmentAccept.split(',').join(' ')]),
             }) %>
           </div>
           <input id="files" name="files" type="file" multiple
@@ -250,18 +249,18 @@
     <% if (locals.sla) { %>
       <%# The two clocks as cards: time to go (or overdue), and when it is due. %>
       <div class="sla-clocks">
-        <% [['First response', sla.response], ['Resolution', sla.resolution]].forEach(function (pair) {
+        <% [[t('First response'), sla.response], [t('Resolution'), sla.resolution]].forEach(function (pair) {
              var c = pair[1], left = new Date(c.due).getTime() - Date.now(); %>
           <div class="sla-clock sla-clock--<%= c.state %>">
             <small><%= pair[0] %></small>
             <% if (c.doneAt) { %>
-              <b><%= c.state === 'breached' ? 'Missed' : 'Met' %></b>
+              <b><%= c.state === 'breached' ? t('Missed') : t('Met') %></b>
               <span class="sla-clock__sub">Done <%= formatDateTime(c.doneAt) %></span>
             <% } else if (c.state === 'paused') { %>
               <b>Paused</b>
               <span class="sla-clock__sub">While on hold - due <%= formatDateTime(c.due) %></span>
             <% } else { %>
-              <b><%= formatDuration(left) %> <span><%= left >= 0 ? 'to go' : 'overdue' %></span></b>
+              <b><%= formatDuration(left) %> <span><%= left >= 0 ? t('to go') : t('overdue') %></span></b>
               <span class="sla-clock__sub">Due <%= formatDateTime(c.due) %></span>
             <% } %>
           </div>
@@ -279,12 +278,12 @@
         <dt>Type</dt>
         <dd><%= typeLabels[ticket.type] %></dd>
         <dt>Category</dt>
-        <dd><%= categoryPath || "Not classified" %></dd>
+        <dd><%= categoryPath || t('Not classified') %></dd>
         <dt>Technician group</dt>
         <dd>
-          <%= ticket.group_name || "Unrouted" %>
+          <%= ticket.group_name || t('Unrouted') %>
           <% if (locals.groupManagerNames && groupManagerNames.length) { %>
-            <div class="small muted"><%= groupManagerNames.length === 1 ? 'Manager' : 'Managers' %>: <%= groupManagerNames.join(', ') %></div>
+            <div class="small muted"><%= groupManagerNames.length === 1 ? t('Manager') : t('Managers') %>: <%= groupManagerNames.join(', ') %></div>
           <% } %>
         </dd>
         <dt>Requester</dt>
@@ -303,7 +302,7 @@
           <dd><%= raisedByName %> <span class="small muted">on behalf of <%= ticket.requester_name %></span></dd>
         <% } %>
         <dt>Assignee</dt>
-        <dd><%= ticket.assignee_name || 'Unassigned' %></dd>
+        <dd><%= ticket.assignee_name || t('Unassigned') %></dd>
         <dt>Created</dt>
         <dd><%= formatDateTime(ticket.created_at) %></dd>
         <dt>Updated</dt>
@@ -501,7 +500,7 @@
             <dd><a href="mailto:<%= card.email %>"><%= card.email %></a></dd>
           <% } %>
           <% card.lines.forEach(function (l) { %>
-            <dt><%= l.label %></dt>
+            <dt><%= t(l.label) %></dt>
             <dd>
               <% if (l.label === 'Phone') { %><a href="tel:<%= l.value.replace(/[^0-9+]/g, '') %>"><%= l.value %></a><% } else { %><%= l.value %><% } %>
             </dd>

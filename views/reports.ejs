@@ -15,7 +15,7 @@
   var label = function (day) { return formatDate(day + 'T12:00:00Z'); };
   var every = Math.max(1, Math.ceil(n / 8));
   var scope = r.scopeNames.length === 1 ? r.scopeNames[0] : 'All my groups';
-  var prevWhen = prev ? formatDate(prev.from) + ' to ' + formatDate(new Date(prev.to.getTime() - 1)) : '';
+  var prevWhen = prev ? tx('{0} to {1}', [formatDate(prev.from), formatDate(new Date(prev.to.getTime() - 1))]) : '';
 
   // The change against the previous period, in words and an arrow - never
   // colour alone. `up` says whether more is better; counts show the
@@ -26,21 +26,21 @@
     var tone = diff === 0 ? 'flat' : (diff > 0) === up ? 'good' : 'bad';
     var arrow = diff === 0 ? '=' : diff > 0 ? '▲' : '▼';
     var text;
-    if (kind === 'pts') text = diff === 0 ? 'no change' : Math.abs(diff) + ' pts';
-    else if (kind === 'hours') text = diff === 0 ? 'no change' : readableHours(Math.abs(diff));
-    else text = diff === 0 ? 'no change' : Math.abs(diff) + (before > 0 ? ' (' + Math.round(Math.abs(diff) / before * 100) + '%)' : '');
+    if (kind === 'pts') text = diff === 0 ? t('no change') : tx('{0} pts', [Math.abs(diff)]);
+    else if (kind === 'hours') text = diff === 0 ? t('no change') : readableHours(Math.abs(diff));
+    else text = diff === 0 ? t('no change') : Math.abs(diff) + (before > 0 ? ' (' + Math.round(Math.abs(diff) / before * 100) + '%)' : '');
     var was = kind === 'pts' ? before + '%' : kind === 'hours' ? readableHours(before) : before;
-    return '<span class="report-delta report-delta--' + tone + '" title="Previous period (' + prevWhen + '): ' + was + '"><span aria-hidden="true">' + arrow + '</span> ' + text + '<span class="visually-hidden"> against ' + was + ' in the previous period</span></span>';
+    return '<span class="report-delta report-delta--' + tone + '" title="' + tx('Previous period ({0}): {1}', [prevWhen, was]) + '"><span aria-hidden="true">' + arrow + '</span> ' + text + '<span class="visually-hidden"> ' + tx('against {0} in the previous period', [was]) + '</span></span>';
   }
 %>
 
 <div class="dash-hello">
   <div>
     <h1>Reports</h1>
-    <p class="muted"><%= scope %><%= r.unrouted ? ' and unrouted tickets' : '' %><%= r.company ? ' - ' + (r.company === noCompany ? 'no company' : r.company) : '' %> - <%= formatDate(r.period.from) %> to <%= formatDate(new Date(r.period.to.getTime() - 1)) %><% if (prev) { %> <span class="small">(compared with <%= prevWhen %>)</span><% } %></p>
+    <p class="muted"><%= scope %><%= r.unrouted ? ' ' + t('and unrouted tickets') : '' %><%= r.company ? ' - ' + (r.company === noCompany ? t('no company') : r.company) : '' %> - <%= formatDate(r.period.from) %> to <%= formatDate(new Date(r.period.to.getTime() - 1)) %><% if (prev) { %> <span class="small">(compared with <%= prevWhen %>)</span><% } %></p>
   </div>
   <div class="dash-hello__actions">
-    <%- include('partials/pin-button', { label: ('Report - ' + (r.company ? (r.company === noCompany ? 'No company' : r.company) : r.scopeNames.length === 1 ? r.scopeNames[0] : 'All groups')).slice(0, 40), icon: 'chart' }) %>
+    <%- include('partials/pin-button', { label: tx('Report - {0}', [r.company ? (r.company === noCompany ? t('No company') : r.company) : r.scopeNames.length === 1 ? r.scopeNames[0] : t('All groups')]).slice(0, 40), icon: 'chart' }) %>
     <a class="btn btn--primary" href="/reports/export.xlsx?<%= csvQuery %>">Download Excel</a>
   </div>
 </div>
@@ -69,12 +69,12 @@
     <label for="period">Period</label>
     <select id="period" name="period" data-no-search>
       <% periods.forEach(function (p) { %>
-        <option value="<%= p.key %>"<%= r.period.key === p.key ? ' selected' : '' %>><%= p.label %></option>
+        <option value="<%= p.key %>"<%= r.period.key === p.key ? ' selected' : '' %>><%= t(p.label) %></option>
       <% }); %>
     </select>
   </div>
   <div class="field report-dates">
-    <label for="from">From</label>
+    <label for="from"><%= t('From') %></label>
     <input id="from" name="from" type="date" value="<%= input.from %>">
   </div>
   <div class="field report-dates">
@@ -98,10 +98,10 @@
 
 <h2 class="report-section">Volume</h2>
 <div class="dash-stats">
-  <a class="dash-stat dash-stat--a" href="<%= drill('raised') %>" title="<%= definitions.raised.definition %>"><small>Raised</small><b><%= r.totals.raised %> <%- delta(r.totals.raised, prev && prev.totals.raised, false) %></b></a>
-  <a class="dash-stat dash-stat--c" href="<%= drill('resolved') %>" title="<%= definitions.resolved.definition %>"><small>Resolved</small><b><%= r.totals.resolved %> <%- delta(r.totals.resolved, prev && prev.totals.resolved, true) %></b></a>
-  <div class="dash-stat dash-stat--b" title="<%= definitions.backlog.definition %>"><small>Open at end</small><b><%= r.backlog.end %> <span class="report-delta report-delta--<%= r.backlog.end > r.backlog.start ? 'bad' : r.backlog.end < r.backlog.start ? 'good' : 'flat' %>"><span aria-hidden="true"><%= r.backlog.end > r.backlog.start ? '▲' : r.backlog.end < r.backlog.start ? '▼' : '=' %></span> <%= Math.abs(r.backlog.end - r.backlog.start) %> since the start (<%= r.backlog.start %>)</span></b></div>
-  <a class="dash-stat dash-stat--d" href="<%= drill('reopened') %>" title="<%= definitions.reopened.definition %>"><small>Reopened</small><b><%= r.totals.reopened %> <span><%= r.reopenRate === null ? 'nothing resolved' : r.reopenRate + '% of resolved' %></span></b></a>
+  <a class="dash-stat dash-stat--a" href="<%= drill('raised') %>" title="<%= t(definitions.raised.definition) %>"><small>Raised</small><b><%= r.totals.raised %> <%- delta(r.totals.raised, prev && prev.totals.raised, false) %></b></a>
+  <a class="dash-stat dash-stat--c" href="<%= drill('resolved') %>" title="<%= t(definitions.resolved.definition) %>"><small>Resolved</small><b><%= r.totals.resolved %> <%- delta(r.totals.resolved, prev && prev.totals.resolved, true) %></b></a>
+  <div class="dash-stat dash-stat--b" title="<%= t(definitions.backlog.definition) %>"><small>Open at end</small><b><%= r.backlog.end %> <span class="report-delta report-delta--<%= r.backlog.end > r.backlog.start ? 'bad' : r.backlog.end < r.backlog.start ? 'good' : 'flat' %>"><span aria-hidden="true"><%= r.backlog.end > r.backlog.start ? '▲' : r.backlog.end < r.backlog.start ? '▼' : '=' %></span> <%= Math.abs(r.backlog.end - r.backlog.start) %> since the start (<%= r.backlog.start %>)</span></b></div>
+  <a class="dash-stat dash-stat--d" href="<%= drill('reopened') %>" title="<%= t(definitions.reopened.definition) %>"><small>Reopened</small><b><%= r.totals.reopened %> <span><%= r.reopenRate === null ? t('nothing resolved') : tx('{0}% of resolved', [r.reopenRate]) %></span></b></a>
 </div>
 <p class="report-also small muted">
   <a href="<%= drill('closed') %>"><%= r.totals.closed %> closed</a> -
@@ -112,9 +112,9 @@
 <h2 class="report-section">Service levels</h2>
 <% if (r.sla.enabled) { %>
   <div class="dash-stats">
-    <a class="dash-stat dash-stat--c" href="<%= drill('response_breached') %>" title="<%= definitions.response_rate.definition %>"><small>Response target met</small><b><%= pct(r.sla.response.rate) %> <%- delta(r.sla.response.rate, prev && prev.sla.response.rate, true, 'pts') %></b><span class="small muted"><%= r.sla.response.met %> met - <%= r.sla.response.breached %> breached - <%= r.sla.response.running %> running</span></a>
-    <a class="dash-stat dash-stat--a" href="<%= drill('resolution_breached') %>" title="<%= definitions.resolution_rate.definition %>"><small>Resolution target met</small><b><%= pct(r.sla.resolution.rate) %> <%- delta(r.sla.resolution.rate, prev && prev.sla.resolution.rate, true, 'pts') %></b><span class="small muted"><%= r.sla.resolution.met %> met - <%= r.sla.resolution.breached %> breached - <%= r.sla.resolution.running %> running</span></a>
-    <a class="dash-stat dash-stat--d" href="<%= drill('breached') %>" title="<%= definitions.breached.definition %>"><small>Tickets with a breach</small><b><%= r.byPriority.reduce(function (n, p) { return n + p.breached; }, 0) %> <span>see why</span></b></a>
+    <a class="dash-stat dash-stat--c" href="<%= drill('response_breached') %>" title="<%= t(definitions.response_rate.definition) %>"><small>Response target met</small><b><%= pct(r.sla.response.rate) %> <%- delta(r.sla.response.rate, prev && prev.sla.response.rate, true, 'pts') %></b><span class="small muted"><%= r.sla.response.met %> met - <%= r.sla.response.breached %> breached - <%= r.sla.response.running %> running</span></a>
+    <a class="dash-stat dash-stat--a" href="<%= drill('resolution_breached') %>" title="<%= t(definitions.resolution_rate.definition) %>"><small>Resolution target met</small><b><%= pct(r.sla.resolution.rate) %> <%- delta(r.sla.resolution.rate, prev && prev.sla.resolution.rate, true, 'pts') %></b><span class="small muted"><%= r.sla.resolution.met %> met - <%= r.sla.resolution.breached %> breached - <%= r.sla.resolution.running %> running</span></a>
+    <a class="dash-stat dash-stat--d" href="<%= drill('breached') %>" title="<%= t(definitions.breached.definition) %>"><small>Tickets with a breach</small><b><%= r.byPriority.reduce(function (n, p) { return n + p.breached; }, 0) %> <span>see why</span></b></a>
   </div>
 <% } else { %>
   <div class="dash-stats">
@@ -128,10 +128,10 @@
     <table class="table report-timing">
       <thead><tr><th scope="col"></th><th scope="col">Median</th><th scope="col">Average</th><th scope="col">P90</th><% if (r.timing.resolutionBusiness) { %><th scope="col">Median, business hours</th><% } %><th scope="col">Tickets</th></tr></thead>
       <tbody>
-        <% [['First response', r.timing.firstResponse, r.timing.firstResponseBusiness, prev && prev.timing.firstResponse, prev && prev.timing.firstResponseBusiness, definitions.first_response.definition],
-            ['Resolution', r.timing.resolution, r.timing.resolutionBusiness, prev && prev.timing.resolution, prev && prev.timing.resolutionBusiness, definitions.resolution_time.definition]].forEach(function (row) { %>
+        <% [[t('First response'), r.timing.firstResponse, r.timing.firstResponseBusiness, prev && prev.timing.firstResponse, prev && prev.timing.firstResponseBusiness, definitions.first_response.definition],
+            [t('Resolution'), r.timing.resolution, r.timing.resolutionBusiness, prev && prev.timing.resolution, prev && prev.timing.resolutionBusiness, definitions.resolution_time.definition]].forEach(function (row) { %>
           <tr>
-            <th scope="row" title="<%= row[5] %>"><%= row[0] %></th>
+            <th scope="row" title="<%= t(row[5]) %>"><%= row[0] %></th>
             <td><b><%= readableHours(row[1].median) %></b> <%- delta(row[1].median, row[3] && row[3].median, false, 'hours') %></td>
             <td><%= readableHours(row[1].mean) %></td>
             <td><%= readableHours(row[1].p90) %></td>
@@ -158,15 +158,15 @@
 </section>
 
 <section class="dash-panel">
-  <div class="dash-panel__head"><h2>Backlog now, by age</h2><small class="muted" title="<%= definitions.aging.definition %>"><%= r.aging.total %> open, by time since raised</small></div>
+  <div class="dash-panel__head"><h2>Backlog now, by age</h2><small class="muted" title="<%= t(definitions.aging.definition) %>"><%= r.aging.total %> open, by time since raised</small></div>
   <div class="report-aging-flags">
-    <a class="report-flag" href="<%= drill('unassigned') %>"><b><%= r.aging.unassigned %></b> unassigned</a>
-    <a class="report-flag" href="<%= drill('on_hold') %>"><b><%= r.aging.onHold %></b> on hold</a>
-    <a class="report-flag" href="<%= drill('stale') %>"><b><%= r.aging.stale %></b> no change in 7 days</a>
+    <a class="report-flag" href="<%= drill('unassigned') %>"><b><%= r.aging.unassigned %></b> <%= t('unassigned') %></a>
+    <a class="report-flag" href="<%= drill('on_hold') %>"><b><%= r.aging.onHold %></b> <%= t('on hold') %></a>
+    <a class="report-flag" href="<%= drill('stale') %>"><b><%= r.aging.stale %></b> <%= t('no change in 7 days') %></a>
   </div>
   <div class="table-scroll">
     <table class="table report-aging">
-      <thead><tr><th scope="col">Priority</th><% r.aging.buckets.forEach(function (b) { %><th scope="col"><%= b.label %></th><% }); %><th scope="col">Total</th></tr></thead>
+      <thead><tr><th scope="col">Priority</th><% r.aging.buckets.forEach(function (b) { %><th scope="col"><%= t(b.label) %></th><% }); %><th scope="col">Total</th></tr></thead>
       <tbody>
         <% r.aging.byPriority.forEach(function (row) { var sum = row.counts.reduce(function (a, b) { return a + b; }, 0); %>
           <tr>
@@ -216,7 +216,7 @@
 </div>
 
 <section class="dash-panel">
-  <div class="dash-panel__head"><h2>By category</h2><small class="muted" title="<%= definitions.category.definition %>">Raised in the period, by top-level category</small></div>
+  <div class="dash-panel__head"><h2>By category</h2><small class="muted" title="<%= t(definitions.category.definition) %>">Raised in the period, by top-level category</small></div>
   <% if (r.byCategory.length === 0) { %>
     <p class="dash-empty">No tickets in this period.</p>
   <% } else { %>
@@ -235,7 +235,7 @@
 </section>
 
 <section class="dash-panel">
-  <div class="dash-panel__head"><h2>By company</h2><small class="muted" title="<%= definitions.company.definition %>">The requester's company</small></div>
+  <div class="dash-panel__head"><h2>By company</h2><small class="muted" title="<%= t(definitions.company.definition) %>">The requester's company</small></div>
   <% if (r.byCompany.length === 0) { %>
     <p class="dash-empty">No tickets in this period.</p>
   <% } else { %>
@@ -282,7 +282,7 @@
   <summary><h2>How each figure is counted</h2></summary>
   <dl>
     <% Object.keys(definitions).forEach(function (k) { %>
-      <dt><%= definitions[k].label %></dt><dd><%= definitions[k].definition %></dd>
+      <dt><%= t(definitions[k].label) %></dt><dd><%= t(definitions[k].definition) %></dd>
     <% }); %>
     <dt>Time zone</dt><dd>Days and dates are in the <%= timeZone %> time zone (Settings - Customisation - Locale).</dd>
   </dl>

@@ -7,6 +7,7 @@ import type { UserRow } from './users.js';
 import { ticketReference } from '../lib/util.js';
 import { formatDateTime, formatDuration } from '../lib/format.js';
 import { workbook, type Sheet } from '../lib/xlsx.js';
+import { words } from '../i18n/current.js';
 
 /**
  * Reports (/reports): what a group did over a period - raised, resolved,
@@ -512,7 +513,7 @@ export async function buildReport(user: UserRow, input: ReportInput, now = new D
   for (const t of raised) perCategory.set(rootOf(t), (perCategory.get(rootOf(t)) ?? 0) + 1);
   const rootNames = new Map([...roots.values()].map((r) => [r.id, r.name]));
   const byCategory = [...perCategory.entries()]
-    .map(([key, n]) => ({ key, name: key === NO_CATEGORY ? 'No category' : rootNames.get(key) ?? 'Removed category', raised: n, breached: categoryBreaches.get(key) ?? 0 }))
+    .map(([key, n]) => ({ key, name: key === NO_CATEGORY ? words()('No category') : rootNames.get(key) ?? words()('Removed category'), raised: n, breached: categoryBreaches.get(key) ?? 0 }))
     .sort((a, b) => b.raised - a.raised || a.name.localeCompare(b.name));
 
   // Open now, by age.
@@ -561,7 +562,7 @@ export async function buildReport(user: UserRow, input: ReportInput, now = new D
     const pc = perCompany.get(key) ?? { raised: 0, breached: 0, met: 0, hours: [] };
     return {
       key,
-      name: key === NO_COMPANY ? 'No company' : key,
+      name: key === NO_COMPANY ? words()('No company') : key,
       raised: pc.raised,
       resolved: resolvedBy.get(key) ?? 0,
       openNow: openBy.get(key) ?? 0,

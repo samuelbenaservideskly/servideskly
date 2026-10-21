@@ -31,6 +31,16 @@ passes (24 tests).
 
 ## Pick up here: the rest of the translation
 
+> **Done for requesters and technicians, 21 Oct 2026** - see CLAUDE.md, "Text
+> from code is translated where it is shown". The owner narrowed the scope
+> that day: Settings, the audit trail and time zone names stay English, so
+> item 3 below is no longer wanted. Items 1, 2 and 4 are done for every page
+> a requester or technician opens, by hand in the views (`t()`, `tx()`) and
+> centrally (i18n/localise.ts, i18n/code-scan.ts) - not by the general
+> literal rewrite item 1 suggests. Left in English on purpose: the pin
+> icons' names on /boards (they are identifiers), template and dashboard
+> names an administrator wrote.
+
 The owner's instruction (16 Oct 2026) is **"everything that is currently in
 english, when czech is set should be translated as well (excluding variables
 of course)"**. The views are now covered - create buttons, text between

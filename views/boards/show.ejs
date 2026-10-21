@@ -13,18 +13,18 @@
     <% if (!pinned) { %>
       <form method="post" action="/boards/<%= board.id %>/pin" class="inline-form">
         <input type="hidden" name="_csrf" value="<%= locals.csrfToken %>">
-        <button type="submit" class="btn"><%- include('../partials/icon', { name: 'pin' }) %> Pin to sidebar</button>
+        <button type="submit" class="btn"><%- include('../partials/icon', { name: 'pin' }) %> <%= t('Pin to sidebar') %></button>
       </form>
     <% } %>
     <form method="post" action="/boards/<%= board.id %>/share" class="inline-form">
       <input type="hidden" name="_csrf" value="<%= locals.csrfToken %>">
-      <button type="submit" class="btn"<%- share ? ' title="Makes a new link; the current one stops working"' : '' %>><%- include('../partials/icon', { name: 'userPlus' }) %> Share</button>
+      <button type="submit" class="btn"<% if (share) { %> title="<%= t('Makes a new link; the current one stops working') %>"<% } %>><%- include('../partials/icon', { name: 'userPlus' }) %> <%= t('Share') %></button>
     </form>
     <% if (editing) { %>
       <a class="btn" href="#rename-board">Rename</a>
       <a class="btn btn--primary" href="/boards/<%= board.id %>">Done</a>
     <% } else { %>
-      <a class="btn btn--primary" href="/boards/<%= board.id %>?edit=1"><%- include('../partials/icon', { name: 'pencil' }) %> Edit</a>
+      <a class="btn btn--primary" href="/boards/<%= board.id %>?edit=1"><%- include('../partials/icon', { name: 'pencil' }) %> <%= t('Edit') %></a>
     <% } %>
   </div>
 </div>
@@ -63,7 +63,7 @@
 
 <% if (editing) { %>
   <div class="board-toolbar">
-    <a class="btn btn--primary" href="#add-widget">+ Add a widget</a>
+    <a class="btn btn--primary" href="#add-widget"><span aria-hidden="true">+</span> Add a widget</a>
     <form method="post" action="/boards/<%= board.id %>/delete" class="inline-form">
       <input type="hidden" name="_csrf" value="<%= locals.csrfToken %>">
       <button type="submit" class="btn btn--danger btn--small">Remove this dashboard</button>
@@ -73,7 +73,7 @@
 
 <div class="board-grid" id="widgets">
   <% if (views.length === 0) { %>
-    <p class="dash-empty board-grid__empty">This dashboard is empty. <a href="/boards/<%= board.id %>?edit=1#add-widget">Add a widget</a>.</p>
+    <p class="dash-empty board-grid__empty"><%= t('This dashboard is empty.') %> <a href="/boards/<%= board.id %>?edit=1#add-widget"><%= t('Add a widget') %></a></p>
   <% } %>
   <% views.forEach(function (item, i) { var w = item.widget, v = item.view; %>
     <section class="board-widget board-widget--<%= w.width %> board-widget--<%= w.kind %>" id="w-<%= w.id %>">
@@ -89,7 +89,7 @@
             <a class="btn btn--quiet btn--small" href="#edit-<%= w.id %>" title="Settings"><%- include('../partials/icon', { name: 'settings' }) %><span class="visually-hidden">Settings</span></a>
             <form method="post" action="/boards/<%= board.id %>/widgets/<%= w.id %>/delete" class="inline-form">
               <input type="hidden" name="_csrf" value="<%= locals.csrfToken %>">
-              <%- include('../partials/bin-button', { label: 'Remove ' + item.title }) %>
+              <%- include('../partials/bin-button', { label: tx('Remove {0}', [item.title]) }) %>
             </form>
           </span>
         <% } else if (v.href && v.kind !== 'figure' && v.kind !== 'report') { %>
@@ -148,7 +148,7 @@
         <% } else { v.items.forEach(function (a) { %>
           <a class="dash-activity dash-activity--info" href="/tickets/<%= a.ticketId %>">
             <span class="dash-activity__icon"><%- include('../partials/icon', { name: a.kind === 'comment' ? 'message' : a.kind === 'created' ? 'sparkles' : 'ticket' }) %></span>
-            <span><b><%= a.reference %> - <%= a.title %></b><small><%= a.actorName || 'Somebody' %> - <%= formatRelative(a.at) %></small></span>
+            <span><b><%= a.reference %> - <%= a.title %></b><small><%= a.actorName || t('Somebody') %> - <%= formatRelative(a.at) %></small></span>
           </a>
         <% }); } %>
       <% } else { %>

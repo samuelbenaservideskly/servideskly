@@ -43,7 +43,7 @@
       same link: the form everybody may use.
     %>
     <p class="empty">
-      <%= locals.kind ? 'Nothing of that kind is offered.' : 'There is nothing to choose from yet.' %>
+      <%= locals.kind ? t('Nothing of that kind is offered.') : t('There is nothing to choose from yet.') %>
     </p>
     <% if (defaultTemplateId) { %>
       <p><a class="btn btn--primary" href="/tickets/new?template=<%= defaultTemplateId %>">Raise a ticket</a></p>

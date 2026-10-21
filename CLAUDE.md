@@ -3403,6 +3403,50 @@ Two practical notes:
   `JSON_COLUMNS` - without that, `row.strings[id]` reads a character out of
   a string and every translation silently misses.
 
+### Text from code is translated where it is shown (21 Oct 2026)
+
+**Scope, the owner's call**: everything a requester or a technician sees.
+Settings (admin only), the audit trail and the time zone names stay
+English. Measured, not guessed: a pseudo-language whose every translation
+is `‹English›`, every page rendered as a technician, a requester and a
+visitor, and whatever visible text has no marks is untranslated - 214 such
+pieces before, a few dozen after, all of them data (template names, the app
+name, initials).
+
+Four mechanisms, each so that a word written later is translated without
+anybody remembering to:
+
+- **`i18n/localise.ts`**, installed by the language middleware for a
+  language other than English only (an English page is byte-for-byte what it
+  was). At render it translates every `*Labels` object a route passes
+  (`statusLabels`, `typeLabels`...), `title`, a form's `errors` and the
+  flash messages, and wraps every `*Label()` helper on `app.locals` and the
+  date helpers (month names, "5 minutes ago").
+- **`i18n/code-scan.ts`** puts code's own text in the catalogue: a
+  single-quoted sentence (capital, two words, ends `.?!`, not SQL), a
+  `flash(req, '...', '...')`, a router's `title: '...'`, and `t('...')` /
+  `tx('...', [...])` calls. `*-admin.ts`, `routes/settings.ts`, SCIM, the
+  API, automations and portal design are left out (Settings, or JSON).
+- **`i18n/current.ts`**: `words()` / `wordsWith()` give code the reader's
+  `t` for the length of the request (AsyncLocalStorage, like a database
+  transaction), so a service that draws HTML - the requester dashboards in
+  `services/dashboards.ts`, the clocks in `services/work-dashboard.ts` -
+  writes `t('Raised today')`. Outside a request: English.
+- **`tx('Up to {0} files', [n])`** in a view: a sentence with values as
+  plain text, for an attribute or the ⓘ, which escape what they get.
+  `tr()` is the HTML one. The ⓘ translates its own `text`; the extractor
+  reads a literal `text:` from `include('.../info', ...)`.
+
+Lists of words in code (availability statuses, weekdays, widget kinds,
+report definitions, built-in field labels and placeholders, built-in
+dashboard names...) are added to `code-strings.ts`, derived from the
+constant, and the view prints `t(x.label)`.
+
+**`t` is a ticket in some views** (`function dashTicket(t)` in
+work-dashboard.ejs, `forEach(function (t)` in reports-tickets.ejs): inside
+those, write `locals.t(...)` / `locals.tx(...)`. The catalogue finds them
+just the same.
+
 ### The earlier brief, for the parts not yet built
 
 [docs/custom-language-brief.md](docs/custom-language-brief.md) is the

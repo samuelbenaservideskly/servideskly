@@ -3,17 +3,17 @@
     nowhere else: the sign-in pages carry nothing but their card. %>
 <% if (!locals.themeLocked) { %>
 <details class="colour-mode<%= locals.up ? ' colour-mode--up' : '' %>">
-  <summary class="colour-mode__button" title="Colour mode: <%= locals.themeLabel %>">
+  <summary class="colour-mode__button" title="<%= tx('Colour mode: {0}', [t(locals.themeLabel || '')]) %>">
     <%- include('icon', { name: 'palette' }) %>
     <% if (locals.withLabel) { %><span>Colour mode</span><% } %>
-    <span class="visually-hidden">Colour mode, currently <%= locals.themeLabel %></span>
+    <span class="visually-hidden"><%= tx('Colour mode, currently {0}', [t(locals.themeLabel || '')]) %></span>
   </summary>
 
   <form method="post" action="/theme" class="colour-mode__menu">
     <input type="hidden" name="_csrf" value="<%= locals.csrfToken %>">
     <input type="hidden" name="returnTo" value="<%= locals.currentPath || '/' %>">
     <p class="colour-mode__heading">Colour mode</p>
-    <% [{ value: 'system', label: 'System default' }, { value: 'light', label: 'Light' }, { value: 'dark', label: 'Dark' }].forEach(function (choice) { %>
+    <% [{ value: 'system', label: t('System default') }, { value: 'light', label: t('Light') }, { value: 'dark', label: t('Dark') }].forEach(function (choice) { %>
       <button type="submit" name="theme" value="<%= choice.value %>"
               class="colour-mode__option<%= locals.theme === choice.value ? ' colour-mode__option--current' : '' %>"
               <%- locals.theme === choice.value ? 'aria-current="true"' : '' %>>

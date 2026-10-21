@@ -10,7 +10,7 @@
 <div class="dialog<%= openDialog === id ? ' dialog--open' : '' %>" id="<%= id %>">
   <a class="dialog__backdrop" href="<%= close %>" aria-label="Close"></a>
   <div class="dialog__panel" role="dialog" aria-modal="true">
-    <div class="dialog__head"><h2><%= editing ? 'Widget settings' : 'Add a widget' %></h2><a class="dialog__close" href="<%= close %>" aria-label="Close">&times;</a></div>
+    <div class="dialog__head"><h2><%= editing ? t('Widget settings') : t('Add a widget') %></h2><a class="dialog__close" href="<%= close %>" aria-label="Close">&times;</a></div>
     <form method="post" action="/boards/<%= board.id %>/widgets<%= editing ? '/' + w.id : '' %>" class="stack widget-form">
       <input type="hidden" name="_csrf" value="<%= locals.csrfToken %>">
       <% if (openDialog === id && error) { %><p class="field-error" role="alert"><%= error %></p><% } %>
@@ -21,7 +21,7 @@
           <% widgetKinds.forEach(function (k, i) { %>
             <label class="widget-kind">
               <input type="radio" name="kind" value="<%= k.key %>"<%= (editing ? w.kind === k.key : i === 0) ? ' checked' : '' %>>
-              <b><%= k.label %></b><small><%= k.hint %></small>
+              <b><%= t(k.label) %></b><small><%= t(k.hint) %></small>
             </label>
           <% }); %>
         </div>
@@ -37,7 +37,7 @@
         <select id="<%= id %>-dashboard" name="dashboardId">
           <% (locals.dashboards || []).forEach(function (d) { %>
             <option value="<%= d.id %>"<%= editing && w.dashboardId === d.id ? ' selected' : '' %>>
-              <%= d.name %><%= d.is_enabled ? '' : ' (switched off)' %>
+              <%= t(d.name) %><%= d.is_enabled ? '' : ' ' + t('(switched off)') %>
             </option>
           <% }); %>
         </select>
@@ -52,7 +52,7 @@
         <div class="field">
           <label for="<%= id %>-scope">Tickets</label>
           <select id="<%= id %>-scope" name="scope" data-no-search>
-            <% scopes.forEach(function (s) { %><option value="<%= s.key %>"<%= f.scope === s.key ? ' selected' : '' %>><%= s.label %></option><% }); %>
+            <% scopes.forEach(function (s) { %><option value="<%= s.key %>"<%= f.scope === s.key ? ' selected' : '' %>><%= t(s.label) %></option><% }); %>
           </select>
         </div>
         <div class="field">
@@ -115,13 +115,13 @@
         <div class="field">
           <label for="<%= id %>-period">Period</label>
           <select id="<%= id %>-period" name="period" data-no-search>
-            <% periods.forEach(function (p) { %><option value="<%= p.key %>"<%= rp.period === p.key ? ' selected' : '' %>><%= p.label %></option><% }); %>
+            <% periods.forEach(function (p) { %><option value="<%= p.key %>"<%= rp.period === p.key ? ' selected' : '' %>><%= t(p.label) %></option><% }); %>
           </select>
         </div>
         <div class="field only-metric">
           <label for="<%= id %>-metric">Figure</label>
           <select id="<%= id %>-metric" name="metric" data-no-search>
-            <% metrics.forEach(function (m) { %><option value="<%= m.key %>"<%= rp.metric === m.key ? ' selected' : '' %>><%= m.label %></option><% }); %>
+            <% metrics.forEach(function (m) { %><option value="<%= m.key %>"<%= rp.metric === m.key ? ' selected' : '' %>><%= t(m.label) %></option><% }); %>
           </select>
         </div>
       </div>
@@ -135,7 +135,7 @@
       </fieldset>
 
       <div class="dialog__actions">
-        <button type="submit" class="btn btn--primary"><%= editing ? 'Save widget' : 'Add widget' %></button>
+        <button type="submit" class="btn btn--primary"><%= editing ? t('Save widget') : t('Add widget') %></button>
         <a class="btn btn--quiet" href="<%= close %>">Cancel</a>
       </div>
     </form>

@@ -59,7 +59,7 @@
           <% if (locals.isBreakGlass) { %>
             Break-glass administrator - signs in with a password
           <% } else if (isLocalAccount) { %>
-            Local account - signs in with <%= locals.usesSignInCode ? 'a code sent by email' : 'a password' %>
+            <%= locals.usesSignInCode ? t('Local account - signs in with a code sent by email') : t('Local account - signs in with a password') %>
           <% } else { %>
             Directory account - signs in through your organisation's identity provider
           <% } %>
@@ -69,7 +69,7 @@
         <dd><%= formatDateTime(user.created_at) %></dd>
 
         <dt>Last sign-in</dt>
-        <dd><%= user.last_login_at ? formatDateTime(user.last_login_at) : 'this session' %></dd>
+        <dd><%= user.last_login_at ? formatDateTime(user.last_login_at) : t('this session') %></dd>
 
         <% if (user.last_synced_at) { %>
           <dt>Last directory sync</dt>
@@ -199,22 +199,23 @@
 
     <% if (!isLocalAccount) { %>
       <div class="card">
-        <h2 class="section-title">Directory groups</h2>
+        <%#
+          The technician groups this person is in (groupsForUser). It was
+          "Directory groups" from when groups came from the identity provider,
+          printed each row as [object Object], and said roles follow them -
+          they never do (CLAUDE.md, "Roles never come from the directory").
+          Fixed 21 Oct 2026.
+        %>
+        <h2 class="section-title">Your technician groups</h2>
         <% if (groups.length === 0) { %>
-          <p class="muted small">
-            No groups were provided by the identity provider. Your role comes
-            from the default role for this installation.
-          </p>
+          <p class="muted small">You are not in a technician group.</p>
         <% } else { %>
-          <ul class="tight-list small mono">
+          <ul class="tight-list small">
             <% groups.forEach(function (group) { %>
-              <li><%= group %></li>
+              <li><%= group.name %></li>
             <% }); %>
           </ul>
         <% } %>
-        <p class="hint">
-          Roles follow these groups unless an administrator has locked your role.
-        </p>
       </div>
     <% } %>
 

@@ -60,7 +60,7 @@ import { viewLocals } from './middleware/view-locals.js';
 import { themePreference } from './middleware/theme.js';
 import { language } from './middleware/language.js';
 import { useTranslatedViews } from './i18n/engine.js';
-import { english, interpolatorFor } from './i18n/index.js';
+import { english, interpolatorFor, textInterpolatorFor } from './i18n/index.js';
 import { installSettingsWiring } from './settings/wiring.js';
 
 /**
@@ -193,6 +193,7 @@ export function createApp(): Express {
   // the usual pipeline and so never sees res.locals.
   app.locals.t = english;
   app.locals.tr = interpolatorFor(english);
+  app.locals.tx = textInterpolatorFor(english);
 
   app.locals.formatDateTime = formatDateTime;
   app.locals.formatDate = formatDate;
