@@ -9755,12 +9755,6 @@
     "where": "src/i18n/code-strings.ts",
     "uses": 3
   },
-  "sb5851c5cd5": {
-    "text": "Outlook, Outlook on the web, Gmail, Apple Mail and Thunderbird, and the From / Sent block or \"On ... wrote:\" line in English, Czech, German, French, Spanish and Italian. A reply with nothing above the quote is kept whole.",
-    "context": "An explanation behind an (i) mark on admin/settings/mail-signatures",
-    "where": "views/admin/settings/mail-signatures.ejs",
-    "uses": 1
-  },
   "sb5b51017ea": {
     "text": "until {0}",
     "context": "Text on the page on admin/settings/connections",

@@ -10,7 +10,7 @@
     <label class="check">
       <input type="checkbox" name="trimQuoted" value="on"<%= automation.trimQuoted !== false ? ' checked' : '' %>>
       <span>Remove the earlier messages quoted below a reply
-        <%- include('../../partials/info', { text: 'Outlook, Outlook on the web, Gmail, Apple Mail and Thunderbird, and the From / Sent block or "On ... wrote:" line in English, Czech, German, French, Spanish and Italian. A reply with nothing above the quote is kept whole.' }) %></span>
+        <%- include('../../partials/info', { text: 'When somebody answers a ticket email, their mail program copies the whole earlier conversation under their answer. With this on, only their new words are added to the ticket: everything from the "On ... wrote:" line or the From and Sent lines down is left out. Works with Outlook, Gmail, Apple Mail and Thunderbird, in English, Czech, German, French, Spanish and Italian. A reply that has nothing above the copied part is kept whole.' }) %></span>
     </label>
     <div class="actions"><button type="submit" class="btn btn--primary">Save</button></div>
   </form>
