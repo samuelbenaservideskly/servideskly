@@ -1371,7 +1371,7 @@
     "text": "Cancel",
     "context": "A button on admin/settings/_mailbox-dialog / A button on admin/settings/_relay-dialog / A button on admin/settings/advanced-data",
     "where": "views/admin/settings/_mailbox-dialog.ejs",
-    "uses": 61
+    "uses": 60
   },
   "s19e1e1c903": {
     "text": "An upper-case letter",
@@ -2121,6 +2121,12 @@
     "text": "{0} hour ago",
     "context": "How long ago something happened. Keep {0}: it is the number",
     "where": "src/i18n/code-strings.ts",
+    "uses": 1
+  },
+  "s2773a775b6": {
+    "text": "Choose the kind of request",
+    "context": "Text on tickets/new",
+    "where": "views/tickets/new.ejs",
     "uses": 1
   },
   "s278f003df0": {
@@ -3843,12 +3849,6 @@
     "text": "filters",
     "context": "Text on admin/settings/api-keys",
     "where": "views/admin/settings/api-keys.ejs",
-    "uses": 1
-  },
-  "s47f6ce28eb": {
-    "text": "What kind of request is this?",
-    "context": "A heading on tickets/new",
-    "where": "views/tickets/new.ejs",
     "uses": 1
   },
   "s481ae44555": {

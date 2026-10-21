@@ -3,7 +3,6 @@
 <div class="wrap--narrow">
   <div class="page-head">
     <h1>Raise a ticket</h1>
-    <a class="btn btn--quiet" href="/tickets">Cancel</a>
   </div>
 
   <% if (locals.catalogue) { %>
@@ -24,8 +23,7 @@
       many forms is exactly where the panel earns its place.
     %>
     <% var kinds = []; templates.forEach(function (t) { if (kinds.indexOf(t.type) < 0) kinds.push(t.type); }); %>
-    <form method="get" action="/tickets/new" class="template-picker" aria-labelledby="template-heading">
-      <h2 id="template-heading" class="template-picker__title">What kind of request is this?</h2>
+    <form method="get" action="/tickets/new" class="template-picker" aria-label="<%= t('Choose the kind of request') %>">
       <div class="template-picker__row">
         <% if (kinds.length > 1) { %>
           <div class="field" data-needs-script hidden>
