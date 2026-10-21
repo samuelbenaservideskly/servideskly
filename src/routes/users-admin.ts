@@ -369,8 +369,8 @@ const OTHER_URL = '/admin/settings/users/other';
 
 /** A sample person, so the page can show what the format makes of a name. */
 const SAMPLE_PERSON = {
-  first_name: 'Jana', last_name: 'Novakova', company: 'Contoso', department: 'Finance', job_title: 'Accountant',
-  office: 'Prague', email: 'jana.novakova@contoso.com', display_name_source: 'Jana Novakova',
+  first_name: 'Emma', last_name: 'Wilson', company: 'Contoso', department: 'Finance', job_title: 'Accountant',
+  office: 'London', email: 'emma.wilson@contoso.com', display_name_source: 'Emma Wilson',
 };
 
 async function renderOther(
@@ -433,7 +433,7 @@ async function renderOther(
       examples: usable && format.trim()
         ? [
             buildDisplayName(SAMPLE_PERSON, format),
-            buildDisplayName({ ...SAMPLE_PERSON, company: '', department: '', first_name: 'Petr', last_name: 'Svoboda', email: 'petr@contoso.com' }, format),
+            buildDisplayName({ ...SAMPLE_PERSON, company: '', department: '', first_name: 'Peter', last_name: 'Fisher', email: 'peter@contoso.com' }, format),
             ...(req.currentUser ? [buildDisplayName(req.currentUser, format)] : []),
           ]
         : [],

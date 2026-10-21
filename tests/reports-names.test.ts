@@ -65,7 +65,7 @@ describe('display names from a format', () => {
     assert.equal((await findUserById(someone.user.id))!.display_name, 'Svoboda Petr (Fabrikam)');
 
     const page = await as(admin).get('/admin/settings/users/other').expect(200);
-    assert.match(page.text, /Novakova Jana \(Contoso\)/, 'an example of how names read');
+    assert.match(page.text, /Wilson Emma \(Contoso\)/, 'an example of how names read');
 
     // Off again: back to the name as the directory gave it.
     await post(admin, '/admin/settings/users/other', { displayNameFormat: '' }).expect(302);

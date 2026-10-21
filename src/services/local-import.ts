@@ -56,11 +56,11 @@ export const MAX_IMPORT_ROWS = 500;
 export function importTemplateCsv(): string {
   const lines = [
     IMPORT_COLUMNS.join(','),
-    ['jana.novakova@example.com', 'Jana', 'Nováková', 'Jana Nováková', 'Contoso', 'user', '', '+420 123 456 789', 'Finance', 'Accountant', 'Prague', '', '', ''].map(csvField).join(','),
-    ['petr.svoboda@example.com', 'Petr', 'Svoboda', '', 'Contoso', 'agent', '', '', 'IT', '', 'Brno', '', '', ''].map(csvField).join(','),
+    ['emma.wilson@example.com', 'Emma', 'Wilson', 'Emma Wilson', 'Contoso', 'user', '', '+44 20 7946 0000', 'Finance', 'Accountant', 'London', '', '', ''].map(csvField).join(','),
+    ['peter.fisher@example.com', 'Peter', 'Fisher', '', 'Contoso', 'agent', '', '', 'IT', '', 'Manchester', '', '', ''].map(csvField).join(','),
   ];
   // The byte-order mark is what makes Excel read the file as UTF-8, so a
-  // name with a háček survives the round trip.
+  // name with an accent survives the round trip.
   return '﻿' + lines.join('\r\n') + '\r\n';
 }
 

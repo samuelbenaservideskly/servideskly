@@ -73,7 +73,7 @@ function nameProblem(name: string): string | null {
 const SAMPLE_APPROVAL = {
   reference: 'SR-000123',
   title: 'New laptop for the finance team',
-  requesterName: 'Jana Nováková',
+  requesterName: 'Emma Wilson',
   approverEmail: 'line.manager@example.com',
 };
 

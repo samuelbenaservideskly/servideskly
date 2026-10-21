@@ -203,7 +203,7 @@ describe('the preview', () => {
     assert.ok(!res.text.includes('{{'), 'no placeholder should survive the preview');
     assert.ok(res.text.includes('TKT-000123'));
     // Also proves the response is served as UTF-8: the sample title is Czech.
-    assert.ok(res.text.includes('Tiskárna nefunguje'));
+    assert.ok(res.text.includes('Printer not working'));
   });
 
   test('may be framed by the page that shows it, and nothing else', async () => {

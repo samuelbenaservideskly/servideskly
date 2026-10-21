@@ -3827,12 +3827,6 @@
     "where": "views/admin/settings/automation-edit.ejs",
     "uses": 1
   },
-  "s477c9e6e39": {
-    "text": "requester=jana@example.com",
-    "context": "Text on admin/settings/api-keys",
-    "where": "views/admin/settings/api-keys.ejs",
-    "uses": 1
-  },
   "s4790f51688": {
     "text": "Google Identity",
     "context": "Text on the page on admin/settings/integrations",
@@ -10509,6 +10503,12 @@
     "text": "Sent",
     "context": "Text on the page on admin/settings/mail",
     "where": "views/admin/settings/mail.ejs",
+    "uses": 1
+  },
+  "sc1786f82c4": {
+    "text": "requester=emma@example.com",
+    "context": "Text on admin/settings/api-keys",
+    "where": "views/admin/settings/api-keys.ejs",
     "uses": 1
   },
   "sc1a48e2a41": {

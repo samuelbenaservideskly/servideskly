@@ -373,7 +373,7 @@ export const API_EXAMPLES: ApiExample[] = [
   {
     title: 'Create a ticket',
     steps: 'Create a ticket - raised from your incident template; requester {{request.json.email}}, title {{request.json.title}}, description {{request.json.description}}. No "ticket" in the request: the answer names the one created.',
-    body: { email: 'jana@example.com', title: 'Disk full on srv-12', description: 'Free space under 5%' },
+    body: { email: 'emma@example.com', title: 'Disk full on srv-12', description: 'Free space under 5%' },
     answer: '{ "outcome": "success", "ticket": "INC-000124" }',
   },
   {
@@ -590,8 +590,8 @@ export const READ_EXAMPLES: ReadExample[] = [
       '  "status": "in_progress", "statusLabel": "In progress",',
       '  "priority": "urgent", "priorityLabel": "Urgent",',
       '  "type": "incident", "typeLabel": "Incident",',
-      '  "requester": { "name": "Jana Nováková", "email": "jana@example.com" },',
-      '  "assignee": { "name": "Petr Svoboda", "email": "petr@example.com" },',
+      '  "requester": { "name": "Emma Wilson", "email": "emma@example.com" },',
+      '  "assignee": { "name": "Peter Fisher", "email": "peter@example.com" },',
       '  "group": "Infrastructure",',
       '  "category": "Hardware › Servers",',
       '  "createdAt": "2026-10-12T08:14:03.120Z",',
@@ -624,7 +624,7 @@ export const READ_EXAMPLES: ReadExample[] = [
   {
     title: 'A list: open tickets of one requester',
     explain: 'Filters, all optional and combinable: status and priority (comma-separated), requester (email), group (name), updatedSince (date and time), tasks=include. Newest change first, 50 at a time (limit up to 100); "next" is the offset of the next page, or null.',
-    path: '/tickets?status=open,in_progress&requester=jana@example.com',
+    path: '/tickets?status=open,in_progress&requester=emma@example.com',
     answer: '{ "total": 2, "limit": 50, "offset": 0, "next": null, "items": [ { "reference": "INC-000123", ... } ] }',
   },
   {
@@ -649,7 +649,7 @@ export const READ_EXAMPLES: ReadExample[] = [
     title: 'Its comments',
     explain: 'The conversation, oldest first. Internal notes only with "Read internal notes too" ticked on the key; "includesInternal" says which you got.',
     path: '/tickets/INC-000123/comments',
-    answer: '{ "reference": "INC-000123", "includesInternal": false, "items": [ { "author": "Petr Svoboda", "body": "Cleaning up /var/log now.", "internal": false, "createdAt": "..." } ] }',
+    answer: '{ "reference": "INC-000123", "includesInternal": false, "items": [ { "author": "Peter Fisher", "body": "Cleaning up /var/log now.", "internal": false, "createdAt": "..." } ] }',
   },
 ];
 
@@ -683,7 +683,7 @@ export const WRITE_EXAMPLES: WriteExample[] = [
     method: 'POST',
     path: '/tickets',
     needs: 'Create a ticket',
-    body: { template: 'Default request', title: 'VPN drops every hour', description: 'Since the update on Monday.', requester: 'jana@example.com', priority: 'high' },
+    body: { template: 'Default request', title: 'VPN drops every hour', description: 'Since the update on Monday.', requester: 'emma@example.com', priority: 'high' },
     answer: '201 { "reference": "INC-000124", "id": "...", "url": "https://.../tickets/..." }',
   },
   {
@@ -692,7 +692,7 @@ export const WRITE_EXAMPLES: WriteExample[] = [
     method: 'PATCH',
     path: '/tickets/INC-000123',
     needs: 'Assign to technician',
-    body: { assignee: 'petr@example.com' },
+    body: { assignee: 'peter@example.com' },
     answer: '200 { "reference": "INC-000123", "changed": ["assignee"] }',
   },
   {
@@ -719,7 +719,7 @@ export const WRITE_EXAMPLES: WriteExample[] = [
     method: 'PATCH',
     path: '/tickets/INC-000123',
     needs: 'Set status, Set priority, Route to group, Assign to technician',
-    body: { status: 'in_progress', priority: 'urgent', group: 'Network', assignee: 'petr@example.com' },
+    body: { status: 'in_progress', priority: 'urgent', group: 'Network', assignee: 'peter@example.com' },
     answer: '200 { "reference": "INC-000123", "changed": ["status", "priority", "group", "assignee"] }',
   },
   {
