@@ -27,6 +27,8 @@ declare module 'express-session' {
     idpSessionIndex?: string;
     idpNameId?: string;
     idpNameIdFormat?: string;
+    /** A refused reply's words, put back in the box once (routes/tickets.ts). */
+    replyDraft?: { ticketId: string; body: string; internal: boolean };
     /** One-shot messages rendered on the next page load. */
     flash?: { type: 'success' | 'error' | 'info'; message: string; where?: string }[];
     /** Requester portal an administrator is previewing full screen. */

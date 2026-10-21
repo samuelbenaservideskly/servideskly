@@ -65,6 +65,12 @@
     "where": "views/admin/settings/_mailbox-dialog.ejs",
     "uses": 1
   },
+  "s01792a33c2": {
+    "text": "Add files",
+    "context": "Text on tickets/show",
+    "where": "views/tickets/show.ejs",
+    "uses": 1
+  },
   "s017b586052": {
     "text": "How many technicians are available today.",
     "context": "A message shown beside a form or after an action",
@@ -739,7 +745,7 @@
   },
   "s0e76960093": {
     "text": "History",
-    "context": "A heading on tickets/show",
+    "context": "Text on the page on tickets/show",
     "where": "views/tickets/show.ejs",
     "uses": 1
   },
@@ -857,6 +863,12 @@
     "where": "views/profile.ejs",
     "uses": 1
   },
+  "s10f0cdbbdc": {
+    "text": "That is too long to post. Shorten it, or attach it as a file.",
+    "context": "A message shown beside a form or after an action",
+    "where": "src/routes/tickets.ts",
+    "uses": 1
+  },
   "s111d09b611": {
     "text": "The break-glass administrator cannot be removed; it is what keeps the service administrable.",
     "context": "A message shown beside a form or after an action",
@@ -868,12 +880,6 @@
     "context": "A message shown beside a form or after an action",
     "where": "src/services/erasure.ts",
     "uses": 2
-  },
-  "s115fc0289b": {
-    "text": "The comment could not be saved.",
-    "context": "A message shown beside a form or after an action",
-    "where": "src/routes/tickets.ts",
-    "uses": 1
   },
   "s1181ca0d6f": {
     "text": "The first {0} tickets raised in the period were read, as on the report.",
@@ -1101,12 +1107,6 @@
     "text": "they",
     "context": "Text on boards/show",
     "where": "views/boards/show.ejs",
-    "uses": 1
-  },
-  "s153dc13a3e": {
-    "text": "Post comment",
-    "context": "A button on tickets/show",
-    "where": "views/tickets/show.ejs",
     "uses": 1
   },
   "s1548ba1212": {
@@ -1421,6 +1421,12 @@
     "where": "src/routes/work-dashboard.ts",
     "uses": 1
   },
+  "s1b829a6c11": {
+    "text": "Files attached.",
+    "context": "A message shown beside a form or after an action",
+    "where": "src/routes/tickets.ts",
+    "uses": 1
+  },
   "s1bb201d188": {
     "text": "Allowed",
     "context": "Text on the page on admin/settings/advanced-javascript",
@@ -1533,6 +1539,12 @@
     "text": "No",
     "context": "Text on the page on admin/settings/portal-edit",
     "where": "views/admin/settings/portal-edit.ejs",
+    "uses": 1
+  },
+  "s1ed3666edf": {
+    "text": "attached a file",
+    "context": "Text on tickets/show",
+    "where": "views/tickets/show.ejs",
     "uses": 1
   },
   "s1ee182b369": {
@@ -1660,6 +1672,12 @@
     "context": "One choice in a dropdown on admin/settings/automation-edit",
     "where": "views/admin/settings/automation-edit.ejs",
     "uses": 3
+  },
+  "s20abc8b633": {
+    "text": "raised this for {0}",
+    "context": "Text on tickets/show. Keep each {0}, {1}...: it is a value",
+    "where": "views/tickets/show.ejs",
+    "uses": 1
   },
   "s20b5b164a2": {
     "text": "Tick the answers that show this section; any one of them is enough. Tick none to show it always. Only answers picked from a list can be used: a choice or several-choices field, or Priority, from another section.",
@@ -1835,6 +1853,12 @@
     "where": "views/admin/settings/attachments.ejs",
     "uses": 1
   },
+  "s23c5f33170": {
+    "text": "Add a comment...",
+    "context": "Text on tickets/show",
+    "where": "views/tickets/show.ejs",
+    "uses": 1
+  },
   "s23dde5f272": {
     "text": "Add a phrase",
     "context": "The label of a form field on admin/settings/mail-signatures",
@@ -1899,6 +1923,12 @@
     "text": "The file is empty.",
     "context": "A message shown beside a form or after an action",
     "where": "src/services/local-import.ts",
+    "uses": 1
+  },
+  "s24c8ec7ff1": {
+    "text": "The requester is emailed your reply and its files.",
+    "context": "Text on tickets/show",
+    "where": "views/tickets/show.ejs",
     "uses": 1
   },
   "s24c9b0d1de": {
@@ -2027,6 +2057,12 @@
     "where": "views/admin/settings/api-keys.ejs",
     "uses": 1
   },
+  "s27b0f312f4": {
+    "text": "1 change",
+    "context": "Text on tickets/show",
+    "where": "views/tickets/show.ejs",
+    "uses": 1
+  },
   "s27eb5e5150": {
     "text": "updated",
     "context": "Text on work-dashboard",
@@ -2097,7 +2133,7 @@
     "text": "Category",
     "context": "A figure in Reports / A field on the form a ticket is raised with / The label of a form field on admin/settings/catalogue",
     "where": "src/i18n/code-strings.ts",
-    "uses": 8
+    "uses": 7
   },
   "s294125f6aa": {
     "text": "Certificate (PEM)",
@@ -2115,12 +2151,6 @@
     "text": "Between 1 and 5 columns.",
     "context": "A message shown beside a form or after an action",
     "where": "src/services/service-catalogue.ts",
-    "uses": 1
-  },
-  "s2986fc810b": {
-    "text": "Internal note - visible to service desk staff only",
-    "context": "Text on tickets/show",
-    "where": "views/tickets/show.ejs",
     "uses": 1
   },
   "s29887a5ff9": {
@@ -2383,7 +2413,7 @@
   },
   "s2ea1842b44": {
     "text": "Internal",
-    "context": "Text on the page on tickets/show",
+    "context": "Text on tickets/show",
     "where": "views/tickets/show.ejs",
     "uses": 1
   },
@@ -2551,7 +2581,7 @@
   },
   "s3103e085ea": {
     "text": "raised this",
-    "context": "Text on the page on tickets/show",
+    "context": "Text on tickets/show",
     "where": "views/tickets/show.ejs",
     "uses": 1
   },
@@ -2745,12 +2775,12 @@
     "text": "Group",
     "context": "The label of a form field on admin/settings/automation-edit / The label of a form field on boards/_widget-form / A table column heading on reports-tickets",
     "where": "views/admin/settings/automation-edit.ejs",
-    "uses": 7
+    "uses": 8
   },
-  "s35165436db": {
-    "text": "on behalf of {0}",
-    "context": "Text on the page on tickets/show",
-    "where": "views/tickets/show.ejs",
+  "s350fa12380": {
+    "text": "File attached.",
+    "context": "A message shown beside a form or after an action",
+    "where": "src/routes/tickets.ts",
     "uses": 1
   },
   "s35371ae1d0": {
@@ -3027,7 +3057,7 @@
     "text": "Updated",
     "context": "Text on tickets/index / Text on tickets/show",
     "where": "views/tickets/index.ejs",
-    "uses": 2
+    "uses": 3
   },
   "s3a74a5a84e": {
     "text": "Delete closed tickets",
@@ -3111,7 +3141,7 @@
     "text": "Technician group",
     "context": "A field on the form a ticket is raised with / The label of a form field on admin/settings/template-edit / The label of a form field on admin/settings/templates",
     "where": "src/i18n/code-strings.ts",
-    "uses": 7
+    "uses": 5
   },
   "s3d131368b4": {
     "text": "Tickets",
@@ -3273,12 +3303,6 @@
     "text": "Remove this account?",
     "context": "A heading on admin/settings/user-detail",
     "where": "views/admin/settings/user-detail.ejs",
-    "uses": 1
-  },
-  "s4079adff78": {
-    "text": "Internal - visible to service desk staff only",
-    "context": "Text on tickets/show",
-    "where": "views/tickets/show.ejs",
     "uses": 1
   },
   "s40a852ac6b": {
@@ -3549,7 +3573,7 @@
     "text": "Details",
     "context": "The label of a form field on admin/settings/dashboard-edit / A heading on admin/settings/group-detail / A heading on admin/settings/user-group-detail",
     "where": "views/admin/settings/dashboard-edit.ejs",
-    "uses": 5
+    "uses": 4
   },
   "s45999251b2": {
     "text": "Use this relay",
@@ -4025,16 +4049,16 @@
     "where": "views/admin/settings/template-catalogue.ejs",
     "uses": 1
   },
+  "s4fcff9b2f7": {
+    "text": "Reply to requester",
+    "context": "Text on tickets/show",
+    "where": "views/tickets/show.ejs",
+    "uses": 1
+  },
   "s4ffb12db47": {
     "text": "Set up an identity provider under Integrations first",
     "context": "A tooltip on admin/settings/_user-tabs",
     "where": "views/admin/settings/_user-tabs.ejs",
-    "uses": 1
-  },
-  "s4ffbef3c08": {
-    "text": "Triage",
-    "context": "A heading on tickets/show",
-    "where": "views/tickets/show.ejs",
     "uses": 1
   },
   "s5008522e4b": {
@@ -4671,7 +4695,7 @@
     "text": "Resolved",
     "context": "A ticket's status - a badge on the ticket and in the queue / A figure from Reports, shown on a dashboard widget / A figure in Reports",
     "where": "src/i18n/code-strings.ts",
-    "uses": 10
+    "uses": 11
   },
   "s5c1e1acf71": {
     "text": "They see this group in Reports and on the Manager dashboard, and receive its SLA alerts and the reason a ticket in it was deleted. A manager need not be a member.",
@@ -4937,6 +4961,12 @@
     "where": "views/admin/settings/automation-edit.ejs",
     "uses": 1
   },
+  "s625aafc3a9": {
+    "text": "Send reply",
+    "context": "Text on tickets/show",
+    "where": "views/tickets/show.ejs",
+    "uses": 1
+  },
   "s626ab419c1": {
     "text": "Private - only for signed-in people",
     "context": "Text on admin/settings/custom-images",
@@ -4993,15 +5023,15 @@
   },
   "s633816da5f": {
     "text": "Not classified",
-    "context": "One choice in a dropdown on admin/settings/template-edit / Text on tickets/show / One choice in a dropdown on tickets/show",
+    "context": "One choice in a dropdown on admin/settings/template-edit / Text on tickets/show",
     "where": "views/admin/settings/template-edit.ejs",
     "uses": 3
   },
   "s634de11477": {
     "text": "Attachments",
-    "context": "A field on the form a ticket is raised with / A link on admin/settings/_customization-tabs / A heading on tickets/show",
+    "context": "A field on the form a ticket is raised with / A link on admin/settings/_customization-tabs",
     "where": "src/i18n/code-strings.ts",
-    "uses": 3
+    "uses": 2
   },
   "s6368d4e33f": {
     "text": "That dashboard no longer exists.",
@@ -5221,7 +5251,7 @@
   },
   "s66aaf2571d": {
     "text": "Add a comment",
-    "context": "Text on admin/settings/api-keys / A heading on tickets/show",
+    "context": "Text on admin/settings/api-keys / Text on tickets/show",
     "where": "views/admin/settings/api-keys.ejs",
     "uses": 2
   },
@@ -5265,6 +5295,12 @@
     "text": "| s0123456789 | A button on tickets/index | Raise a ticket | Zadat pozadavek |",
     "context": "The grey example inside an input on admin/settings/locale",
     "where": "views/admin/settings/locale.ejs",
+    "uses": 1
+  },
+  "s67166f5e11": {
+    "text": "attached {0} files",
+    "context": "Text on tickets/show. Keep each {0}, {1}...: it is a value",
+    "where": "views/tickets/show.ejs",
     "uses": 1
   },
   "s6756af2571": {
@@ -5783,6 +5819,12 @@
     "where": "views/admin/settings/automation-edit.ejs",
     "uses": 1
   },
+  "s708aba3eb6": {
+    "text": "Reply sent, with its files.",
+    "context": "A message shown beside a form or after an action",
+    "where": "src/routes/tickets.ts",
+    "uses": 1
+  },
   "s70a6e54297": {
     "text": "Send a notification about it",
     "context": "Text on admin/settings/api-keys",
@@ -5939,9 +5981,15 @@
     "where": "views/admin/settings/users-other.ejs",
     "uses": 1
   },
+  "s740ce2c6cd": {
+    "text": "Only the service desk sees a note and its files.",
+    "context": "Text on tickets/show",
+    "where": "views/tickets/show.ejs",
+    "uses": 1
+  },
   "s744569a2a3": {
     "text": "Do not attach anything containing passwords or other credentials.",
-    "context": "A note under a control on tickets/show",
+    "context": "Text on tickets/show",
     "where": "views/tickets/show.ejs",
     "uses": 1
   },
@@ -6453,7 +6501,7 @@
     "text": "Attachments are turned off.",
     "context": "A message shown beside a form or after an action",
     "where": "src/routes/tickets.ts",
-    "uses": 1
+    "uses": 2
   },
   "s7dd9c181fd": {
     "text": "Upload the first one.",
@@ -6603,7 +6651,7 @@
     "text": "That upload could not be read.",
     "context": "A message shown beside a form or after an action",
     "where": "src/routes/tickets.ts",
-    "uses": 1
+    "uses": 2
   },
   "s814b5aef02": {
     "text": "The email address of the colleague the ticket is for. They become its requester; whoever filled in the form can still follow it.",
@@ -6893,12 +6941,6 @@
     "where": "views/login-register-confirm.ejs",
     "uses": 1
   },
-  "s865e89de78": {
-    "text": "Upload",
-    "context": "A button on tickets/show",
-    "where": "views/tickets/show.ejs",
-    "uses": 1
-  },
   "s866ef85f80": {
     "text": "Templates restricted to this group become available to everybody again.\n    Nothing is deleted.",
     "context": "Text on the page on admin/settings/user-group-detail",
@@ -7138,12 +7180,6 @@
     "context": "Text on boards/show / Text on reports",
     "where": "views/boards/show.ejs",
     "uses": 2
-  },
-  "s8b693a8e71": {
-    "text": "Inform the requester, and email them these files",
-    "context": "Text on tickets/show",
-    "where": "views/tickets/show.ejs",
-    "uses": 1
   },
   "s8b73fc8c36": {
     "text": "e.g. Service desk",
@@ -8241,6 +8277,12 @@
     "text": "Requester portal",
     "context": "A link on admin/settings/_customization-tabs",
     "where": "views/admin/settings/_customization-tabs.ejs",
+    "uses": 1
+  },
+  "s9d9209d1b0": {
+    "text": "{0} changes",
+    "context": "Text on tickets/show. Keep each {0}, {1}...: it is a value",
+    "where": "views/tickets/show.ejs",
     "uses": 1
   },
   "s9db19ea07f": {
@@ -9455,6 +9497,12 @@
     "where": "views/admin/settings/connections.ejs",
     "uses": 1
   },
+  "sb617615f96": {
+    "text": "Add internal note",
+    "context": "Text on tickets/show",
+    "where": "views/tickets/show.ejs",
+    "uses": 1
+  },
   "sb6238a5142": {
     "text": "Conditional access",
     "context": "Text on the page on admin/settings/users-other",
@@ -9561,12 +9609,6 @@
     "text": "Kinds of request",
     "context": "A label for a screen reader on tickets/catalogue",
     "where": "views/tickets/catalogue.ejs",
-    "uses": 1
-  },
-  "sb7cba9576d": {
-    "text": "No comments yet.",
-    "context": "Text on the page on tickets/show",
-    "where": "views/tickets/show.ejs",
     "uses": 1
   },
   "sb7d1991663": {
@@ -9771,7 +9813,7 @@
     "text": "Type",
     "context": "A table column heading on admin/settings/connections / Text on the page on admin/settings/connections / A table column heading on admin/settings/custom-fields",
     "where": "views/admin/settings/connections.ejs",
-    "uses": 12
+    "uses": 11
   },
   "sbad092efe3": {
     "text": "Somebody signing in from anywhere else gives their password and then a six-digit code sent to their address. Without this, a sign-in from outside the ranges is refused.",
@@ -10007,6 +10049,12 @@
     "where": "src/i18n/code-strings.ts",
     "uses": 1
   },
+  "sbf9d944899": {
+    "text": "Emailed to the requester {0}",
+    "context": "Text on tickets/show. Keep each {0}, {1}...: it is a value",
+    "where": "views/tickets/show.ejs",
+    "uses": 1
+  },
   "sbfbdcfe741": {
     "text": "Includes tickets routed to no group.",
     "context": "A message shown beside a form or after an action",
@@ -10127,12 +10175,6 @@
     "where": "views/admin/settings/mail.ejs",
     "uses": 1
   },
-  "sc1830589ff": {
-    "text": "No files attached.",
-    "context": "Text on the page on tickets/show",
-    "where": "views/tickets/show.ejs",
-    "uses": 1
-  },
   "sc1a48e2a41": {
     "text": "Ticked by hand below, or added by a rule. A rule member cannot be unticked\n    here - change the rule instead.",
     "context": "Text on the page on admin/settings/user-group-detail",
@@ -10205,6 +10247,12 @@
     "where": "views/admin/settings/automation-edit.ejs",
     "uses": 1
   },
+  "sc253f451bd": {
+    "text": "Reply",
+    "context": "Text on tickets/show",
+    "where": "views/tickets/show.ejs",
+    "uses": 1
+  },
   "sc282ea31ac": {
     "text": "Stored secret",
     "context": "A heading on admin/settings/authentication",
@@ -10251,7 +10299,7 @@
     "text": "Remove",
     "context": "A button on admin/settings/automation-edit / A heading on admin/settings/group-detail / A button on admin/settings/locale",
     "where": "views/admin/settings/automation-edit.ejs",
-    "uses": 5
+    "uses": 6
   },
   "sc397a5b487": {
     "text": "No images yet.",
@@ -10315,9 +10363,9 @@
   },
   "sc59c7d4406": {
     "text": "Delete this ticket",
-    "context": "A button on tickets/show / A heading on tickets/show",
+    "context": "A heading on tickets/show / A button on tickets/show",
     "where": "views/tickets/show.ejs",
-    "uses": 3
+    "uses": 2
   },
   "sc5a7b1cadc": {
     "text": "Your technician groups",
@@ -10483,9 +10531,9 @@
   },
   "sc8e7249311": {
     "text": "Unrouted",
-    "context": "One choice in a dropdown on admin/settings/template-edit / Text on tickets/show / One choice in a dropdown on tickets/show",
+    "context": "One choice in a dropdown on admin/settings/template-edit / Text on tickets/show / Text on work-dashboard",
     "where": "views/admin/settings/template-edit.ejs",
-    "uses": 5
+    "uses": 4
   },
   "sc907750297": {
     "text": "Add to availability",
@@ -10615,7 +10663,7 @@
   },
   "sccca181757": {
     "text": "Conversation",
-    "context": "A heading on tickets/show",
+    "context": "Text on tickets/show",
     "where": "views/tickets/show.ejs",
     "uses": 1
   },
@@ -10901,12 +10949,6 @@
     "where": "views/admin/settings/api-keys.ejs",
     "uses": 1
   },
-  "sd3a6d577b6": {
-    "text": "Required when informing the requester. The message is posted to the ticket as a regular comment, so it is recorded. Files are sent as attachments, up to 15 MB per email. Internal files are never sent.",
-    "context": "An explanation behind an (i) mark on tickets/show",
-    "where": "views/tickets/show.ejs",
-    "uses": 1
-  },
   "sd3afac9f5e": {
     "text": "Posted as a comment the requester can see, and sent with the resolved notification.",
     "context": "An explanation behind an (i) mark on tickets/show",
@@ -11083,7 +11125,7 @@
   },
   "sd6eafe8235": {
     "text": "Download",
-    "context": "A link on tickets/show",
+    "context": "Text on tickets/show",
     "where": "views/tickets/show.ejs",
     "uses": 1
   },
@@ -11103,7 +11145,7 @@
     "text": "Created",
     "context": "Text on profile / Text on tickets/show",
     "where": "views/profile.ejs",
-    "uses": 2
+    "uses": 3
   },
   "sd73b3d047b": {
     "text": "Clear to retire it without touching the tickets already raised.",
@@ -11287,9 +11329,9 @@
   },
   "sda27805201": {
     "text": "Emailed",
-    "context": "Text on the page on admin/settings/users",
+    "context": "Text on the page on admin/settings/users / Text on tickets/show",
     "where": "views/admin/settings/users.ejs",
-    "uses": 1
+    "uses": 2
   },
   "sda2e5dc515": {
     "text": "Everyone",
@@ -11495,12 +11537,6 @@
     "where": "src/i18n/code-strings.ts",
     "uses": 1
   },
-  "sdd76eacc24": {
-    "text": "Message to send with them",
-    "context": "The label of a form field on tickets/show",
-    "where": "views/tickets/show.ejs",
-    "uses": 1
-  },
   "sdd951b98b4": {
     "text": "No custom notifications yet. Press New notification.",
     "context": "Text on admin/settings/mail-notifications",
@@ -11548,6 +11584,12 @@
     "context": "Text on the page on admin/settings/_automation-variables / Text on the page on admin/settings/_mailbox-dialog / Text on the page on admin/settings/authentication",
     "where": "views/admin/settings/_automation-variables.ejs",
     "uses": 12
+  },
+  "sde9ef972e7": {
+    "text": "Write a reply...",
+    "context": "Text on tickets/show",
+    "where": "views/tickets/show.ejs",
+    "uses": 1
   },
   "sdeaf3194bd": {
     "text": "Use a different address",
@@ -11765,12 +11807,6 @@
     "where": "src/i18n/code-strings.ts",
     "uses": 1
   },
-  "se25e759529": {
-    "text": "Here is the corrected document - please try it and let us know.",
-    "context": "The grey example inside an input on tickets/show",
-    "where": "views/tickets/show.ejs",
-    "uses": 1
-  },
   "se26d51d367": {
     "text": "Settings sections",
     "context": "A label for a screen reader on admin/settings/_layout",
@@ -11803,9 +11839,9 @@
   },
   "se2d0a54968": {
     "text": "Delete",
-    "context": "A button on admin/settings/automation-edit / A button on admin/settings/template-edit",
+    "context": "A button on admin/settings/automation-edit / A button on admin/settings/template-edit / A button on tickets/show",
     "where": "views/admin/settings/automation-edit.ejs",
-    "uses": 2
+    "uses": 3
   },
   "se2d65334cf": {
     "text": "What it counts",
@@ -11977,9 +12013,9 @@
   },
   "se697cc1e45": {
     "text": "Attach files",
-    "context": "The label of a form field on tickets/_field / The label of a form field on tickets/show",
+    "context": "The label of a form field on tickets/_field",
     "where": "views/tickets/_field.ejs",
-    "uses": 2
+    "uses": 1
   },
   "se6b6ce31b1": {
     "text": "Change it",
@@ -12413,12 +12449,6 @@
     "where": "views/admin/settings/mail-relay.ejs",
     "uses": 1
   },
-  "sf19c4d0e60": {
-    "text": "Requester informed",
-    "context": "Text on the page on tickets/show",
-    "where": "views/tickets/show.ejs",
-    "uses": 1
-  },
   "sf1c1afa450": {
     "text": "Remove logo",
     "context": "A button on admin/settings/customization",
@@ -12517,9 +12547,9 @@
   },
   "sf4377182ae": {
     "text": "Internal note",
-    "context": "Text on admin/settings/automation-edit / Text on the page on tickets/show / Text on work-dashboard",
+    "context": "Text on admin/settings/automation-edit / Text on tickets/show / Text on work-dashboard",
     "where": "views/admin/settings/automation-edit.ejs",
-    "uses": 3
+    "uses": 4
   },
   "sf43b942510": {
     "text": "Make default",
@@ -12543,7 +12573,7 @@
     "text": "Raised by",
     "context": "Text on tickets/show",
     "where": "views/tickets/show.ejs",
-    "uses": 1
+    "uses": 2
   },
   "sf4db1e4847": {
     "text": "End",
@@ -12627,6 +12657,12 @@
     "text": "Sign-in could not be completed.",
     "context": "A message shown beside a form or after an action",
     "where": "src/auth/oidc.ts",
+    "uses": 1
+  },
+  "sf6f4688ff2": {
+    "text": "Send",
+    "context": "Text on tickets/show",
+    "where": "views/tickets/show.ejs",
     "uses": 1
   },
   "sf6f8d3f69e": {

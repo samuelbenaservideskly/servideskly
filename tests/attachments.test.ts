@@ -240,7 +240,7 @@ describe('upload and download', () => {
         contentType: 'image/png',
       })
       .expect(302)
-      .expect('Location', '/tickets/' + ticketId + '#attachments');
+      .expect('Location', '/tickets/' + ticketId + '#reply');
 
     assert.equal(
       (await queryOne<{ c: number }>(
@@ -251,12 +251,13 @@ describe('upload and download', () => {
       'nothing may be stored when verification fails',
     );
 
-    // And the reason is waiting beside the upload button, inside the form,
-    // rather than as a banner at the top of the page.
+    // And the reason is waiting beside the one file picker the page has -
+    // the reply box, since the redesign of 21 Oct 2026 - rather than as a
+    // banner at the top of the page.
     const back = await agent.get('/tickets/' + ticketId).expect(200);
     assert.match(back.text, /do not match its \.png extension/);
-    const form = /<form[^>]*attachments"[\s\S]*?<\/form>/.exec(back.text);
-    assert.ok(form, 'the upload form should be on the page');
+    const form = /<form[^>]*id="reply"[\s\S]*?<\/form>/.exec(back.text);
+    assert.ok(form, 'the reply box should be on the page');
     assert.match(form[0], /field-error/, 'the refusal belongs inside that form');
   });
 

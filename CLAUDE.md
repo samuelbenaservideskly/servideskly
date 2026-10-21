@@ -36,6 +36,7 @@ settings page - is unchanged.
 | `public/js/copy.js` | `/admin/settings/customization/images` | copy-to-clipboard buttons | buttons stay hidden; snippets are one-click selectable |
 | `public/js/copy.js` | `/admin/settings/advanced/api-keys` | copy the new key, and each code example; approved 12 Oct 2026 | buttons stay hidden; the key selects with one click |
 | `public/js/copy.js` | `/boards` | copy a pin's address beside it; asked for 15 Oct 2026 | buttons stay hidden; the address selects with one click |
+| `public/js/reply-files.js` | `/tickets/:id` (`allowOwnScripts()` on the GET) | the reply box's chosen files as chips with a cross, choosing again adds rather than replaces, files dropped on the box join them; no requests - the real file input holds the list (asked for 21 Oct 2026, "implement both with the script") | an ordinary file picker, which posts the same files |
 | `public/js/catalogue-grid.js` | `/admin/settings/templates/catalogue` | drag a tile onto another in the service catalogue grid (asked for 15 Oct 2026, "like in ticket template") | the ▲▼ buttons on each tile do the same, and the script hides them only when it runs |
 | `public/js/automation-canvas.js` | `/admin/settings/advanced/automation/:id` | drag steps, draw wires; approved 11 Oct 2026 | the step cards do the same with forms |
 | `public/js/password-reveal.js` | every page of the Users router (`allowOwnScripts()` on `userAdminRouter`), **`/profile`**, `/login/new-password` and **`/setup`** (asked for 18 Oct 2026) | the eye beside a password box an administrator types into (`partials/password-input.ejs`), and the rules box ticking as a password is typed (`partials/password-rules.ejs`); no requests; both approved 15 Oct 2026 | an ordinary password box, and the rules as a plain list that still says what is required |
@@ -1196,11 +1197,27 @@ which is what every organisation's mail does.
    why on the page, shown only when that body actually asks for the logo.
 
 
-### A ticket's files are sent only when somebody says so
+### A ticket's files go with the reply they belong to
 
-"Inform the requester" on the upload form, which **requires a message** - the
-message is posted as an ordinary visible comment, so what the requester was
-told is on the ticket too, and the files are attached to that notification.
+**Since the redesign of 21 Oct 2026** the ticket page has one file picker, in
+the reply box (POST `/:id/comments`, multipart): a technician's **reply**
+emails its files with it, an **internal note**'s files are internal and go
+nowhere, and **files with no words** are attached and emailed to nobody.
+Every file is verified **before** anything is stored, so a bad second file
+cannot leave the first behind; a refusal puts the typed words back in the
+box once (`session.replyDraft`). The route checks the CSRF token itself,
+before it looks the ticket up - the path is in `isAttachmentUploadPath`
+because the global check runs before a multipart body is read.
+
+The page shows each file **with the message it came with**
+(`services/ticket-timeline.ts`): same person, same internal flag, within
+20 seconds; files raised with the request sit with the request. There is
+no column naming a file's comment, and none is needed.
+
+`POST /:id/attachments` (the old upload form, "Inform the requester",
+which **requires a message**) still works for anything that posts to it,
+and its refusals now land beside the reply box. What follows is true of
+both.
 
 - The ids ride on the queue (`mail_outbox.attachment_ids`, migration 13) and
   the bytes are read at send time, so the queue never holds a copy and a file
@@ -1208,7 +1225,7 @@ told is on the ticket too, and the files are attached to that notification.
 - **Internal and informed are mutually exclusive**, and refused together
   rather than silently resolved one way.
 - The attachment row records `emailed_at` (migration 14) and the ticket shows
-  a **Requester informed** badge. A file the requester has seen and one only
+  an **Emailed** mark beside the file (it read "Requester informed" before the redesign). A file the requester has seen and one only
   the service desk holds look identical otherwise, and the difference decides
   whether somebody already has the thing being discussed.
 - SMTP wraps this in `multipart/mixed` **outside** the `related` container:

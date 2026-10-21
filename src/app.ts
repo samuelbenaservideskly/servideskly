@@ -87,6 +87,9 @@ function isAttachmentUploadPath(path: string): boolean {
   if (path === '/tickets') return true;
 
   const parts = path.split('/');
+  // A reply, which may carry files (21 Oct 2026). The route checks the token
+  // itself on every post, with files or without.
+  if (parts.length === 4 && parts[1] === 'tickets' && parts[3] === 'comments' && parts[2] !== '') return true;
   if (
     parts.length === 4 &&
     parts[1] === 'tickets' &&

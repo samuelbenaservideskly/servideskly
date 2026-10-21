@@ -11,7 +11,8 @@ import { HttpError, badRequest, forbidden, notFound } from '../lib/errors.js';
 import { normaliseEmail, normaliseLine, normaliseText } from '../lib/util.js';
 import { requireAuth } from '../middleware/auth.js';
 import { assertCsrfToken } from '../middleware/csrf.js';
-import { writeLimiter } from '../middleware/security.js';
+import { allowOwnScripts, writeLimiter } from '../middleware/security.js';
+import { buildTimeline } from '../services/ticket-timeline.js';
 import { flash } from '../middleware/view-locals.js';
 import { isStaff, listAssignableStaff, findUserById, findUserByEmail, type UserRow } from '../services/users.js';
 import { findGroup, groupManagers, groupsForUser, listActiveGroups, type GroupRow } from '../services/groups.js';
@@ -132,11 +133,6 @@ function createBody(typedDescription: boolean) {
     category: z.enum(TICKET_CATEGORIES).default('other'),
   });
 }
-
-const commentBody = z.object({
-  body: z.string().trim().min(1, 'Write something before posting.').max(20_000),
-  internal: z.string().optional(),
-});
 
 const updateBody = z.object({
   status: z.enum(TICKET_STATUSES).optional(),
@@ -956,8 +952,13 @@ async function loadTicket(req: Request) {
 
 ticketRouter.get(
   '/:id',
+  // The reply box's file list (public/js/reply-files.js), asked for 21 Oct 2026.
+  allowOwnScripts(),
   asyncHandler(async (req, res) => {
     const { viewer, ticket } = await loadTicket(req);
+    // A refused reply's words, once, and only on the ticket they were for.
+    const draft = req.session.replyDraft && req.session.replyDraft.ticketId === ticket.id ? req.session.replyDraft : null;
+    if (req.session.replyDraft) delete req.session.replyDraft;
 
     // Fetched together: these are independent reads on the same ticket.
     const [comments, attachments, events, staff, groups] = await Promise.all([
@@ -998,6 +999,8 @@ ticketRouter.get(
       slaStateLabels: SLA_STATE_LABELS,
       comments,
       attachments,
+      timeline: buildTimeline(ticket, comments, attachments),
+      replyDraft: draft,
       formatBytes,
       ...attachmentViewData(),
       events,
@@ -1011,53 +1014,130 @@ ticketRouter.get(
   }),
 );
 
+/**
+ * A reply or an internal note, with files if there are any (redesign,
+ * 21 Oct 2026: "files go with the reply"). One press sends both, so a reply
+ * that says "see the attached document" arrives with the document.
+ *
+ * - A **staff reply** emails its files with it, through the same notification
+ *   as before - which is why every file is checked *before* anything is
+ *   stored: a refusal afterwards would leave half a reply behind.
+ * - An **internal note**'s files are internal, and nothing is emailed.
+ * - **Files with no words** are attached and emailed to nobody: a mail with
+ *   nothing to say is not one a requester can act on.
+ * - Still takes a plain form post with no files, which is what it was.
+ *
+ * A refusal goes back beside the box, with what was typed still in it
+ * (`replyDraft`) - a long reply lost to "that file is too large" is the
+ * mistake this page must not make. The files have to be chosen again; a
+ * browser does not let a page put them back.
+ */
 ticketRouter.post(
   '/:id/comments',
   writeLimiter,
   asyncHandler(async (req, res) => {
+    const limits = attachmentLimits();
+    const back = '/tickets/' + String(req.params.id) + '#reply';
+    let files: Express.Multer.File[] = [];
+
+    if (req.is('multipart/form-data')) {
+      try {
+        files = await parseUpload(req, res, limits);
+      } catch (err) {
+        flash(req, 'error', err instanceof HttpError && err.status === 400 ? err.message : 'That upload could not be read.', 'reply');
+        res.redirect(back);
+        return;
+      }
+    }
+    // Here, with files or without, and before the ticket is looked up - a
+    // forged post is refused as one, without saying whether the ticket
+    // exists. The path is exempt from the global check, which runs before a
+    // multipart body is read (app.ts, isAttachmentUploadPath).
+    assertCsrfToken(req);
     const { viewer, ticket } = await loadTicket(req);
 
     const raw = (req.body ?? {}) as Record<string, unknown>;
-    const parsed = commentBody.safeParse({
-      body: typeof raw.body === 'string' ? normaliseText(raw.body) : '',
-      internal: raw.internal,
-    });
+    const text = typeof raw.body === 'string' ? normaliseText(raw.body).trim() : '';
+    // Only staff may write internal notes, whatever the form claims.
+    const isInternal = isStaff(viewer.role) && raw.internal === 'on';
 
-    if (!parsed.success) {
-      flash(req, 'error', parsed.error.issues[0]?.message ?? 'The comment could not be saved.');
-      res.redirect('/tickets/' + ticket.id);
+    const refuse = (message: string): void => {
+      flash(req, 'error', message, 'reply');
+      req.session.replyDraft = { ticketId: ticket.id, body: text, internal: isInternal };
+      res.redirect(back);
+    };
+
+    if (text === '' && files.length === 0) {
+      refuse('Write something before posting.');
       return;
     }
-
-    // Only staff may write internal notes, whatever the form claims.
-    const isInternal = isStaff(viewer.role) && parsed.data.internal === 'on';
-
-    const commentId = await addComment({
-      ticketId: ticket.id,
-      authorId: viewer.id,
-      body: parsed.data.body,
-      isInternal,
-    });
-
-    auditRequest(req, {
-      action: isInternal ? 'ticket.note.added' : 'ticket.comment.added',
-      targetType: 'ticket',
-      targetId: ticket.id,
-      detail: { commentId, reference: ticket.reference },
-    });
-
-    // An internal note is for the service desk, so it is never emailed to
-    // the requester - that is the whole point of marking one internal.
-    if (!isInternal) {
-      await notifyTicket(
-        isStaff(viewer.role) ? 'comment.added.requester' : 'comment.added.technician',
-        ticket.id,
-        { comment: parsed.data.body, authorName: viewer.display_name },
-      );
+    if (text.length > 20_000) {
+      refuse('That is too long to post. Shorten it, or attach it as a file.');
+      return;
+    }
+    if (files.length > 0) {
+      if (!limits.enabled) {
+        refuse('Attachments are turned off.');
+        return;
+      }
+      if ((await countAttachments(ticket.id)) + files.length > limits.maxPerTicket) {
+        refuse('A ticket may hold at most ' + limits.maxPerTicket + ' attachments.');
+        return;
+      }
+      // Every file, before any is stored: see above.
+      for (const file of files) {
+        try {
+          verifyType(sanitiseFilename(file.originalname), file.buffer.subarray(0, 64));
+        } catch (err) {
+          if (err instanceof HttpError && err.status === 400) {
+            refuse(sanitiseFilename(file.originalname) + ': ' + err.message);
+            return;
+          }
+          throw err;
+        }
+      }
     }
 
-    flash(req, 'success', isInternal ? 'Internal note added.' : 'Comment added.');
-    res.redirect('/tickets/' + ticket.id);
+    const stored = files.length > 0 ? await storeFiles(req, ticket.id, viewer.id, files, isInternal) : [];
+
+    if (text !== '') {
+      const commentId = await addComment({ ticketId: ticket.id, authorId: viewer.id, body: text, isInternal });
+      auditRequest(req, {
+        action: isInternal ? 'ticket.note.added' : 'ticket.comment.added',
+        targetType: 'ticket',
+        targetId: ticket.id,
+        detail: { commentId, reference: ticket.reference, ...(stored.length ? { withFiles: stored.length } : {}) },
+      });
+
+      // An internal note is for the service desk, so it is never emailed to
+      // the requester - that is the whole point of marking one internal.
+      if (!isInternal) {
+        if (isStaff(viewer.role)) {
+          // Recorded when the decision is made; the outbox shows a failure to deliver.
+          if (stored.length) await markEmailed(stored);
+          await notifyTicket('comment.added.requester', ticket.id, {
+            comment: text,
+            authorName: viewer.display_name,
+            ...(stored.length ? { attachmentIds: stored } : {}),
+          });
+        } else {
+          await notifyTicket('comment.added.technician', ticket.id, { comment: text, authorName: viewer.display_name });
+        }
+      }
+    }
+
+    flash(
+      req,
+      'success',
+      text === ''
+        ? stored.length === 1 ? 'File attached.' : 'Files attached.'
+        : isInternal
+          ? 'Internal note added.'
+          : isStaff(viewer.role) && stored.length
+            ? 'Reply sent, with its files.'
+            : 'Comment added.',
+    );
+    res.redirect(back);
   }),
 );
 
@@ -1409,7 +1489,8 @@ ticketRouter.post(
      */
     const refuse = (message: string): void => {
       flash(req, 'error', message, 'attachments');
-      res.redirect('/tickets/' + ticket.id + '#attachments');
+      // Shown beside the reply box, the one file picker the page has now.
+      res.redirect('/tickets/' + ticket.id + '#reply');
     };
 
     if (!limits.enabled) {
@@ -1515,7 +1596,7 @@ ticketRouter.post(
       (stored.length === 1 ? 'Attachment added.' : stored.length + ' attachments added.') +
         (inform ? ' The requester has been emailed a copy.' : ''),
     );
-    res.redirect('/tickets/' + ticket.id + '#attachments');
+    res.redirect('/tickets/' + ticket.id + '#conversation');
   }),
 );
 
