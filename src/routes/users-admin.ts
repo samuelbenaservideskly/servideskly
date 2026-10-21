@@ -531,6 +531,7 @@ userAdminRouter.post(
       breakGlassRanges: breakGlassLines,
       elsewhereNeedsCode: raw.elsewhereNeedsCode === 'on',
       codeForEveryone: raw.codeForEveryone === 'on',
+      requireAuthenticator: raw.requireAuthenticator === 'on',
     };
     await updateSettings(
       { localAccounts: { ...settings().localAccounts, conditionalAccess: access } },
@@ -546,7 +547,7 @@ userAdminRouter.post(
     flash(
       req,
       'success',
-      access.allowedRanges.length === 0 && !access.codeForEveryone
+      access.allowedRanges.length === 0 && !access.codeForEveryone && !access.requireAuthenticator
         ? 'Saved. Password accounts can sign in from anywhere.'
         : 'Conditional access saved.',
     );

@@ -32,7 +32,7 @@ import {
   verifyIdToken,
 } from '../auth/oidc.js';
 import { linkCandidate, linkToProvider, provisionOnLogin, type DirectoryIdentity } from '../auth/provisioning.js';
-import { setLocalPassword, verifyLocalSignIn } from '../auth/local-accounts.js';
+import { isLocalAdmin, setLocalPassword, verifyLocalSignIn } from '../auth/local-accounts.js';
 import { accessDecision, codeSignInAllowed } from '../auth/conditional-access.js';
 import { findUserById } from '../services/users.js';
 import { allowOwnScripts } from '../middleware/security.js';
@@ -51,7 +51,9 @@ import { rotateCsrfToken } from '../middleware/csrf.js';
 import { allowFormActionTo, callbackLimiter, loginLimiter } from '../middleware/security.js';
 import { flash } from '../middleware/view-locals.js';
 import type { UserRow, UserSource } from '../services/users.js';
-import { hasAuthenticator, useAuthenticatorCode } from '../auth/authenticator.js';
+import { enableAuthenticator, hasAuthenticator, matchStep, newSecret, otpauthUri, useAuthenticatorCode } from '../auth/authenticator.js';
+import { renderSVG } from 'uqr';
+import { openMaybe, seal } from '../lib/secret-box.js';
 
 const log = logger.child({ module: 'routes/auth' });
 
@@ -845,16 +847,107 @@ authRouter.post(
     const returnTo = req.session.mfaReturnTo ?? '/home';
     delete req.session.mfaReturnTo;
 
-    // A temporary password is replaced after the code, not instead of it.
-    if (req.session.mfaMustChange) {
-      delete req.session.mfaMustChange;
-      req.session.mustChangeUserId = pending.id;
-      req.session.mustChangeReturnTo = returnTo;
-      res.redirect('/login/new-password');
+    // A temporary password is replaced after the code, not instead of it;
+    // and a required authenticator is set up after it too.
+    const mustChange = !!req.session.mfaMustChange;
+    delete req.session.mfaMustChange;
+    await finishPasswordSignIn(req, res, pending, returnTo, mustChange);
+  }),
+);
+
+/**
+ * The last step of a password sign-in, whatever came before it: a required
+ * authenticator app is set up first (Conditional access, 21 Oct 2026), then
+ * a temporary password is replaced, then the session begins. The
+ * break-glass account is never asked to set one up: it is the way in when
+ * things are broken.
+ */
+async function finishPasswordSignIn(req: Request, res: Response, user: UserRow, returnTo: string, mustChange: boolean): Promise<void> {
+  if (settings().localAccounts.conditionalAccess.requireAuthenticator && !isLocalAdmin(user) && !(await hasAuthenticator(user.id))) {
+    req.session.enrolUserId = user.id;
+    req.session.enrolReturnTo = returnTo;
+    req.session.enrolMustChange = mustChange;
+    delete req.session.enrolSecret;
+    delete req.session.enrolDone;
+    res.redirect('/login/authenticator/setup');
+    return;
+  }
+  if (mustChange) {
+    req.session.mustChangeUserId = user.id;
+    req.session.mustChangeReturnTo = returnTo;
+    res.redirect('/login/new-password');
+    return;
+  }
+  await establishSession(req, res, user, false, 'manual', returnTo);
+}
+
+async function renderEnrol(req: Request, res: Response, error: string | null): Promise<void> {
+  const pending = req.session.enrolUserId ? await findUserById(req.session.enrolUserId) : undefined;
+  if (!pending) {
+    res.redirect('/login');
+    return;
+  }
+  let secret = req.session.enrolSecret ? openMaybe(JSON.parse(req.session.enrolSecret)) : '';
+  if (!secret) {
+    secret = newSecret();
+    req.session.enrolSecret = JSON.stringify(seal(secret));
+  }
+  res.setHeader('Cache-Control', 'no-store');
+  res.status(error ? 400 : 200).render('login-authenticator-setup', {
+    title: 'Set up an authenticator app',
+    secret,
+    qrSvg: renderSVG(otpauthUri(secret, pending.email, settings().branding.appName || 'Service Desk')),
+    error,
+  });
+}
+
+authRouter.get('/login/authenticator/setup', asyncHandler(async (req: Request, res: Response) => {
+  if (req.currentUser) {
+    res.redirect('/home');
+    return;
+  }
+  await renderEnrol(req, res, null);
+}));
+
+authRouter.post(
+  '/auth/local/authenticator/setup',
+  loginLimiter,
+  asyncHandler(async (req: Request, res: Response) => {
+    const pending = req.session.enrolUserId ? await findUserById(req.session.enrolUserId) : undefined;
+    const secret = req.session.enrolSecret ? openMaybe(JSON.parse(req.session.enrolSecret)) : '';
+    if (!pending || !secret) {
+      res.redirect('/login');
       return;
     }
+    if (matchStep(secret, String((req.body ?? {}).code ?? ''), 0) === null) {
+      await renderEnrol(req, res, 'That code is not right. Type the six digits the app shows now.');
+      return;
+    }
+    const codes = await enableAuthenticator(pending.id, secret, pending);
+    delete req.session.enrolSecret;
+    req.session.enrolDone = true;
+    // Shown on this response only: stored as hashes, never in the session or a redirect.
+    res.setHeader('Cache-Control', 'no-store');
+    res.render('login-recovery-codes', { title: 'Your recovery codes', codes });
+  }),
+);
 
-    await establishSession(req, res, pending, false, 'manual', returnTo);
+/** After the recovery codes: the rest of the sign-in. */
+authRouter.post(
+  '/auth/local/authenticator/continue',
+  asyncHandler(async (req: Request, res: Response) => {
+    const pending = req.session.enrolUserId && req.session.enrolDone ? await findUserById(req.session.enrolUserId) : undefined;
+    if (!pending) {
+      res.redirect('/login');
+      return;
+    }
+    const returnTo = req.session.enrolReturnTo ?? '/home';
+    const mustChange = !!req.session.enrolMustChange;
+    delete req.session.enrolUserId;
+    delete req.session.enrolReturnTo;
+    delete req.session.enrolMustChange;
+    delete req.session.enrolDone;
+    await finishPasswordSignIn(req, res, pending, returnTo, mustChange);
   }),
 );
 
@@ -875,7 +968,7 @@ authRouter.get('/login/authenticator', asyncHandler(async (req: Request, res: Re
     res.redirect('/login');
     return;
   }
-  res.render('login-authenticator', { title: 'Enter the code from your app', error: null });
+  res.render('login-authenticator', { title: 'Enter the code from your Authenticator app', error: null });
 }));
 
 authRouter.post(
@@ -905,7 +998,7 @@ authRouter.post(
       }
       req.session.totpTries = tries;
       res.status(400).render('login-authenticator', {
-        title: 'Enter the code from your app',
+        title: 'Enter the code from your Authenticator app',
         error: 'That code is not right. Type the one your app shows now.',
       });
       return;
@@ -1121,14 +1214,7 @@ authRouter.post(
      * the account is remembered in the pre-auth session, and the next step
      * sets the password and establishes the session (asked for 15 Oct 2026).
      */
-    if (mustChange) {
-      req.session.mustChangeUserId = user.id;
-      req.session.mustChangeReturnTo = parsed.data.returnTo ?? '/home';
-      res.redirect('/login/new-password');
-      return;
-    }
-
-    await establishSession(req, res, user, false, 'manual', parsed.data.returnTo ?? '/home');
+    await finishPasswordSignIn(req, res, user, parsed.data.returnTo ?? '/home', mustChange);
   }),
 );
 

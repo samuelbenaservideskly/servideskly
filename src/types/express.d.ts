@@ -35,6 +35,16 @@ declare module 'express-session' {
     totpReturnTo?: string;
     totpMustChange?: boolean;
     totpTries?: number;
+    /**
+     * A password account that must set up an authenticator app before it gets
+     * in (Conditional access - Require an authenticator app). No session yet.
+     */
+    enrolUserId?: string;
+    enrolReturnTo?: string;
+    enrolMustChange?: boolean;
+    enrolSecret?: string;
+    /** Set up and shown its recovery codes: Continue finishes the sign-in. */
+    enrolDone?: boolean;
     /** An authenticator secret being set up, sealed, until a code proves the app holds it. */
     totpSetup?: string;
     /** A refused reply's words, put back in the box once (routes/tickets.ts). */

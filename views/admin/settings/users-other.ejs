@@ -72,6 +72,7 @@
       <%
         var bits = [];
         if (access.allowedRanges.length) { bits.push(access.allowedRanges.length + (access.allowedRanges.length === 1 ? ' range' : ' ranges')); }
+        if (access.requireAuthenticator) { bits.push('authenticator required'); }
         if (access.codeForEveryone) { bits.push('code for everyone'); }
         else if (access.allowedRanges.length && access.elsewhereNeedsCode) { bits.push('code elsewhere'); }
       %>
@@ -107,6 +108,14 @@
         <span>Ask every password account for a code, wherever they are</span>
       </label>
       <%- include('../../partials/info', { text: 'A code on every sign-in, inside the allowed addresses as well.' }) %>
+    </div>
+
+    <div class="label-row">
+      <label class="check">
+        <input type="checkbox" name="requireAuthenticator" value="on"<%= access.requireAuthenticator ? ' checked' : '' %>>
+        <span>Require an authenticator app</span>
+      </label>
+      <%- include('../../partials/info', { text: 'Everybody who signs in with a password sets one up at their next sign-in, and is then asked for its code every time. The break-glass account is exempt.' }) %>
     </div>
 
     <% if (locals.hasBreakGlass) { %>

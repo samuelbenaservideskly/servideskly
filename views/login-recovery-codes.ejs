@@ -1,0 +1,20 @@
+<%- include('partials/header') %>
+<%#
+  The recovery codes after a required set-up at sign-in, on this response
+  only (stored as hashes). Continue finishes the sign-in.
+%>
+<div class="signin">
+  <div class="card signin-card stack">
+    <%- include("partials/signin-mark") %>
+    <h1>Your recovery codes</h1>
+    <p class="lede">If you lose your phone, each of these signs you in once instead of a code. Keep them somewhere safe. They are not shown again.</p>
+    <ul class="authenticator-recovery">
+      <% codes.forEach(function (code) { %><li><%= code %></li><% }); %>
+    </ul>
+    <form method="post" action="/auth/local/authenticator/continue">
+      <input type="hidden" name="_csrf" value="<%= locals.csrfToken %>">
+      <button type="submit" class="btn btn--primary btn--block">I have saved them, continue</button>
+    </form>
+  </div>
+</div>
+<%- include('partials/footer') %>

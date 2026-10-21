@@ -158,6 +158,8 @@ const documentSchema = z
           elsewhereNeedsCode: z.boolean().default(false),
           /** A code by email on every sign-in, wherever it comes from. */
           codeForEveryone: z.boolean().default(false),
+          /** Every password account (break-glass aside) must use an authenticator app; set up at the next sign-in. */
+          requireAuthenticator: z.boolean().default(false),
         })
         .default({ allowedRanges: [], elsewhereNeedsCode: false, codeForEveryone: false }),
     }),
@@ -430,6 +432,7 @@ export interface EffectiveSettings {
       breakGlassRanges: string[];
       elsewhereNeedsCode: boolean;
       codeForEveryone: boolean;
+      requireAuthenticator: boolean;
     };
   };
   sla: SlaSettings;
@@ -602,6 +605,7 @@ function documentFromEnvironment(): SettingsDocument {
         breakGlassRanges: [],
         elsewhereNeedsCode: false,
         codeForEveryone: false,
+        requireAuthenticator: false,
       },
     },
     locale: {

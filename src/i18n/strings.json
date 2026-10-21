@@ -871,9 +871,9 @@
   },
   "s109de3e85a": {
     "text": "Code from the app",
-    "context": "The label of a form field on profile-authenticator",
-    "where": "views/profile-authenticator.ejs",
-    "uses": 1
+    "context": "The label of a form field on login-authenticator-setup / The label of a form field on profile-authenticator",
+    "where": "views/login-authenticator-setup.ejs",
+    "uses": 2
   },
   "s10c59a14d7": {
     "text": "A reply usually ends in a name, a job title, a telephone number and a legal\n    disclaimer. Add the phrase each of your senders signs off with, and\n    everything from that line down is cut from the comment.",
@@ -1576,6 +1576,12 @@
     "context": "The label of a form field on admin/settings/_mailbox-dialog / The label of a form field on admin/settings/authentication",
     "where": "views/admin/settings/_mailbox-dialog.ejs",
     "uses": 2
+  },
+  "s1dd453b7a5": {
+    "text": "Everybody who signs in with a password sets one up at their next sign-in, and is then asked for its code every time. The break-glass account is exempt.",
+    "context": "An explanation behind an (i) mark on admin/settings/users-other",
+    "where": "views/admin/settings/users-other.ejs",
+    "uses": 1
   },
   "s1de3df70dd": {
     "text": "Steps",
@@ -2519,12 +2525,6 @@
     "where": "views/reports.ejs",
     "uses": 1
   },
-  "s2f1e9d4cff": {
-    "text": "Enter the code from your app",
-    "context": "A heading on login-authenticator / The title of a page, in the browser tab",
-    "where": "views/login-authenticator.ejs",
-    "uses": 3
-  },
   "s2f23890060": {
     "text": "Cancellation note",
     "context": "The label of a form field on tickets/show",
@@ -2835,7 +2835,7 @@
     "text": "Set up an authenticator app",
     "context": "A heading on profile-authenticator / A button on profile / The title of a page, in the browser tab",
     "where": "views/profile-authenticator.ejs",
-    "uses": 3
+    "uses": 4
   },
   "s33d7931757": {
     "text": "Please say why you are declining this request.",
@@ -3256,6 +3256,12 @@
     "context": "A field on the form a ticket is raised with / The label of a form field on admin/settings/template-edit / The label of a form field on admin/settings/templates",
     "where": "src/i18n/code-strings.ts",
     "uses": 5
+  },
+  "s3cf19b8a24": {
+    "text": "This service desk asks for a code from an authenticator app when you sign in.",
+    "context": "The sentence under a heading on login-authenticator-setup",
+    "where": "views/login-authenticator-setup.ejs",
+    "uses": 1
   },
   "s3d131368b4": {
     "text": "Tickets",
@@ -3937,9 +3943,9 @@
   },
   "s49e2f75e06": {
     "text": "Your recovery codes",
-    "context": "A heading on profile-recovery / The title of a page, in the browser tab",
-    "where": "views/profile-recovery.ejs",
-    "uses": 2
+    "context": "A heading on login-recovery-codes / A heading on profile-recovery / The title of a page, in the browser tab",
+    "where": "views/login-recovery-codes.ejs",
+    "uses": 4
   },
   "s4a3b3db4cf": {
     "text": "The last day it shows. Leave empty to show it until it is removed.",
@@ -4197,6 +4203,12 @@
     "text": "What just happened on your tickets",
     "context": "What the \"Activity\" widget shows",
     "where": "src/i18n/code-strings.ts",
+    "uses": 1
+  },
+  "s4f9950197c": {
+    "text": "I have saved them, continue",
+    "context": "A button on login-recovery-codes",
+    "where": "views/login-recovery-codes.ejs",
     "uses": 1
   },
   "s4fa7901d97": {
@@ -4600,6 +4612,12 @@
     "context": "A label for a screen reader on admin/settings/_template-tabs / A link on admin/settings/_template-tabs / A table column heading on admin/settings/api-keys",
     "where": "views/admin/settings/_template-tabs.ejs",
     "uses": 4
+  },
+  "s56bf0e6705": {
+    "text": "Install an authenticator app on your phone, such as Microsoft Authenticator or Google Authenticator.",
+    "context": "Text on the page on login-authenticator-setup",
+    "where": "views/login-authenticator-setup.ejs",
+    "uses": 1
   },
   "s56c2c91623": {
     "text": "Managers",
@@ -5163,12 +5181,6 @@
     "text": "Rule",
     "context": "A table column heading on admin/settings/mail-rules",
     "where": "views/admin/settings/mail-rules.ejs",
-    "uses": 1
-  },
-  "s62a201f481": {
-    "text": "Lost your phone? Type one of your recovery codes instead. Without one, ask an administrator to remove the app from your account.",
-    "context": "Text on the page on login-authenticator",
-    "where": "views/login-authenticator.ejs",
     "uses": 1
   },
   "s62bdb92aee": {
@@ -6033,6 +6045,12 @@
     "text": "An unexpected error occurred.",
     "context": "Text on error",
     "where": "views/error.ejs",
+    "uses": 1
+  },
+  "s705a5686db": {
+    "text": "Set up your Authenticator app",
+    "context": "A heading on login-authenticator-setup",
+    "where": "views/login-authenticator-setup.ejs",
     "uses": 1
   },
   "s7071fd5b2b": {
@@ -7652,8 +7670,8 @@
   "s8ec361f7be": {
     "text": "That code is not right. Type the six digits the app shows now.",
     "context": "A message shown beside a form or after an action",
-    "where": "src/routes/profile.ts",
-    "uses": 1
+    "where": "src/routes/auth.ts",
+    "uses": 2
   },
   "s8f0f50af8c": {
     "text": "The usual week is saved.",
@@ -8296,6 +8314,12 @@
     "context": "Text on work-dashboard. Keep each {0}, {1}...: it is a value",
     "where": "views/work-dashboard.ejs",
     "uses": 1
+  },
+  "s999544cdd1": {
+    "text": "If you have trouble logging in contact your administrator.",
+    "context": "Text on the page on login-authenticator-setup / Text on the page on login-authenticator",
+    "where": "views/login-authenticator-setup.ejs",
+    "uses": 2
   },
   "s999f23fcd7": {
     "text": "Identity",
@@ -9437,6 +9461,12 @@
     "where": "views/admin/settings/_relay-dialog.ejs",
     "uses": 2
   },
+  "saf10ddc55d": {
+    "text": "Enter the code from your Authenticator app",
+    "context": "A heading on login-authenticator / The title of a page, in the browser tab",
+    "where": "views/login-authenticator.ejs",
+    "uses": 3
+  },
   "saf15a99878": {
     "text": "Save user groups",
     "context": "A button on admin/settings/user-detail",
@@ -9975,12 +10005,6 @@
     "text": "How many are not available today.",
     "context": "A message shown beside a form or after an action",
     "where": "src/services/dashboards.ts",
-    "uses": 1
-  },
-  "sb91289e595": {
-    "text": "They sign in with the password alone until they set it up again.",
-    "context": "Text on the page on admin/settings/user-detail",
-    "where": "views/admin/settings/user-detail.ejs",
     "uses": 1
   },
   "sb944a395e9": {
@@ -10567,9 +10591,9 @@
   },
   "sc258cd1356": {
     "text": "In the app, add an account and scan this code.",
-    "context": "Text on the page on profile-authenticator",
-    "where": "views/profile-authenticator.ejs",
-    "uses": 1
+    "context": "Text on the page on login-authenticator-setup / Text on the page on profile-authenticator",
+    "where": "views/login-authenticator-setup.ejs",
+    "uses": 2
   },
   "sc282ea31ac": {
     "text": "Stored secret",
@@ -10973,6 +10997,12 @@
     "where": "views/admin/settings/portal-edit.ejs",
     "uses": 1
   },
+  "scc9b613dfd": {
+    "text": "Require an authenticator app",
+    "context": "Text on the page on admin/settings/users-other",
+    "where": "views/admin/settings/users-other.ejs",
+    "uses": 1
+  },
   "sccaac90536": {
     "text": "Its own list, which the addresses above never apply to. Empty: anywhere, as before. Asked for 16 Oct 2026 - the one account with a role nothing can take away is worth pinning to the office.",
     "context": "An explanation behind an (i) mark on admin/settings/users-other",
@@ -11229,6 +11259,12 @@
     "text": "A cancelled task counts as done. The rules are copied onto each ticket when it is raised, so changing them here does not affect tickets already open. Automatic closing waits for any approval the ticket needs.",
     "context": "An explanation behind an (i) mark on admin/settings/template-edit",
     "where": "views/admin/settings/template-edit.ejs",
+    "uses": 1
+  },
+  "sd2daa88f41": {
+    "text": "Cannot scan it? Enter this key in the app:",
+    "context": "Text on the page on login-authenticator-setup",
+    "where": "views/login-authenticator-setup.ejs",
     "uses": 1
   },
   "sd329473ab6": {
@@ -11947,9 +11983,9 @@
   },
   "sdef58af9fd": {
     "text": "QR code for your authenticator app",
-    "context": "Text on profile-authenticator",
-    "where": "views/profile-authenticator.ejs",
-    "uses": 1
+    "context": "Text on login-authenticator-setup / Text on profile-authenticator",
+    "where": "views/login-authenticator-setup.ejs",
+    "uses": 2
   },
   "sdf03affb86": {
     "text": "- not while it has a mandatory field",
@@ -11991,12 +12027,6 @@
     "text": "Text to compare with",
     "context": "The grey example inside an input on admin/settings/automation-edit",
     "where": "views/admin/settings/automation-edit.ejs",
-    "uses": 1
-  },
-  "sdf76e850aa": {
-    "text": "Remove their authenticator app",
-    "context": "A button on admin/settings/user-detail",
-    "where": "views/admin/settings/user-detail.ejs",
     "uses": 1
   },
   "sdf796c655f": {
@@ -12355,9 +12385,9 @@
   },
   "se679ca0953": {
     "text": "Turn it on",
-    "context": "A button on profile-authenticator",
-    "where": "views/profile-authenticator.ejs",
-    "uses": 1
+    "context": "A button on login-authenticator-setup / A button on profile-authenticator",
+    "where": "views/login-authenticator-setup.ejs",
+    "uses": 2
   },
   "se67ab0416c": {
     "text": "Brand colour",
@@ -12995,6 +13025,12 @@
     "where": "views/admin/settings/user-detail.ejs",
     "uses": 1
   },
+  "sf65e6bb3c8": {
+    "text": "Reset authenticator",
+    "context": "A button on admin/settings/user-detail",
+    "where": "views/admin/settings/user-detail.ejs",
+    "uses": 1
+  },
   "sf6670e3d3a": {
     "text": "Method and address",
     "context": "A table column heading on admin/settings/api-keys",
@@ -13263,6 +13299,12 @@
     "text": "That field is not on this form.",
     "context": "A message shown beside a form or after an action",
     "where": "src/services/templates.ts",
+    "uses": 1
+  },
+  "sfa688b9194": {
+    "text": "If you lose your phone, each of these signs you in once instead of a code. Keep them somewhere safe. They are not shown again.",
+    "context": "The sentence under a heading on login-recovery-codes",
+    "where": "views/login-recovery-codes.ejs",
     "uses": 1
   },
   "sfa6ea8c3ce": {

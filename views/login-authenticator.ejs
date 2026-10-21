@@ -9,9 +9,9 @@
 <div class="signin">
   <div class="card signin-card">
     <%- include("partials/signin-mark") %>
-    <h1>Enter the code from your app</h1>
+    <h1>Enter the code from your Authenticator app</h1>
     <p class="lede">
-      Your password was accepted. Open your authenticator app and type the six digits it shows for
+      Open your authenticator app and type the six digits it shows for
       <strong><%= locals.appName || 'this service desk' %></strong>.
     </p>
 
@@ -32,7 +32,7 @@
     </form>
 
     <p class="small muted">
-      Lost your phone? Type one of your recovery codes instead. Without one, ask an administrator to remove the app from your account.
+      If you have trouble logging in contact your administrator.
     </p>
     <p class="small muted"><a href="/login?change=1">Use a different address</a></p>
   </div>

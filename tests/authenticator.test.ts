@@ -7,6 +7,7 @@ import { createApp } from '../src/app.js';
 import { signInAs, type TestSession } from './support/session.js';
 import { bootstrapTestDatabase } from './support/bootstrap.js';
 import { createLocalAccount } from '../src/auth/local-accounts.js';
+import { settings, updateSettings } from '../src/settings/index.js';
 import { findUserByEmail } from '../src/services/users.js';
 import { codeAt, currentStep, matchStep, newSecret } from '../src/auth/authenticator.js';
 
@@ -52,7 +53,7 @@ before(async () => {
   await bootstrapTestDatabase();
   app = createApp();
   admin = await signInAs('totp.admin@example.com', 'admin');
-  for (const email of ['totp.one@example.com', 'totp.two@example.com', 'totp.three@example.com']) {
+  for (const email of ['totp.one@example.com', 'totp.two@example.com', 'totp.three@example.com', 'totp.forced@example.com']) {
     await createLocalAccount({ email, displayName: email, role: 'user', password: PASSWORD }, null);
   }
 });
@@ -111,7 +112,7 @@ describe('signing in', () => {
     await setUp('totp.three@example.com');
     const target = (await findUserByEmail('totp.three@example.com'))!;
     const page = await request(app).get('/admin/settings/users/' + target.id).set('Cookie', admin.cookie).expect(200);
-    assert.match(page.text, /Remove their authenticator app/);
+    assert.match(page.text, /Reset authenticator/);
     await request(app)
       .post('/admin/settings/users/' + target.id + '/authenticator/reset')
       .set('Cookie', admin.cookie)
@@ -126,5 +127,32 @@ describe('signing in', () => {
     const directory = await signInAs('totp.entra@example.com', 'user');
     const res = await request(app).get('/profile/authenticator').set('Cookie', directory.cookie);
     assert.equal(res.status, 403);
+  });
+});
+
+describe('required by the service desk', () => {
+  test('a password account without one sets it up at its next sign-in, before it gets in', async () => {
+    const ca = settings().localAccounts.conditionalAccess;
+    await updateSettings({ localAccounts: { ...settings().localAccounts, conditionalAccess: { ...ca, requireAuthenticator: true } } }, null);
+    try {
+      const { agent, response } = await signIn('totp.forced@example.com');
+      assert.equal(response.headers.location, '/login/authenticator/setup');
+      assert.equal((await agent.get('/profile')).status, 302, 'no session yet');
+
+      const page = await agent.get('/login/authenticator/setup').expect(200);
+      const secret = /class="authenticator-key">([^<]+)</.exec(page.text)![1]!.replace(/s+/g, '');
+      const codes = await agent.post('/auth/local/authenticator/setup').type('form')
+        .send({ _csrf: csrfFrom(page.text), code: codeAt(secret, currentStep()) }).expect(200);
+      assert.match(codes.text, /Your recovery codes/);
+      const done = await agent.post('/auth/local/authenticator/continue').type('form').send({ _csrf: csrfFrom(codes.text) });
+      assert.equal(done.status, 302);
+      await agent.get('/profile').expect(200);
+
+      // The next sign-in asks for the app's code, as for anybody who has one.
+      const again = await signIn('totp.forced@example.com');
+      assert.equal(again.response.headers.location, '/login/authenticator');
+    } finally {
+      await updateSettings({ localAccounts: { ...settings().localAccounts, conditionalAccess: { ...ca, requireAuthenticator: false } } }, null);
+    }
   });
 });

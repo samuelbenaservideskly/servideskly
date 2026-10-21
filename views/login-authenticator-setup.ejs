@@ -1,0 +1,31 @@
+<%- include('partials/header') %>
+<%#
+  Conditional access - Require an authenticator app (21 Oct 2026): a password
+  account without one sets it up here, after its password, before it gets
+  in. The QR code is drawn on the server (uqr); no script.
+%>
+<div class="signin">
+  <div class="card signin-card stack">
+    <%- include("partials/signin-mark") %>
+    <h1>Set up your Authenticator app</h1>
+    <p class="lede">This service desk asks for a code from an authenticator app when you sign in.</p>
+    <ol class="authenticator-steps">
+      <li>Install an authenticator app on your phone, such as Microsoft Authenticator or Google Authenticator.</li>
+      <li>In the app, add an account and scan this code.</li>
+    </ol>
+    <div class="authenticator-qr" role="img" aria-label="<%= t('QR code for your authenticator app') %>"><%- qrSvg %></div>
+    <p class="small muted">Cannot scan it? Enter this key in the app:</p>
+    <p class="authenticator-key"><%= secret.match(/.{1,4}/g).join(' ') %></p>
+    <form method="post" action="/auth/local/authenticator/setup" class="stack local-signin">
+      <input type="hidden" name="_csrf" value="<%= locals.csrfToken %>">
+      <div class="field">
+        <label for="code">Code from the app</label>
+        <input id="code" name="code" type="text" inputmode="numeric" required maxlength="7" autocomplete="one-time-code" spellcheck="false" class="authenticator-code"<%- error ? ' aria-describedby="code-error"' : '' %>>
+        <% if (error) { %><p class="field-error" id="code-error" role="alert"><%= error %></p><% } %>
+      </div>
+      <button type="submit" class="btn btn--primary btn--block">Turn it on</button>
+    </form>
+    <p class="small muted">If you have trouble logging in contact your administrator.</p>
+  </div>
+</div>
+<%- include('partials/footer') %>
