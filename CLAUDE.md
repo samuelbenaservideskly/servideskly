@@ -2207,7 +2207,16 @@ discovery document must name the **configured issuer** (a typed URL is not
 ours to trust), an email the provider calls unverified is refused (no claim,
 as ADFS sends, is accepted), optional allowed email domains. The button
 reads "Sign in with <name>". Local sign-in can be disabled once an
-administrator signed in through it. SAML is still not built - see HANDOFF.
+administrator signed in through it.
+
+**Internal addresses are refused** (security review, 21 Oct 2026,
+`refuseInternal` in oidc.ts): for the generic provider and Okta, every
+address the server will fetch - the discovery document, token, keys,
+userinfo - is looked up first and refused when it is private (10.x,
+192.168.x, localhost...), unless "Allow addresses on the internal network"
+(`genericOidc.allowPrivateNetwork`) is on, for a Keycloak or ADFS inside
+the company. Checked at discovery, so a later DNS change is not caught;
+an address that does not resolve is left to the fetch. SAML is still not built - see HANDOFF.
 
 ### Connections: five types
 
@@ -2522,6 +2531,12 @@ above the page (a GET to `/tickets?q=`). Signed out, the plain masthead.
   two cards: time **to go** (or overdue) and when it is due.
 - "New ticket" is in the sidebar and on the pages that need it, not in the
   top bar as well - asked for directly.
+- **The sidebar folds to icons** (21 Oct 2026, "like Outlook"): the button
+  beside the brand posts to `/sidebar`, a cookie (`helpdesk_sidebar`,
+  middleware/theme.ts, like the colour mode) remembers it, and the shell
+  gets `shell--compact`. Folded, each link's name is its `title`, the
+  count a badge on the icon; unfolding is the same button. Wide screens
+  only - under 900px the sidebar slides in and out as before.
 
 
 ### Linen and petrol (18 Oct 2026)

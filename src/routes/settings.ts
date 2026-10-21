@@ -329,6 +329,7 @@ settingsRouter.post(
     const clientSecret = text(body.clientSecret);
     const scopes = text(body.scopes).split(/[\s,]+/).filter(Boolean).join(' ') || 'openid profile email';
     const allowedDomains = parseList(body.allowedDomains, 50).map((d) => bareHost(d));
+    const allowPrivateNetwork = body.allowPrivateNetwork === 'on';
 
     const problems: string[] = [];
     if (issuer) {
@@ -347,18 +348,18 @@ settingsRouter.post(
     const badDomain = allowedDomains.find((d) => !HOSTNAME.test(d));
     if (badDomain) problems.push('"' + badDomain + '" is not a domain name, e.g. example.com.');
     if (problems.length > 0) {
-      renderProvider(res, 'generic', { problems, values: { name, issuer, clientId, scopes, allowedDomains: allowedDomains.join('\n') } }, 400);
+      renderProvider(res, 'generic', { problems, values: { name, issuer, clientId, scopes, allowedDomains: allowedDomains.join('\n'), allowPrivateNetwork: allowPrivateNetwork ? 'on' : '' } }, 400);
       return;
     }
 
     await updateSettings(
-      { genericOidc: { name, issuer, clientId, scopes, allowedDomains, ...(clientSecret ? { clientSecret } : {}) } },
+      { genericOidc: { name, issuer, clientId, scopes, allowedDomains, allowPrivateNetwork, ...(clientSecret ? { clientSecret } : {}) } },
       req.currentUser?.id ?? null,
     );
     auditRequest(req, {
       action: 'settings.generic_oidc.changed',
       targetType: 'settings',
-      detail: { name, issuer, clientId, scopes, allowedDomains, secretChanged: clientSecret !== '' },
+      detail: { name, issuer, clientId, scopes, allowedDomains, allowPrivateNetwork, secretChanged: clientSecret !== '' },
     });
     // Saved either way; but a provider that cannot be read is said here,
     // where it can be fixed, rather than as a failed sign-in later.

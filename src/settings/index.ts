@@ -102,6 +102,9 @@ const documentSchema = z
       clientSecret: secretField,
       scopes: z.string().max(300),
       allowedDomains: stringList,
+      // Fetch the provider's addresses even when they lead into the private
+      // network (a Keycloak or ADFS inside the company). Off by default.
+      allowPrivateNetwork: z.boolean(),
     }),
     provisioning: z.object({
       // Create an unknown account on its first successful sign-in. With
@@ -402,6 +405,7 @@ export interface EffectiveSettings {
     clientSecret: string;
     scopes: string[];
     allowedDomains: string[];
+    allowPrivateNetwork: boolean;
     discoveryUrl: string;
   };
   oidc: {
@@ -586,7 +590,7 @@ function documentFromEnvironment(): SettingsDocument {
     },
     google: { clientId: '', clientSecret: undefined, allowedDomains: [] },
     okta: { domain: '', authServer: 'default', clientId: '', clientSecret: undefined },
-    genericOidc: { name: '', issuer: '', clientId: '', clientSecret: undefined, scopes: 'openid profile email', allowedDomains: [] },
+    genericOidc: { name: '', issuer: '', clientId: '', clientSecret: undefined, scopes: 'openid profile email', allowedDomains: [], allowPrivateNetwork: false },
     provisioning: {
       jitEnabled: config.provisioning.jitEnabled,
       portalAdmins: [],
@@ -772,6 +776,7 @@ function derive(doc: SettingsDocument): EffectiveSettings {
       // openid is what makes it OpenID Connect; never left out.
       scopes: genericScopes.includes('openid') ? genericScopes : ['openid', ...genericScopes],
       allowedDomains: doc.genericOidc.allowedDomains.map((d) => d.toLowerCase()),
+      allowPrivateNetwork: doc.genericOidc.allowPrivateNetwork === true,
       discoveryUrl: genericIssuer + '/.well-known/openid-configuration',
     },
     google: {

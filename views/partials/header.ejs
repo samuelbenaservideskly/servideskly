@@ -89,12 +89,13 @@
   // Escaped: a pin's label and address are the person's own text (review, 21 Oct 2026).
   var escapeLink = function (v) { return String(v).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;'); };
   var link = function (href, icon, label, on, badge) {
-    return '<a class="side-link" href="' + escapeLink(href) + '"' + (on ? ' aria-current="page"' : '') + '>' +
+    // Compact, the name is only an icon's tooltip.
+    return '<a class="side-link" href="' + escapeLink(href) + '"' + (on ? ' aria-current="page"' : '') + (locals.sidebarCompact ? ' title="' + escapeLink(label) + '"' : '') + '>' +
       include('icon', { name: icon }) + '<span>' + escapeLink(label) + '</span>' +
       (badge ? '<em class="side-link__badge">' + escapeLink(badge) + '</em>' : '') + '</a>';
   };
 %>
-<div class="shell">
+<div class="shell<%= locals.sidebarCompact ? ' shell--compact' : '' %>">
   <%# The sidebar. On a narrow screen it is hidden until the address names it
       (#sidebar, the menu button), and closed by going back to #top - the same
       :target technique as the dialogs, so no script. %>
@@ -108,6 +109,18 @@
           <span class="brand__name"><%= locals.appName %></span>
         <% } %>
       </a>
+      <%# Full or compact (icons only), as Outlook's folder pane: a form post,
+          remembered in a cookie (middleware/theme.ts). Not on a phone, where
+          the sidebar slides in and out anyway. %>
+      <form method="post" action="/sidebar" class="sidebar__fold">
+        <input type="hidden" name="_csrf" value="<%= locals.csrfToken %>">
+        <input type="hidden" name="returnTo" value="<%= locals.currentUrl || path || '/' %>">
+        <% if (locals.sidebarCompact) { %>
+          <button type="submit" name="sidebar" value="full" class="icon-button" title="<%= t('Always show the sidebar') %>"><%- include('icon', { name: 'panelOpen' }) %><span class="visually-hidden"><%= t('Always show the sidebar') %></span></button>
+        <% } else { %>
+          <button type="submit" name="sidebar" value="compact" class="icon-button" title="<%= t('Fold the sidebar to icons') %>"><%- include('icon', { name: 'panelClose' }) %><span class="visually-hidden"><%= t('Fold the sidebar to icons') %></span></button>
+        <% } %>
+      </form>
       <a class="sidebar__close" href="#top" aria-label="Close menu"><%- include('icon', { name: 'x' }) %></a>
     </div>
 
@@ -138,7 +151,7 @@
             <%- link(p.href, p.icon, p.label, p.href === locals.currentUrl || (p.href.indexOf('/boards/') === 0 && path === p.href)) %>
           <% }); %>
           <% if (!(locals.sidebarPins || []).length) { %>
-            <a class="side-link side-link--hint" href="/boards"><%- include('icon', { name: 'plus' }) %><span>Add a dashboard</span></a>
+            <a class="side-link side-link--hint" href="/boards"<% if (locals.sidebarCompact) { %> title="<%= t('Add a dashboard') %>"<% } %>><%- include('icon', { name: 'plus' }) %><span>Add a dashboard</span></a>
           <% } %>
         </nav>
       </div>

@@ -1867,9 +1867,9 @@
   },
   "s22d1dd2d38": {
     "text": "Add a dashboard",
-    "context": "Text on the page on partials/header",
+    "context": "Text on partials/header / Text on the page on partials/header",
     "where": "views/partials/header.ejs",
-    "uses": 1
+    "uses": 2
   },
   "s22d7b11d40": {
     "text": "Send test",
@@ -5981,6 +5981,12 @@
     "where": "views/admin/settings/customization.ejs",
     "uses": 1
   },
+  "s6f8ef3c60c": {
+    "text": "Fold the sidebar to icons",
+    "context": "Text on partials/header",
+    "where": "views/partials/header.ejs",
+    "uses": 2
+  },
   "s6f9f03f95e": {
     "text": "X-API-Key",
     "context": "The grey example inside an input on admin/settings/connections",
@@ -7107,6 +7113,12 @@
     "text": "{\"outcome\": \"success\", \"ticket\": \"INC-000123\"}",
     "context": "Text on admin/settings/api-keys",
     "where": "views/admin/settings/api-keys.ejs",
+    "uses": 1
+  },
+  "s847425bd82": {
+    "text": "Allow addresses on the internal network",
+    "context": "Text on admin/settings/integration-generic",
+    "where": "views/admin/settings/integration-generic.ejs",
     "uses": 1
   },
   "s847df47c08": {
@@ -9677,6 +9689,12 @@
     "where": "views/admin/settings/user-detail.ejs",
     "uses": 1
   },
+  "sb2efa29f72": {
+    "text": "Turn this on only if your sign-in server runs inside your company network, for example Keycloak or ADFS on an internal address. Off, the service desk refuses to contact internal addresses, so nobody can use this page to reach your internal systems. Sign-in from the internet is not affected either way.",
+    "context": "An explanation behind an (i) mark on admin/settings/integration-generic",
+    "where": "views/admin/settings/integration-generic.ejs",
+    "uses": 1
+  },
   "sb2f6bbe918": {
     "text": "The value is never displayed after saving.",
     "context": "Text on the page on admin/settings/authentication",
@@ -10888,6 +10906,12 @@
     "context": "Text on admin/settings/mail-signatures / The grey example inside an input on admin/settings/mail-signatures",
     "where": "views/admin/settings/mail-signatures.ejs",
     "uses": 3
+  },
+  "sc895d40dad": {
+    "text": "Always show the sidebar",
+    "context": "Text on partials/header",
+    "where": "views/partials/header.ejs",
+    "uses": 2
   },
   "sc8b469dbec": {
     "text": "Raised and resolved, day by day",

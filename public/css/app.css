@@ -4668,3 +4668,31 @@ h1 { font-weight: 700; letter-spacing: -0.015em; }
   .audit-row--head { display: none; }
   .audit-row__who, .audit-row__action { grid-column: 1 / -1; }
 }
+
+/* The sidebar folds to icons, as Outlook's folder pane (21 Oct 2026). The
+   button sits beside the brand; folded, each link's name is its tooltip.
+   Only on a wide screen: under 900px the sidebar slides in and out anyway. */
+.sidebar__fold { margin-left: auto; }
+.sidebar__fold .icon-button { padding: 0.4rem; }
+@media (max-width: 900px) {
+  .sidebar__fold { display: none; }
+}
+@media (min-width: 901px) {
+  .shell--compact { grid-template-columns: 4.5rem minmax(0, 1fr); }
+  .shell--compact .sidebar { padding: 1.1rem 0.55rem; gap: 1rem; overflow-x: hidden; }
+  .shell--compact .sidebar__head { flex-direction: column; gap: 0.6rem; }
+  .shell--compact .sidebar__fold { margin-left: 0; }
+  .shell--compact .sidebar__brand { padding: 0.2rem; justify-content: center; }
+  .shell--compact .sidebar__brand .brand__name { display: none; }
+  .shell--compact .sidebar__brand .brand__logo { width: 2rem; height: 2rem; object-fit: cover; object-position: left center; }
+  .shell--compact .side-link { position: relative; justify-content: center; padding: 0.68rem 0; gap: 0; }
+  .shell--compact .side-link > span { display: none; }
+  /* A count stays, as a small badge on the icon's corner. */
+  .shell--compact .side-link__badge { position: absolute; top: 0.15rem; right: 0.2rem; min-width: 1.1rem; height: 1.1rem; padding: 0 0.25rem; font-size: 0.62rem; margin: 0; }
+  .shell--compact .sidebar__pins-head { display: none; }
+  .shell--compact .sidebar__foot .colour-mode__button { justify-content: center; padding: 0.55rem 0; }
+  .shell--compact .sidebar__foot .colour-mode__button > span:not(.visually-hidden) { display: none; }
+  .shell--compact .sidebar__me { flex-direction: column; gap: 0.2rem; }
+  .shell--compact .sidebar__person { justify-content: center; padding: 0.3rem; flex: none; }
+  .shell--compact .sidebar__who { display: none; }
+}

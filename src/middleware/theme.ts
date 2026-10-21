@@ -64,6 +64,39 @@ export function writeTheme(res: Response, theme: Theme): void {
 }
 
 /**
+ * The sidebar: full, with its labels, or compact - icons only, each name in
+ * its tooltip - as Outlook's folder pane folds (asked for 21 Oct 2026).
+ * A cookie like the colour mode, chosen with a form post, so no script; a
+ * phone keeps its slide-in menu either way.
+ */
+export const SIDEBAR_COOKIE = 'helpdesk_sidebar';
+
+export function readSidebarCompact(req: Request): boolean {
+  const header = req.headers.cookie;
+  if (!header) return false;
+  try {
+    return cookieLib.parse(header)[SIDEBAR_COOKIE] === 'compact';
+  } catch {
+    return false;
+  }
+}
+
+export function writeSidebar(res: Response, compact: boolean): void {
+  if (!compact) {
+    res.clearCookie(SIDEBAR_COOKIE, { path: '/' });
+    return;
+  }
+  res.cookie(SIDEBAR_COOKIE, 'compact', {
+    httpOnly: true,
+    secure: config.session.secureCookies,
+    sameSite: 'lax',
+    path: '/',
+    maxAge: 365 * 24 * 60 * 60 * 1000,
+    signed: false,
+  });
+}
+
+/**
  * Exposes the preference to every template.
  *
  * `themeAttribute` is rendered straight into the `<html>` tag, so it is an
@@ -82,6 +115,7 @@ export function themePreference(): RequestHandler {
     // Shown on the control itself, so the current choice is readable without
     // opening it.
     res.locals.themeLabel = theme === 'system' ? 'System default' : theme === 'dark' ? 'Dark' : 'Light';
+    res.locals.sidebarCompact = readSidebarCompact(req);
     next();
   };
 }

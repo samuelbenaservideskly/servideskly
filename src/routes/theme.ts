@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import { safeRedirectPath } from '../lib/util.js';
-import { isTheme, writeTheme } from '../middleware/theme.js';
+import { isTheme, writeSidebar, writeTheme } from '../middleware/theme.js';
 
 /**
  * Setting the light/dark preference.
@@ -20,5 +20,12 @@ themeRouter.post('/theme', (req, res) => {
   // An unknown value is treated as "follow the system" rather than refused:
   // a display preference is not worth an error page.
   writeTheme(res, isTheme(body.theme) ? body.theme : 'system');
+  res.redirect(303, safeRedirectPath(body.returnTo, '/'));
+});
+
+/** The sidebar, full or compact (middleware/theme.ts). The same rules as the theme. */
+themeRouter.post('/sidebar', (req, res) => {
+  const body = (req.body ?? {}) as Record<string, unknown>;
+  writeSidebar(res, body.sidebar === 'compact');
   res.redirect(303, safeRedirectPath(body.returnTo, '/'));
 });

@@ -1,4 +1,7 @@
 import crypto from 'node:crypto';
+import dns from 'node:dns/promises';
+import net from 'node:net';
+import { isPrivateAddress } from '../services/http-client.js';
 import { createRemoteJWKSet, jwtVerify, type JWTPayload, type JWTVerifyGetKey } from 'jose';
 import { settings } from '../settings/index.js';
 import { config } from '../config.js';
@@ -280,6 +283,37 @@ async function fetchJson(url: string, init?: RequestInit): Promise<unknown> {
   return body;
 }
 
+/**
+ * The private-network rule for addresses an administrator typed (security
+ * review, 21 Oct 2026). The OpenID Connect and Okta pages take any https
+ * address, and the server fetches it - so without this, somebody allowed
+ * into Integrations could make the server call into its own network.
+ * Refused unless "Allow addresses on the internal network" is on, which a
+ * Keycloak or ADFS inside the company needs. Entra and Google are fixed
+ * public addresses. An address that does not resolve is left to the fetch,
+ * which fails on its own.
+ */
+async function refuseInternal(key: ProviderKey, url: string): Promise<void> {
+  if (key === 'entra' || key === 'google') return;
+  if (key === 'generic' && settings().genericOidc.allowPrivateNetwork) return;
+  // An IPv6 address keeps its brackets in a URL's hostname.
+  const host = new URL(url).hostname.replace(/^\[|\]$/g, '');
+  let addresses: string[];
+  if (net.isIP(host)) addresses = [host];
+  else {
+    try {
+      addresses = (await dns.lookup(host, { all: true })).map((a) => a.address);
+    } catch {
+      return;
+    }
+  }
+  if (addresses.some((a) => isPrivateAddress(a))) {
+    throw new Error(
+      host + ' is an address on the internal network. Turn on "Allow addresses on the internal network" if the provider really is inside it.',
+    );
+  }
+}
+
 /** Fetches and caches a provider's OpenID configuration and signing keys. */
 export async function discover(key: ProviderKey = 'entra'): Promise<CachedDiscovery> {
   const provider = providerConfig(key);
@@ -288,6 +322,7 @@ export async function discover(key: ProviderKey = 'entra'): Promise<CachedDiscov
     return hit;
   }
 
+  await refuseInternal(key, provider.discoveryUrl);
   const raw = (await fetchJson(provider.discoveryUrl)) as Partial<DiscoveryDocument>;
   if (!raw.issuer || !raw.authorization_endpoint || !raw.token_endpoint || !raw.jwks_uri) {
     throw new Error('Incomplete OpenID configuration from ' + provider.discoveryUrl);
@@ -309,6 +344,11 @@ export async function discover(key: ProviderKey = 'entra'): Promise<CachedDiscov
       : {}),
     ...(raw.userinfo_endpoint ? { userinfo_endpoint: requireHttps(raw.userinfo_endpoint, 'userinfo_endpoint') } : {}),
   };
+
+  // Every address the document names is one the server will call too.
+  for (const url of [doc.token_endpoint, doc.jwks_uri, doc.userinfo_endpoint]) {
+    if (url) await refuseInternal(key, url);
+  }
 
   const entry: CachedDiscovery = {
     doc,

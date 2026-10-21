@@ -73,6 +73,14 @@
     <textarea id="allowedDomains" name="allowedDomains" rows="3" spellcheck="false" placeholder="example.com"><%= values.allowedDomains !== undefined ? values.allowedDomains : generic.allowedDomains.join('\n') %></textarea>
   </div>
 
+  <div class="label-row">
+    <label class="check">
+      <input type="checkbox" name="allowPrivateNetwork" value="on"<%= (values.allowPrivateNetwork !== undefined ? values.allowPrivateNetwork : generic.allowPrivateNetwork) ? ' checked' : '' %>>
+      Allow addresses on the internal network
+    </label>
+    <%- include('../../partials/info', { text: 'Turn this on only if your sign-in server runs inside your company network, for example Keycloak or ADFS on an internal address. Off, the service desk refuses to contact internal addresses, so nobody can use this page to reach your internal systems. Sign-in from the internet is not affected either way.' }) %>
+  </div>
+
   <div class="actions">
     <button type="submit" class="btn btn--primary">Save OpenID Connect settings</button>
   </div>
