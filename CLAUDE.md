@@ -2068,11 +2068,10 @@ What it has to get right, and does:
    lockout this feature can cause.
 7. **The same parser validates and applies** (`parseRange`), so the page and
    the gate cannot disagree; a bad line is refused where it was typed.
-8. **The page says which address the service desk reads.** Ranges typed from
-   a public address while the server saw `::1` looked like the feature
-   firing for no reason (reported 16 Oct 2026): a browser on localhost
-   arrives as the loopback address, and behind an untrusted proxy as the
-   proxy. The card names the address and whether the list covers it.
+8. **The page no longer says which address the service desk reads.** It
+   did (reported 16 Oct 2026: ranges typed from a public address while the
+   server saw `::1`), and the owner asked for the line to go (21 Oct 2026).
+   A browser on localhost still arrives as the loopback address.
 
 ### Custom roles (21 Oct 2026)
 

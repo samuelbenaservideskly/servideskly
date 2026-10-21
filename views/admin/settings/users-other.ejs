@@ -93,14 +93,6 @@
       <% } %>
     </div>
 
-    <p class="hint">
-      This device signs in from <code><%= locals.yourAddress || 'an address the service desk cannot read' %></code><%
-        %><% if (access.allowedRanges.length && locals.yourAddress) { %>, which <%= locals.yourAddressAllowed ? 'is inside the list above' : 'is not in the list above' %><% } %>.
-      It is read from the connection, not from the internet - a browser on
-      <code>localhost</code> arrives as <code>::1</code> whatever a public
-      address lookup says.
-    </p>
-
     <div class="label-row">
       <label class="check">
         <input type="checkbox" name="elsewhereNeedsCode" value="on"<%= access.elsewhereNeedsCode ? ' checked' : '' %>>
@@ -178,11 +170,6 @@
       </label>
       <%- include('../../partials/info', { text: "For a service desk that serves several companies: a search then finds only people whose company matches the searcher's. Administrators are not narrowed." }) %>
     </div>
-    <%# A fact the switches cannot show: what a reader is shown of somebody. %>
-    <p class="hint">
-      A technician sees what that person raised; a requester sees only how to
-      reach them. Nothing on the page can be changed from it.
-    </p>
     <div class="actions"><button type="submit" class="btn btn--primary">Save</button></div>
   </form>
 </details>

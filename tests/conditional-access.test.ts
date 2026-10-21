@@ -251,31 +251,6 @@ describe('the holes somebody would look for', () => {
     assert.equal(codeSignInAllowed(person, '127.0.0.1'), true);
   });
 
-  test('the page says which address the service desk reads', async () => {
-    // Typed from a public address while the server saw ::1, and the code
-    // step then looked like a bug (reported 16 Oct 2026). The page has to
-    // say what it is actually comparing against.
-    await access({ allowedRanges: ['203.0.113.0/24'], elsewhereNeedsCode: true });
-    const page = await request
-      .agent(app)
-      .set('Cookie', admin.cookie)
-      .get('/admin/settings/users/other')
-      .expect(200);
-
-    assert.match(page.text, /This device signs in from/);
-    assert.match(page.text, /is not in the list above/, 'and whether the ranges cover it');
-
-    await access({ allowedRanges: ['127.0.0.0/8', '::1/128'] });
-    const covered = await request
-      .agent(app)
-      .set('Cookie', admin.cookie)
-      .get('/admin/settings/users/other')
-      .expect(200);
-    assert.match(covered.text, /is inside the list above/);
-
-    await access({});
-  });
-
   test('the break-glass account can be pinned to its own addresses', async () => {
     const { accessDecision } = await import('../src/auth/conditional-access.js');
     // A break-glass-shaped row: the rule reads the locked administrator

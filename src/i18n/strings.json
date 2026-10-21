@@ -3887,12 +3887,6 @@
     "where": "views/admin/settings/mail-notifications.ejs",
     "uses": 1
   },
-  "s49960de588": {
-    "text": "localhost",
-    "context": "Text on admin/settings/users-other",
-    "where": "views/admin/settings/users-other.ejs",
-    "uses": 1
-  },
   "s49ab7f8775": {
     "text": "You cannot remove that attachment.",
     "context": "A message shown beside a form or after an action",
@@ -8207,12 +8201,6 @@
     "where": "views/work-dashboard.ejs",
     "uses": 1
   },
-  "s98a3660d6e": {
-    "text": "A technician sees what that person raised; a requester sees only how to\n      reach them. Nothing on the page can be changed from it.",
-    "context": "A note under a control on admin/settings/users-other",
-    "where": "views/admin/settings/users-other.ejs",
-    "uses": 1
-  },
   "s98a8725228": {
     "text": "Written before the key, for an API that wants Bearer or Token in front. Include the space that follows it. Usually empty.",
     "context": "An explanation behind an (i) mark on admin/settings/connections",
@@ -11085,12 +11073,6 @@
     "text": "Value from an earlier step",
     "context": "The label of a form field on admin/settings/automation-edit",
     "where": "views/admin/settings/automation-edit.ejs",
-    "uses": 1
-  },
-  "scf9046bad8": {
-    "text": "whatever a public\n      address lookup says.",
-    "context": "Text on admin/settings/users-other",
-    "where": "views/admin/settings/users-other.ejs",
     "uses": 1
   },
   "scf9c7aa24a": {
