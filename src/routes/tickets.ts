@@ -15,6 +15,7 @@ import { allowOwnScripts, writeLimiter } from '../middleware/security.js';
 import { buildTimeline } from '../services/ticket-timeline.js';
 import { flash } from '../middleware/view-locals.js';
 import { isStaff, listAssignableStaff, findUserById, findUserByEmail, type UserRow } from '../services/users.js';
+import { mayRaiseFor } from '../services/teams.js';
 import { findGroup, groupManagers, groupsForUser, listActiveGroups, type GroupRow } from '../services/groups.js';
 import { userGroupIdsFor } from '../services/user-groups.js';
 import { notifyTicket } from '../services/mail/outbox.js';
@@ -714,6 +715,9 @@ ticketRouter.post(
       const person = await findUserByEmail(onBehalfEmail);
       if (!person || person.status !== 'active') {
         onBehalfError = 'There is no active account with that address.';
+      } else if (!mayRaiseFor(viewer, person)) {
+        // Only for somebody in the same team (services/teams.ts); staff, for anybody.
+        onBehalfError = 'You can raise a ticket only for people in your team.';
       } else if (person.id !== viewer.id) {
         onBehalfOf = person;
       }

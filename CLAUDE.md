@@ -854,6 +854,15 @@ placeholder `{{raisedByName}}`) instead of the usual thanks. An unknown or
 disabled address is refused beside the field; one's own address is an
 ordinary ticket.
 
+**Only within a team** (21 Oct 2026, `services/teams.ts`, migration 66
+`users.manager_id`): a requester may raise for their manager, their reports
+and colleagues under the same manager - nobody else; service desk staff for
+anybody. The manager is set on the person's page under Settings - Users (an
+address; themselves or a loop refused) or by SCIM (the enterprise
+extension's `manager`, our own id; one not provisioned yet is skipped and
+comes again next cycle). Nobody has a manager until one is set, so until
+then a requester cannot raise for anybody.
+
 ### Tasks live under a parent, not in the queue
 `listTickets` excludes `parent_id IS NOT NULL` unless asked, or every task
 would appear twice: once under its parent and once alongside it.

@@ -2001,4 +2001,19 @@ export const migrations: readonly Migration[] = [
       ALTER TABLE users ADD COLUMN IF NOT EXISTS role_id TEXT REFERENCES roles(id) ON DELETE SET NULL;
     `,
   },
+  {
+    version: 66,
+    name: "a person's manager",
+    sql: `
+      -- services/teams.ts (21 Oct 2026): who somebody reports to, set under
+      -- Settings - Users or by SCIM. Raising a ticket on behalf of somebody
+      -- is limited to the same team: the same manager, or manager and report.
+      ALTER TABLE users ADD COLUMN manager_id TEXT REFERENCES users(id) ON DELETE SET NULL;
+      CREATE INDEX IF NOT EXISTS users_manager_idx ON users (manager_id);
+    `,
+    pg: `
+      ALTER TABLE users ADD COLUMN IF NOT EXISTS manager_id TEXT REFERENCES users(id) ON DELETE SET NULL;
+      CREATE INDEX IF NOT EXISTS users_manager_idx ON users (manager_id);
+    `,
+  },
 ];

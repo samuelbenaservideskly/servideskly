@@ -56,6 +56,8 @@ export interface UserRow {
   extension_attribute_2: string;
   extension_attribute_3: string;
   office: string;
+  /** Who they report to (migration 66, services/teams.ts). */
+  manager_id?: string | null;
   last_login_at: string | null;
   last_synced_at: string | null;
   created_at: string;

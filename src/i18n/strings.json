@@ -3305,6 +3305,12 @@
     "where": "views/tickets/show.ejs",
     "uses": 1
   },
+  "s3d9f502861": {
+    "text": "Somebody cannot be their own manager.",
+    "context": "A message shown beside a form or after an action",
+    "where": "src/services/teams.ts",
+    "uses": 1
+  },
   "s3dd0f36d80": {
     "text": "Treat a SCIM delete as \"disable\"",
     "context": "Text on admin/settings/provisioning",
@@ -7453,9 +7459,9 @@
   },
   "s8b2085f74d": {
     "text": "Manager",
-    "context": "Text on the page on admin/settings/group-detail / A table column heading on admin/settings/groups / Text on tickets/show",
+    "context": "Text on the page on admin/settings/group-detail / A table column heading on admin/settings/groups / The label of a form field on admin/settings/user-detail",
     "where": "views/admin/settings/group-detail.ejs",
-    "uses": 5
+    "uses": 6
   },
   "s8b463ea23a": {
     "text": "Czech",
@@ -10325,6 +10331,12 @@
     "where": "src/i18n/code-strings.ts",
     "uses": 1
   },
+  "sbebb8bbbda": {
+    "text": "Their manager's email address",
+    "context": "The grey example inside an input on admin/settings/user-detail",
+    "where": "views/admin/settings/user-detail.ejs",
+    "uses": 1
+  },
   "sbece046d7f": {
     "text": "Save audience",
     "context": "A button on admin/settings/template-edit",
@@ -10623,6 +10635,12 @@
     "text": "Move section up",
     "context": "A tooltip on admin/settings/template-edit",
     "where": "views/admin/settings/template-edit.ejs",
+    "uses": 1
+  },
+  "sc329e0cc40": {
+    "text": "That person reports to them, so they cannot be their manager.",
+    "context": "A message shown beside a form or after an action",
+    "where": "src/services/teams.ts",
     "uses": 1
   },
   "sc333008281": {
@@ -10989,7 +11007,7 @@
     "text": "There is no active account with that address.",
     "context": "A message shown beside a form or after an action",
     "where": "src/routes/tickets.ts",
-    "uses": 1
+    "uses": 2
   },
   "scc5d2592f0": {
     "text": "Scripts run on custom requester portals only, never on the sign-in page, the approval page or in Settings.",
@@ -12033,6 +12051,12 @@
     "text": "Text to compare with",
     "context": "The grey example inside an input on admin/settings/automation-edit",
     "where": "views/admin/settings/automation-edit.ejs",
+    "uses": 1
+  },
+  "sdf4d92095a": {
+    "text": "You can raise a ticket only for people in your team.",
+    "context": "A message shown beside a form or after an action",
+    "where": "src/routes/tickets.ts",
     "uses": 1
   },
   "sdf796c655f": {

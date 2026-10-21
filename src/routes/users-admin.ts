@@ -51,6 +51,7 @@ import {
 } from '../auth/local-accounts.js';
 import { MIN_PASSWORD_LENGTH as MIN_PASSWORD_FLOOR, minPasswordLength, passwordPolicyText, generatePassword, passwordProblems, personOf } from '../auth/password.js';
 import { attempt, type FieldErrors } from './form-errors.js';
+import { managerEmailOf, setManagerByEmail } from '../services/teams.js';
 import { applyAllRules, listActiveUserGroups, listUserGroups, setUserGroupsForUser, userGroupSourcesFor, userGroupsFor } from '../services/user-groups.js';
 import { applyAllTechnicianRules } from '../services/technician-rules.js';
 import { settingsView } from './settings-shared.js';
@@ -1068,6 +1069,7 @@ async function renderUser(req: Request, res: Response, user: UserRow): Promise<v
       settingsView('users', {
         sectionTitle: user.display_name,
         user,
+        managerEmail: await managerEmailOf(user),
         groups,
         groupIds: groups.map((g) => g.id),
         allGroups,
@@ -1177,6 +1179,17 @@ userAdminRouter.post(
 
     await applyAllRules(req.currentUser?.id ?? null);
     await applyAllTechnicianRules(req.currentUser?.id ?? null);
+
+    // The manager (services/teams.ts): an address, '' for none.
+    if (typeof raw.manager === 'string') {
+      const manager = raw.manager;
+      const set = await attempt(() => setManagerByEmail(target.id, manager, req.currentUser?.id ?? null));
+      if (!set.ok) {
+        flash(req, 'error', Object.values(set.errors)[0] ?? 'That manager could not be saved.');
+        res.redirect(userUrl(target));
+        return;
+      }
+    }
 
     flash(req, 'success', 'Profile saved, and group rules recalculated.');
     res.redirect(userUrl(target));

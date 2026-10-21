@@ -262,6 +262,12 @@
     </div>
 
     <div class="field">
+      <label for="manager">Manager</label>
+      <input id="manager" name="manager" type="email" maxlength="320" autocomplete="off"
+             value="<%= locals.managerEmail || '' %>" placeholder="Their manager's email address">
+    </div>
+
+    <div class="field">
       <label for="jobTitle">Job title</label>
       <input id="jobTitle" name="jobTitle" type="text" maxlength="120"
              value="<%= user.job_title %>">

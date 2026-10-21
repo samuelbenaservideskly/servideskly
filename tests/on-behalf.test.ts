@@ -12,6 +12,9 @@ import { createMailbox } from '../src/services/mail/mailboxes.js';
 import { seedNotifications } from '../src/services/mail/notifications.js';
 import { setTransportFactory } from '../src/services/mail/transport.js';
 import { queuedMail } from './support/outbox.js';
+import { setManager, setManagerByEmail } from '../src/services/teams.js';
+import { findUserById } from '../src/services/users.js';
+import { applyScimPatch, createScimUser, readScimUser, updateScimUser } from '../src/services/scim.js';
 
 let app: Express;
 let raiser: TestSession;
@@ -41,6 +44,10 @@ before(async () => {
   raiser = await signInAs('ob.raiser@example.com', 'user');
   colleague = await signInAs('ob.colleague@example.com', 'user');
   stranger = await signInAs('ob.stranger@example.com', 'user');
+  // One team: both report to the same manager (services/teams.ts).
+  const boss = await signInAs('ob.boss@example.com', 'user');
+  await setManager(raiser.user.id, boss.user.id, null);
+  await setManager(colleague.user.id, boss.user.id, null);
   const t = await createTemplate(
     { summary: '', title: '', body: '', priority: 'normal', category: 'other', type: 'service_request', groupId: null, categoryId: null, fields: [], isActive: true, name: 'For a colleague' },
     null,
@@ -105,6 +112,55 @@ describe('On behalf of', () => {
     await post(raiser, '/tickets', { templateId: plain.id, title: 'Forged behalf', onBehalfOf: 'ob.colleague@example.com' }).expect(302);
     const row = (await query<{ requester_id: string }>("SELECT requester_id FROM tickets WHERE title = 'Forged behalf'"))[0]!;
     assert.equal(row.requester_id, raiser.user.id);
+  });
+});
+
+describe('On behalf of, only within a team', () => {
+  test('a requester raises for their manager, their reports and colleagues under the same manager, and nobody else', async () => {
+    const lead = await signInAs('team.lead@example.com', 'user');
+    const report = await signInAs('team.report@example.com', 'user');
+    const peer = await signInAs('team.peer@example.com', 'user');
+    const outsider = await signInAs('team.outsider@example.com', 'user');
+    await setManager(report.user.id, lead.user.id, null);
+    await setManager(peer.user.id, lead.user.id, null);
+    const raise = (who: TestSession, title: string, forWhom: string) => post(who, '/tickets', { templateId, title, onBehalfOf: forWhom });
+
+    await raise(report, 'Team: for a peer', 'team.peer@example.com').expect(302);
+    await raise(report, 'Team: for the manager', 'team.lead@example.com').expect(302);
+    await raise(lead, 'Team: for a report', 'team.report@example.com').expect(302);
+    const refused = await raise(report, 'Team: for an outsider', 'team.outsider@example.com').expect(400);
+    assert.match(refused.text, /You can raise a ticket only for people in your team/);
+    await raise(outsider, 'Team: from outside', 'team.peer@example.com').expect(400);
+    // The service desk raises for anybody.
+    const agent = await signInAs('team.agent@example.com', 'agent');
+    await raise(agent, 'Team: by the service desk', 'team.outsider@example.com').expect(302);
+  });
+
+  test("an administrator sets the manager on the person's page; themselves or a loop is refused", async () => {
+    const admin = await signInAs('team.admin@example.com', 'admin');
+    const a = await signInAs('team.a@example.com', 'user');
+    const b = await signInAs('team.b@example.com', 'user');
+    const save = (who: TestSession, manager: string) =>
+      post(admin, '/admin/settings/users/' + who.user.id + '/profile', { manager, department: '', jobTitle: '', office: '', phone: '' });
+    await save(a, 'team.b@example.com').expect(302);
+    assert.equal((await findUserById(a.user.id))!.manager_id, b.user.id);
+    const page = await as(admin).get('/admin/settings/users/' + a.user.id).expect(200);
+    assert.match(page.text, /name="manager"[^>]*value="team.b@example.com"/);
+    await assert.rejects(setManagerByEmail(b.user.id, 'team.a@example.com', null), /reports to them/);
+    await assert.rejects(setManagerByEmail(a.user.id, 'team.a@example.com', null), /their own manager/);
+    await save(a, '').expect(302);
+    assert.equal((await findUserById(a.user.id))!.manager_id, null);
+  });
+
+  test('SCIM sets and removes it from the enterprise extension', async () => {
+    const ENTERPRISE = 'urn:ietf:params:scim:schemas:extension:enterprise:2.0:User';
+    const m = await createScimUser(readScimUser({ userName: 'team.scim.boss@contoso.com', externalId: 'boss-1', displayName: 'Boss', emails: [{ value: 'team.scim.boss@contoso.com', primary: true }] }));
+    const p = await createScimUser(readScimUser({ userName: 'team.scim.person@contoso.com', externalId: 'person-1', displayName: 'Person', emails: [{ value: 'team.scim.person@contoso.com', primary: true }], [ENTERPRISE]: { manager: { value: m.id } } }));
+    assert.equal((await findUserById(p.id))!.manager_id, m.id, 'on create');
+    await updateScimUser((await findUserById(p.id))!, applyScimPatch({ Operations: [{ op: 'remove', path: ENTERPRISE + ':manager' }] }), { replace: false });
+    assert.equal((await findUserById(p.id))!.manager_id, null, 'removed');
+    await updateScimUser((await findUserById(p.id))!, applyScimPatch({ Operations: [{ op: 'replace', path: ENTERPRISE + ':manager', value: m.id }] }), { replace: false });
+    assert.equal((await findUserById(p.id))!.manager_id, m.id, 'by a PATCH');
   });
 });
 

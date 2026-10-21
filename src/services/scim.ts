@@ -8,6 +8,7 @@ import { settings, updateSettings } from '../settings/index.js';
 import { INITIAL_ROLE } from '../auth/provisioning.js';
 import type { UserRow } from './users.js';
 import { sealText } from '../lib/field-crypto.js';
+import { setManager } from './teams.js';
 
 const log = logger.child({ module: 'scim' });
 
@@ -193,6 +194,8 @@ export interface ScimUserInput {
   extension1?: string;
   extension2?: string;
   extension3?: string;
+  /** The enterprise extension's manager: the SCIM id (ours) of the manager, '' when removed. */
+  managerId?: string;
 }
 
 /**
@@ -253,6 +256,9 @@ export function readScimUser(body: Json): ScimUserInput {
   for (const [k, v] of Object.entries(body)) {
     if (k.toLowerCase().startsWith(ENTERPRISE.toLowerCase() + ':')) enterprise[k.slice(ENTERPRISE.length + 1)] = v;
   }
+  const manager = enterprise.manager;
+  const managerId = str(manager) ?? str((manager as Json | undefined)?.value);
+  if (managerId) input.managerId = managerId;
   const department = str(enterprise.department) ?? str(body.department);
   if (department) input.department = department;
   // Entra maps companyName to the enterprise extension's organization by
@@ -305,6 +311,8 @@ export function applyScimPatch(body: Json): ScimUserInput {
       // The only removal worth honouring is of `active`, which means the same
       // as setting it false. Anything else is ignored rather than refused.
       if (str(operation.path)?.toLowerCase() === 'active') result.active = false;
+      // A manager removed in the directory is removed here.
+      if (/(?:^|:)manager$/i.test(str(operation.path) ?? '')) result.managerId = '';
       continue;
     }
 
@@ -338,6 +346,9 @@ export function applyScimPatch(body: Json): ScimUserInput {
       } else if (/(?:^|:)organization$/.test(key) || key === 'companyname' || key === 'company') {
         // The enterprise extension's organization, whatever its URN prefix.
         result.company = str(value) ?? '';
+      } else if (/(?:^|:)manager$/.test(key)) {
+        // Entra sends the manager's id as a plain value or as { value }.
+        result.managerId = str(value) ?? str((value as Json | null)?.value) ?? '';
       } else if (/(?:^|:)department$/.test(key)) {
         result.department = str(value) ?? '';
       } else if (key === 'title') {
@@ -527,6 +538,7 @@ export async function createScimUser(input: ScimUserInput): Promise<UserRow> {
     ],
   );
   await applyDisplayName(id);
+  if (input.managerId) await applyScimManager(id, input.managerId);
 
   audit({
     action: 'scim.user.created',
@@ -627,6 +639,7 @@ export async function updateScimUser(
   }
 
   await applyDisplayName(existing.id);
+  if (input.managerId !== undefined) await applyScimManager(existing.id, input.managerId);
   const updated = await findScimUser(existing.id);
   if (!updated) throw new ScimError(500, 'The account could not be read back after the update.');
   return updated;
@@ -681,4 +694,18 @@ export async function deleteScimUser(existing: UserRow): Promise<void> {
   await execute('DELETE FROM users WHERE id = ?', [existing.id]);
   audit({ action: 'scim.user.deleted', targetType: 'user', targetId: existing.id });
   log.info({ userId: existing.id }, 'SCIM removed an account');
+}
+
+/**
+ * The manager the directory names, by our own SCIM id (services/teams.ts).
+ * One not provisioned yet, or a loop, is left alone rather than refusing the
+ * whole update: Entra sends the manager again on its next cycle.
+ */
+async function applyScimManager(userId: string, managerId: string): Promise<void> {
+  if (managerId && !(await findScimUser(managerId).catch(() => undefined))) return;
+  try {
+    await setManager(userId, managerId || null, null);
+  } catch (err) {
+    log.warn({ userId, err: (err as Error).message }, 'SCIM manager not applied');
+  }
 }
