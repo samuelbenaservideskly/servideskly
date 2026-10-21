@@ -35,7 +35,7 @@
         <tbody>
           <% tickets.forEach(function (ticket) { %>
             <tr>
-              <td class="mono"><a href="/tickets/<%= ticket.id %>"><%= ticket.reference %></a></td>
+              <td class="ticket-ref"><a href="/tickets/<%= ticket.id %>"><%= ticket.reference %></a></td>
               <td><a href="/tickets/<%= ticket.id %>" title="<%= ticket.title %>"><%= ticket.title %></a></td>
               <td><span class="pill pill--s-<%= ticket.status %>"><%= statusLabels[ticket.status] %></span></td>
               <td><span class="pill pill--p-<%= ticket.priority %>"><%= priorityLabels[ticket.priority] %></span></td>

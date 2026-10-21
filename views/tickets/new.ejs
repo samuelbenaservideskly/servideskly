@@ -24,8 +24,8 @@
       many forms is exactly where the panel earns its place.
     %>
     <% var kinds = []; templates.forEach(function (t) { if (kinds.indexOf(t.type) < 0) kinds.push(t.type); }); %>
-    <form method="get" action="/tickets/new" class="card stack template-picker" aria-labelledby="template-heading">
-      <h2 id="template-heading" class="card__title">What kind of request is this?</h2>
+    <form method="get" action="/tickets/new" class="template-picker" aria-labelledby="template-heading">
+      <h2 id="template-heading" class="template-picker__title">What kind of request is this?</h2>
       <div class="template-picker__row">
         <% if (kinds.length > 1) { %>
           <div class="field" data-needs-script hidden>
@@ -76,7 +76,7 @@
     <%# Shows a section once its answer is picked (CSS :has, no script). %>
     <link rel="stylesheet" href="<%= sectionsCss %>">
   <% } %>
-  <form method="post" action="/tickets" enctype="multipart/form-data" class="card stack ticket-form">
+  <form method="post" action="/tickets" enctype="multipart/form-data" class="card ticket-form" data-file-form data-remove-label="<%= t('Remove') %>">
     <input type="hidden" name="_csrf" value="<%= locals.csrfToken %>">
     <% if (template) { %>
       <input type="hidden" name="templateId" value="<%= template.id %>">
@@ -137,14 +137,13 @@
       repeated on the description and the attachments, which is how a warning
       stops being read.
     %>
-    <p class="hint">
-      Do not include passwords or other credentials, in the text or in a file.
-    </p>
-
-    <div class="actions">
+    <div class="ticket-form__submit">
+      <p class="hint">Do not include passwords or other credentials, in the text or in a file.</p>
       <button type="submit" class="btn btn--primary">Submit ticket</button>
     </div>
   </form>
+  <%# Chosen files as chips, as in a ticket's reply box (public/js/reply-files.js). %>
+  <script src="/assets/js/reply-files.js?v=<%= locals.assetVersion %>" defer></script>
 </div>
 
 <%- include('../partials/footer') %>

@@ -380,6 +380,8 @@ function sectionsCssUrl(template: { id: string; updated_at: string } | null | un
 
 ticketRouter.get(
   '/new',
+  // The chosen files as chips (public/js/reply-files.js), as in a reply.
+  allowOwnScripts(),
   asyncHandler(async (req: Request, res: Response) => {
     const viewer = req.currentUser;
     if (!viewer) throw forbidden();

@@ -205,7 +205,7 @@
              var clocks = s ? [s.response, s.resolution] : [];
              var worst = clocks.find(function (c) { return c.state === 'breached'; }) || clocks.find(function (c) { return !c.doneAt && c.state === 'at_risk'; }); %>
           <tr<%- worst ? ' class="ticket-row--' + worst.state + '"' : '' %>>
-            <td class="mono"><a href="/tickets/<%= ticket.id %>"><%= ticket.reference %></a></td>
+            <td class="ticket-ref"><a href="/tickets/<%= ticket.id %>"><%= ticket.reference %></a></td>
             <td>
               <%# Title and comment count side by side on every row: the count
                   never wraps under a long title on some rows and not others. %>

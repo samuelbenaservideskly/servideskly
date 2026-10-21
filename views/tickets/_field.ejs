@@ -107,8 +107,15 @@
           text: tx('Up to {0} files, {1} each. Accepted: {2}.', [attachmentMaxPerTicket, attachmentMaxLabel, attachmentAccept.split(',').join(' ')]),
         }) %>
       </div>
-      <input id="files" name="files" type="file" multiple<%= req ? ' required' : '' %>
-             accept="<%= attachmentAccept %>"<%= must ? ' aria-describedby="files-help"' : '' %>>
+      <ul class="tk-chips" data-file-list hidden></ul>
+      <div class="ticket-form__files">
+        <label for="files" class="btn btn--small tk-reply__add" data-file-add hidden>
+          <%- include('../partials/icon', { name: 'paperclip' }) %> <%= t('Add files') %>
+        </label>
+        <input id="files" name="files" type="file" multiple<%= req ? ' required' : '' %> data-file-input
+               accept="<%= attachmentAccept %>"<%= must ? ' aria-describedby="files-help"' : '' %>>
+        <span class="small muted" data-file-add hidden><%= t('or drop them onto the form') %></span>
+      </div>
       <% if (must) { %>
         <p id="files-help" class="hint">At least one file is needed.</p>
       <% } %>

@@ -22,7 +22,7 @@
 
 <div class="tk-head">
   <div class="tk-head__main">
-    <p class="tk-head__ref"><span class="mono"><%= ticket.reference %></span> <span aria-hidden="true">&middot;</span> <%= typeLabels[ticket.type] %></p>
+    <p class="tk-head__ref"><span class="ticket-ref"><%= ticket.reference %></span> <span aria-hidden="true">&middot;</span> <%= typeLabels[ticket.type] %></p>
     <h1><%= ticket.title %></h1>
     <div class="tk-head__meta">
       <span class="pill pill--<%= ticket.status %>"><%= statusLabels[ticket.status] %></span>
@@ -158,7 +158,7 @@
       an ordinary one.
     %>
     <form method="post" action="/tickets/<%= ticket.id %>/comments" enctype="multipart/form-data"
-          class="card tk-reply" id="reply"
+          class="card tk-reply" id="reply" data-file-form
           data-remove-label="<%= t('Remove') %>">
       <input type="hidden" name="_csrf" value="<%= locals.csrfToken %>">
       <% if (locals.isStaff) { %>
@@ -179,16 +179,16 @@
       <% }); %>
 
       <% if (attachmentsEnabled) { %>
-        <ul class="tk-chips" data-reply-files hidden></ul>
+        <ul class="tk-chips" data-file-list hidden></ul>
       <% } %>
 
       <div class="tk-reply__bar">
         <% if (attachmentsEnabled) { %>
           <div class="tk-reply__attach">
-            <label for="reply-files" class="btn btn--small tk-reply__add" data-reply-add hidden>
+            <label for="reply-files" class="btn btn--small tk-reply__add" data-file-add hidden>
               <%- include('../partials/icon', { name: 'paperclip' }) %> <%= t('Add files') %>
             </label>
-            <input id="reply-files" name="files" type="file" multiple accept="<%= attachmentAccept %>" class="tk-reply__input">
+            <input id="reply-files" name="files" type="file" multiple accept="<%= attachmentAccept %>" class="tk-reply__input" data-file-input>
             <%- include('../partials/info', {
               text: tx('Up to {0} files per ticket, {1} each. Accepted: {2}.', [attachmentMaxPerTicket, attachmentMaxLabel, attachmentAccept.split(',').join(' ')]),
             }) %>
@@ -416,7 +416,7 @@
             <li class="task-list__item">
               <span>
                 <a class="link-strong" href="/tickets/<%= task.id %>"><%= task.title %></a>
-                <div class="small muted mono"><%= task.reference %></div>
+                <div class="small muted ticket-ref"><%= task.reference %></div>
               </span>
               <span>
                 <span class="pill pill--<%= task.status %>"><%= statusLabels[task.status] %></span>

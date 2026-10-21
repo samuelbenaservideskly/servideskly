@@ -1,9 +1,17 @@
 <%- include('partials/header') %>
-
+<%#
+  Reports with no technician group yet (an administrator only: anybody else
+  gets a 404). It said "Reports are by technician group, and there are no
+  active groups yet", which read as a fault (21 Oct 2026). It now says what
+  the page needs and offers the one step that gives it that.
+%>
 <div class="dash-hello">
   <div><h1>Reports</h1></div>
 </div>
-
-<p class="dash-empty">Reports are by technician group, and there are no active groups yet. <a href="/admin/settings/groups">Create a technician group</a> and route tickets to it.</p>
-
+<div class="card empty-state">
+  <h2 class="section-title">No reports yet</h2>
+  <p>Reports count the tickets each technician group handles: how many came in, how quickly they were answered and solved, and which service levels were met.</p>
+  <p class="muted">Create a technician group and route tickets to it. Its figures appear here straight away.</p>
+  <p><a class="btn btn--primary" href="/admin/settings/groups#new-group"><span aria-hidden="true">+</span> Create a technician group</a></p>
+</div>
 <%- include('partials/footer') %>

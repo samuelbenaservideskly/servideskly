@@ -161,7 +161,7 @@ describe('reports with no groups', () => {
   test('an administrator is told why, not sent a 404', async () => {
     await execute('UPDATE technician_groups SET is_active = 0');
     const page = await as(admin).get('/reports').expect(200);
-    assert.match(page.text, /no active groups yet/);
+    assert.match(page.text, /No reports yet/);
     await execute('UPDATE technician_groups SET is_active = 1');
   });
 });

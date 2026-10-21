@@ -15,14 +15,21 @@
  * No request is made from here, and nothing a file is called reaches the
  * page as markup - names go in as text.
  */
+/*
+ * Any form that asks for it (data-file-form) gets the same treatment: the
+ * reply box on a ticket, and New ticket (21 Oct 2026). Inside it,
+ * data-file-input is the file input, data-file-list the chips and
+ * data-file-add the button that opens the picker.
+ */
 (function () {
   'use strict';
+  Array.prototype.forEach.call(document.querySelectorAll('form[data-file-form]'), enhance);
 
-  var form = document.getElementById('reply');
-  var input = document.getElementById('reply-files');
-  var list = form && form.querySelector('[data-reply-files]');
-  var add = form && form.querySelector('[data-reply-add]');
-  if (!form || !input || !list || !add) return;
+  function enhance(form) {
+  var input = form.querySelector('[data-file-input]');
+  var list = form.querySelector('[data-file-list]');
+  var add = form.querySelector('[data-file-add]');
+  if (!input || !list || !add) return;
 
   // Without DataTransfer a list cannot be built, and the plain picker stays.
   var chosen;
@@ -34,8 +41,8 @@
 
   var removeLabel = form.getAttribute('data-remove-label') || 'Remove';
 
-  input.classList.add('tk-reply__input--hidden');
-  add.hidden = false;
+  input.classList.add('file-input--hidden');
+  Array.prototype.forEach.call(form.querySelectorAll('[data-file-add]'), function (el) { el.hidden = false; });
 
   function size(bytes) {
     if (bytes < 1024) return bytes + ' B';
@@ -107,16 +114,17 @@
   form.addEventListener('dragover', function (e) {
     if (e.dataTransfer && Array.prototype.indexOf.call(e.dataTransfer.types, 'Files') !== -1) {
       e.preventDefault();
-      form.classList.add('tk-reply--drop');
+      form.classList.add('file-form--drop');
     }
   });
   form.addEventListener('dragleave', function (e) {
-    if (!form.contains(e.relatedTarget)) form.classList.remove('tk-reply--drop');
+    if (!form.contains(e.relatedTarget)) form.classList.remove('file-form--drop');
   });
   form.addEventListener('drop', function (e) {
     if (!e.dataTransfer || !e.dataTransfer.files.length) return;
     e.preventDefault();
-    form.classList.remove('tk-reply--drop');
+    form.classList.remove('file-form--drop');
     take(e.dataTransfer.files);
   });
+  }
 })();

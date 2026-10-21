@@ -67,9 +67,9 @@
   },
   "s01792a33c2": {
     "text": "Add files",
-    "context": "Text on tickets/show",
-    "where": "views/tickets/show.ejs",
-    "uses": 1
+    "context": "Text on tickets/_field / Text on tickets/show",
+    "where": "views/tickets/_field.ejs",
+    "uses": 2
   },
   "s017b586052": {
     "text": "How many technicians are available today.",
@@ -1161,6 +1161,12 @@
     "text": "No history yet.",
     "context": "Text on the page on tickets/show",
     "where": "views/tickets/show.ejs",
+    "uses": 1
+  },
+  "s1620511058": {
+    "text": "or drop them onto the form",
+    "context": "Text on tickets/_field",
+    "where": "views/tickets/_field.ejs",
     "uses": 1
   },
   "s1652a4cb12": {
@@ -3071,6 +3077,12 @@
     "where": "views/admin/settings/template-other.ejs",
     "uses": 1
   },
+  "s3a7a2348f2": {
+    "text": "Create a technician group and route tickets to it. Its figures appear here straight away.",
+    "context": "Text on the page on reports-empty",
+    "where": "views/reports-empty.ejs",
+    "uses": 1
+  },
   "s3a8ca8de4d": {
     "text": "Defines the appearance of the elements named by classes in the HTML, such as colours, sizes and spacing. It is loaded after the standard stylesheet, so its rules take precedence.",
     "context": "An explanation behind an (i) mark on admin/settings/portal-edit",
@@ -4749,6 +4761,12 @@
     "text": "On the ticket page, choosing Cancelled asks for a note, which is posted as a comment the requester can see and sent with the status notification. An automation that cancels a ticket decides on its Set status step whether to add one.",
     "context": "An explanation behind an (i) mark on admin/settings/template-other",
     "where": "views/admin/settings/template-other.ejs",
+    "uses": 1
+  },
+  "s5d00704e09": {
+    "text": "Reports count the tickets each technician group handles: how many came in, how quickly they were answered and solved, and which service levels were met.",
+    "context": "Text on the page on reports-empty",
+    "where": "views/reports-empty.ejs",
     "uses": 1
   },
   "s5d487f326b": {
@@ -9955,7 +9973,7 @@
   },
   "sbd1076c2b9": {
     "text": "Create a technician group",
-    "context": "A link on reports-empty",
+    "context": "Text on reports-empty",
     "where": "views/reports-empty.ejs",
     "uses": 1
   },
@@ -10187,6 +10205,12 @@
     "where": "views/admin/settings/_mailbox-dialog.ejs",
     "uses": 2
   },
+  "sc142ec36ff": {
+    "text": "No reports yet",
+    "context": "A heading on reports-empty",
+    "where": "views/reports-empty.ejs",
+    "uses": 1
+  },
   "sc16bc82bf1": {
     "text": "Sent",
     "context": "Text on the page on admin/settings/mail",
@@ -10317,7 +10341,7 @@
     "text": "Remove",
     "context": "A button on admin/settings/automation-edit / A heading on admin/settings/group-detail / A button on admin/settings/locale",
     "where": "views/admin/settings/automation-edit.ejs",
-    "uses": 6
+    "uses": 7
   },
   "sc397a5b487": {
     "text": "No images yet.",
