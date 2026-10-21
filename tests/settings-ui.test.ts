@@ -327,7 +327,7 @@ describe('the house style holds across the settings pages', () => {
     { path: '/admin/settings/templates', creates: 'New template' },
     { path: '/admin/settings/templates/categories', creates: 'New category' },
     { path: '/admin/settings/groups', creates: 'New group' },
-    { path: '/admin/settings/users', creates: 'New account' },
+    { path: '/admin/settings/users', creates: 'New user' },
   ];
 
   test('every list page creates through the same button', async () => {

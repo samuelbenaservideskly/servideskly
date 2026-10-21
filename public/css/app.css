@@ -4639,3 +4639,6 @@ h1 { font-weight: 700; letter-spacing: -0.015em; }
 .row-form { display: grid; gap: 0.35rem; }
 .row-form label { font-size: 0.85rem; color: var(--text-muted); }
 .row-form__line { display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap; }
+/* New user (21 Oct 2026): every box as wide as the password one, which is
+   capped at 24rem for its eye, so the column reads as one. */
+#new-account .field > input, #new-account .field > select { width: 100%; max-width: 24rem; }

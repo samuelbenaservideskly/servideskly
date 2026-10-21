@@ -3779,6 +3779,12 @@
     "where": "views/tickets/new.ejs",
     "uses": 1
   },
+  "s481ae44555": {
+    "text": "Add new user",
+    "context": "A button on admin/settings/users",
+    "where": "views/admin/settings/users.ejs",
+    "uses": 1
+  },
   "s48236edef1": {
     "text": "Sign-in could not be verified.",
     "context": "A message shown beside a form or after an action",
@@ -5147,6 +5153,12 @@
     "where": "views/admin/settings/api-keys.ejs",
     "uses": 1
   },
+  "s6384ffa771": {
+    "text": "New user",
+    "context": "Text on admin/settings/users / A heading on admin/settings/users",
+    "where": "views/admin/settings/users.ejs",
+    "uses": 2
+  },
   "s638c7c3279": {
     "text": "Decided by the service desk",
     "context": "Text on tickets/_field",
@@ -6415,9 +6427,9 @@
   },
   "s798ca2ce18": {
     "text": "Create account",
-    "context": "A button on admin/settings/users / A button on login-register",
-    "where": "views/admin/settings/users.ejs",
-    "uses": 2
+    "context": "A button on login-register",
+    "where": "views/login-register.ejs",
+    "uses": 1
   },
   "s79959c3a0c": {
     "text": "ticket{0}",
@@ -9820,12 +9832,6 @@
     "context": "A tooltip on boards/index",
     "where": "views/boards/index.ejs",
     "uses": 1
-  },
-  "sb8773d7525": {
-    "text": "New account",
-    "context": "Text on admin/settings/users / A heading on admin/settings/users",
-    "where": "views/admin/settings/users.ejs",
-    "uses": 2
   },
   "sb892ee3d10": {
     "text": "Save and apply to everyone",
