@@ -152,13 +152,30 @@ export function formatRelative(iso: string | null | undefined, t: Words = asIs):
 }
 
 /** Pretty-prints the JSON detail column of an audit entry. */
-export function formatDetail(detail: string | null): string {
-  if (!detail) return '';
-  try {
-    return JSON.stringify(JSON.parse(detail), null, 1).replace(/\n\s*/g, ' ');
-  } catch {
-    return detail;
+/**
+ * An audit entry's detail, as "reference: INC-000123, withFiles: 2".
+ *
+ * The data layer already parses the column (JSON_COLUMNS), so it arrives as
+ * an object; this read it as text, failed, and printed "[object Object]"
+ * (reported 21 Oct 2026). Text from before is still accepted.
+ */
+export function formatDetail(detail: unknown): string {
+  if (detail === null || detail === undefined || detail === '') return '';
+  let value: unknown = detail;
+  if (typeof detail === 'string') {
+    try {
+      value = JSON.parse(detail);
+    } catch {
+      return detail;
+    }
   }
+  if (typeof value !== 'object' || value === null) return String(value);
+  const show = (v: unknown): string =>
+    v === null || v === undefined ? '-' : typeof v === 'object' ? JSON.stringify(v) : String(v);
+  if (Array.isArray(value)) return value.map(show).join(', ');
+  return Object.entries(value as Record<string, unknown>)
+    .map(([k, v]) => k + ': ' + show(v))
+    .join(', ');
 }
 
 /** Builds a query string, dropping empty values, for filter and page links. */
