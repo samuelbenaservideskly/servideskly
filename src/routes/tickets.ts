@@ -83,6 +83,7 @@ import {
   approvalBlocks,
   tasksBlock,
   createTicket,
+  deleteComment,
   deleteTicket,
   getTicketById,
   listComments,
@@ -1033,6 +1034,7 @@ ticketRouter.get(
       requesterCard: isStaff(viewer.role) ? await requesterCardFor(viewer, ticket) : null,
       title: ticket.reference + ' - ' + ticket.title,
       ticket,
+      mayDeleteComments: await mayDeleteComments(viewer, ticket),
       requireCancelNote: settings().tickets.requireCancelNote,
       requireResolveNote: settings().tickets.requireResolveNote,
       requesterLines: requesterField && requesterPerson ? requesterDetails(requesterField, requesterPerson) : [],
@@ -1754,6 +1756,57 @@ ticketRouter.post(
  * mistake, or a request withdrawn - and that keeps the history. This is for
  * what must not be kept.
  */
+/**
+ * Who may delete a comment (Tickets - Other settings, 22 Oct 2026):
+ * administrators always; technicians when "Allow technicians to delete
+ * comments" is on; with "Only group managers", only managers of the ticket's
+ * group. An internal note also needs the right to write internal notes.
+ */
+export async function mayDeleteComments(viewer: UserRow, ticket: { group_id?: string | null }): Promise<boolean> {
+  if (viewer.role === 'admin') return true;
+  if (!isStaff(viewer.role)) return false;
+  const rules = settings().tickets;
+  if (!rules.techniciansDeleteComments) return false;
+  if (!rules.managersOnlyDeleteComments) return true;
+  if (!ticket.group_id) return false;
+  return (await groupManagers(ticket.group_id)).some((m) => m.id === viewer.id);
+}
+
+ticketRouter.post(
+  '/:id/comments/:commentId/delete',
+  writeLimiter,
+  asyncHandler(async (req, res) => {
+    const { viewer, ticket } = await loadTicket(req);
+    if (!(await mayDeleteComments(viewer, ticket))) {
+      throw forbidden('You may not delete comments on this ticket.');
+    }
+    // A note this person cannot see is "not found", like the ticket itself.
+    const visible = await listComments(ticket.id, viewer);
+    const target = visible.find((c) => c.id === String(req.params.commentId));
+    if (!target) throw notFound('That comment does not exist.');
+    if (target.is_internal && !writesInternal(viewer)) {
+      throw forbidden('Your role does not allow changing internal notes.');
+    }
+    const removed = await deleteComment(ticket.id, target.id, viewer.id);
+    if (removed) {
+      auditRequest(req, {
+        action: 'ticket.comment.deleted',
+        targetType: 'ticket',
+        targetId: ticket.id,
+        detail: {
+          reference: ticket.reference,
+          commentId: removed.id,
+          authorId: removed.author_id,
+          internal: Boolean(removed.is_internal),
+          body: removed.body.slice(0, 2000),
+        },
+      });
+    }
+    flash(req, 'success', 'Comment deleted.');
+    res.redirect('/tickets/' + ticket.id + '#conversation');
+  }),
+);
+
 ticketRouter.post(
   '/:id/delete',
   writeLimiter,

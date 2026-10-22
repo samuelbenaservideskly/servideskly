@@ -304,6 +304,11 @@ const documentSchema = z
       // ticket cancelled from its page needs a note, posted as a comment.
       requireCancelNote: z.boolean(),
       requireResolveNote: z.boolean().default(false),
+      // Tickets - Other settings - Deleting comments (22 Oct 2026). Off, only
+      // administrators delete a comment; on, technicians too - or, with the
+      // second, only the managers of the ticket's group.
+      techniciansDeleteComments: z.boolean().default(false),
+      managersOnlyDeleteComments: z.boolean().default(false),
       // Settings - Tickets - Other settings - Deleting old tickets. A closed
       // ticket is deleted this many days after it closed; 0 is off, which is
       // the default, because deleting somebody's record is not a thing to
@@ -502,6 +507,8 @@ export interface EffectiveSettings {
   tickets: {
     requireCancelNote: boolean;
     requireResolveNote: boolean;
+    techniciansDeleteComments: boolean;
+    managersOnlyDeleteComments: boolean;
     deleteClosedAfterDays: number;
     catalogue: {
       enabled: boolean;
@@ -683,6 +690,8 @@ function documentFromEnvironment(): SettingsDocument {
     tickets: {
       requireCancelNote: false,
       requireResolveNote: false,
+      techniciansDeleteComments: false,
+      managersOnlyDeleteComments: false,
       deleteClosedAfterDays: 0,
       catalogue: { enabled: false, heading: '', columns: 3, rows: 3, filters: false, tiles: [] },
       prefixes: {
@@ -1019,6 +1028,8 @@ export interface SettingsPatch {
     prefixes?: Partial<SettingsDocument['tickets']['prefixes']>;
     requireCancelNote?: boolean;
     requireResolveNote?: boolean;
+    techniciansDeleteComments?: boolean;
+    managersOnlyDeleteComments?: boolean;
     deleteClosedAfterDays?: number;
     // Whole, never merged: the tiles are a list, and a patch that merged
     // them index by index could not remove one.
@@ -1113,6 +1124,8 @@ export async function updateSettings(
       prefixes: { ...current.tickets.prefixes, ...patch.tickets?.prefixes },
       requireCancelNote: patch.tickets?.requireCancelNote ?? current.tickets.requireCancelNote ?? false,
       requireResolveNote: patch.tickets?.requireResolveNote ?? current.tickets.requireResolveNote ?? false,
+      techniciansDeleteComments: patch.tickets?.techniciansDeleteComments ?? current.tickets.techniciansDeleteComments ?? false,
+      managersOnlyDeleteComments: patch.tickets?.managersOnlyDeleteComments ?? current.tickets.managersOnlyDeleteComments ?? false,
       deleteClosedAfterDays:
         patch.tickets?.deleteClosedAfterDays ?? current.tickets.deleteClosedAfterDays ?? 0,
       catalogue: patch.tickets?.catalogue ?? current.tickets.catalogue,

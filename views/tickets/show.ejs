@@ -130,11 +130,31 @@
                 <% if (c.author_role !== 'user') { %><span class="badge badge--<%= c.author_role %>"><%= roleLabel(c.author_role) %></span><% } %>
                 <% if (c.is_internal) { %><span class="badge badge--internal"><%= t('Internal note') %></span><% } %>
                 <span class="tk-entry__when" title="<%= formatDateTime(c.created_at) %>"><%= formatRelative(c.created_at) %></span>
+                <% if (locals.mayDeleteComments) { %>
+                  <span class="tk-entry__tools"><%- include('../partials/bin-button', { label: t('Delete this comment'), href: '#delete-comment-' + c.id }) %></span>
+                <% } %>
               </header>
               <div class="prose"><%= c.body %></div>
               <% if (entry.files.length) { fileList(entry.files); } %>
             </div>
           </article>
+          <% if (locals.mayDeleteComments) { %>
+            <%# A :target confirmation, like deleting the ticket. %>
+            <div class="dialog" id="delete-comment-<%= c.id %>">
+              <a class="dialog__backdrop" href="#conversation" aria-label="Close"></a>
+              <div class="dialog__panel" role="dialog" aria-modal="true" aria-labelledby="delete-comment-<%= c.id %>-title">
+                <div class="dialog__head"><h2 id="delete-comment-<%= c.id %>-title">Delete this comment?</h2><a class="dialog__close" href="#conversation" aria-label="Close">&times;</a></div>
+                <form method="post" action="/tickets/<%= ticket.id %>/comments/<%= c.id %>/delete" class="stack">
+                  <input type="hidden" name="_csrf" value="<%= locals.csrfToken %>">
+                  <p class="small">It is removed for good. The history keeps a line saying who deleted it; files posted with it stay on the ticket.</p>
+                  <div class="dialog__actions">
+                    <a class="btn btn--quiet" href="#conversation">Cancel</a>
+                    <button type="submit" class="btn btn--danger">Delete comment</button>
+                  </div>
+                </form>
+              </div>
+            </div>
+          <% } %>
         <% } else { var by = entry.files[0].uploader_name; %>
           <article class="tk-entry tk-entry--files<%= entry.internal ? ' tk-entry--internal' : '' %>">
             <span class="tk-avatar tk-avatar--icon" aria-hidden="true"><%- include('../partials/icon', { name: 'paperclip' }) %></span>
@@ -451,6 +471,8 @@
                 created the ticket
               <% } else if (event.kind === 'field_changed') { %>
                 changed <%= event.field %> from <code><%= event.old_value %></code> to <code><%= event.new_value %></code>
+              <% } else if (event.kind === 'comment_deleted') { %>
+                deleted a comment by <%= event.old_value %>
               <% } else if (event.kind === 'internal_note') { %>
                 added an internal note
               <% } else if (event.kind === 'comment') { %>

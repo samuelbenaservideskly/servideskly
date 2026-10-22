@@ -1010,6 +1010,34 @@ function addCommentRow(input: {
   });
 }
 
+/**
+ * Removes one comment from a ticket (22 Oct 2026), leaving a line in the
+ * history saying who removed whose. Files posted with it stay on the ticket.
+ */
+export function deleteComment(ticketId: string, commentId: string, actorId: string): Promise<CommentRow | undefined> {
+  return transaction(async (client) => {
+    const found = await client.query<CommentRow>(
+      `SELECT c.*, u.display_name AS author_name, u.role AS author_role
+         FROM ticket_comments c JOIN users u ON u.id = c.author_id
+        WHERE c.id = ? AND c.ticket_id = ?`,
+      [commentId, ticketId],
+    );
+    const comment = found[0];
+    if (!comment) return undefined;
+    const now = nowIso();
+    await client.query('DELETE FROM ticket_comments WHERE id = ?', [commentId]);
+    await recordEvent(client, {
+      ticketId,
+      actorId,
+      kind: 'comment_deleted',
+      oldValue: comment.author_name,
+      at: now,
+    });
+    await client.query('UPDATE tickets SET updated_at = ? WHERE id = ?', [now, ticketId]);
+    return comment;
+  });
+}
+
 export interface TicketUpdate {
   status?: TicketStatus;
   priority?: TicketPriority;

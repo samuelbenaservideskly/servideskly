@@ -158,6 +158,29 @@
   </form>
 </details>
 
+<%# Who may delete a comment from a ticket (22 Oct 2026). Administrators
+    always may; this lets technicians, or only group managers. %>
+<details class="mode-panel settings-panel" id="comment-deletion"<%= panelOpen('comment-deletion') %>>
+  <summary>
+    <span class="mode-panel__title">Deleting comments</span>
+    <span class="small muted"><%= !locals.techniciansDeleteComments ? 'Administrators only' : locals.managersOnlyDeleteComments ? 'Group managers too' : 'Technicians too' %></span>
+  </summary>
+  <form method="post" action="/admin/settings/templates/other/comment-deletion" class="mode-panel__body">
+    <input type="hidden" name="_csrf" value="<%= locals.csrfToken %>">
+    <label class="check">
+      <input type="checkbox" name="techniciansDeleteComments" value="on"<%= locals.techniciansDeleteComments ? ' checked' : '' %>>
+      <strong>Allow technicians to delete comments</strong>
+    </label>
+    <label class="check">
+      <input type="checkbox" name="managersOnlyDeleteComments" value="on"<%= locals.managersOnlyDeleteComments ? ' checked' : '' %>>
+      <strong>Only group managers</strong>
+    </label>
+    <div class="actions">
+      <button type="submit" class="btn btn--primary">Save</button>
+    </div>
+  </form>
+</details>
+
 <details class="mode-panel settings-panel" id="status-notes"<%= panelOpen('status-notes') %>>
   <summary>
     <span class="mode-panel__title">Status notes</span>

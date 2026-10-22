@@ -406,6 +406,8 @@ function otherView(extra: Record<string, unknown> = {}): Record<string, unknown>
     weekdays: WEEKDAYS,
     requireCancelNote: current.tickets.requireCancelNote,
     requireResolveNote: current.tickets.requireResolveNote,
+    techniciansDeleteComments: current.tickets.techniciansDeleteComments,
+    managersOnlyDeleteComments: current.tickets.managersOnlyDeleteComments,
     deleteClosedAfterDays: current.tickets.deleteClosedAfterDays,
     errors: {},
     openPanel: '',
@@ -523,6 +525,29 @@ templateAdminRouter.post(
     }
     flash(req, 'success', 'Status notes saved.');
     res.redirect(otherUrl('status-notes'));
+  }),
+);
+
+/** Who may delete a comment: administrators always; technicians, or only group managers, when switched on. */
+templateAdminRouter.post(
+  '/other/comment-deletion',
+  writeLimiter,
+  asyncHandler(async (req, res) => {
+    const body = req.body ?? {};
+    const technicians = body.techniciansDeleteComments === 'on';
+    // "Only group managers" narrows the first; on its own it means managers may.
+    const managersOnly = body.managersOnlyDeleteComments === 'on';
+    await updateSettings(
+      { tickets: { techniciansDeleteComments: technicians || managersOnly, managersOnlyDeleteComments: managersOnly } },
+      req.currentUser?.id ?? null,
+    );
+    auditRequest(req, {
+      action: 'settings.comment_deletion.changed',
+      targetType: 'settings',
+      detail: { technicians: technicians || managersOnly, managersOnly },
+    });
+    flash(req, 'success', 'Saved.');
+    res.redirect(otherUrl('comment-deletion'));
   }),
 );
 

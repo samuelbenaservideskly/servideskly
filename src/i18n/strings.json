@@ -611,6 +611,12 @@
     "where": "views/admin/settings/catalogue.ejs",
     "uses": 1
   },
+  "s0b91161c24": {
+    "text": "Allow technicians to delete comments",
+    "context": "Text on admin/settings/template-other",
+    "where": "views/admin/settings/template-other.ejs",
+    "uses": 1
+  },
   "s0ba07690b1": {
     "text": "set {0}",
     "context": "Text on the page on admin/settings/provisioning",
@@ -1167,7 +1173,7 @@
     "text": "Save",
     "context": "A button on admin/settings/automations / A button on admin/settings/catalogue / A button on admin/settings/locale",
     "where": "views/admin/settings/automations.ejs",
-    "uses": 25
+    "uses": 26
   },
   "s151779ccfc": {
     "text": "Asset added.",
@@ -1425,7 +1431,7 @@
     "text": "Cancel",
     "context": "A button on admin/settings/_mailbox-dialog / A button on admin/settings/_relay-dialog / A button on admin/settings/advanced-data",
     "where": "views/admin/settings/_mailbox-dialog.ejs",
-    "uses": 66
+    "uses": 67
   },
   "s19e1e1c903": {
     "text": "An upper-case letter",
@@ -1899,6 +1905,12 @@
     "text": "Password policy",
     "context": "Text on the page on admin/settings/users-other",
     "where": "views/admin/settings/users-other.ejs",
+    "uses": 1
+  },
+  "s21d4d77215": {
+    "text": "You may not delete comments on this ticket.",
+    "context": "A message shown beside a form or after an action",
+    "where": "src/routes/tickets.ts",
     "uses": 1
   },
   "s221163d6e7": {
@@ -4283,6 +4295,12 @@
     "where": "views/admin/settings/user-detail.ejs",
     "uses": 1
   },
+  "s4d92d7c516": {
+    "text": "Delete this comment?",
+    "context": "A heading on tickets/show",
+    "where": "views/tickets/show.ejs",
+    "uses": 1
+  },
   "s4dd6aa4072": {
     "text": "Asset removed.",
     "context": "A message shown after an action / A message shown beside a form or after an action",
@@ -5909,6 +5927,12 @@
     "where": "views/work-dashboard.ejs",
     "uses": 1
   },
+  "s690ad6ad09": {
+    "text": "It is removed for good. The history keeps a line saying who deleted it; files posted with it stay on the ticket.",
+    "context": "Text on the page on tickets/show",
+    "where": "views/tickets/show.ejs",
+    "uses": 1
+  },
   "s6920517c3d": {
     "text": "That category no longer exists.",
     "context": "A message shown beside a form or after an action",
@@ -7071,7 +7095,7 @@
     "text": "Close",
     "context": "A label for a screen reader on admin/settings/_mailbox-dialog / A label for a screen reader on admin/settings/_relay-dialog / A label for a screen reader on admin/settings/advanced-data",
     "where": "views/admin/settings/_mailbox-dialog.ejs",
-    "uses": 129
+    "uses": 131
   },
   "s7da11212ed": {
     "text": "Thu",
@@ -8009,6 +8033,12 @@
     "where": "views/assets/import.ejs",
     "uses": 1
   },
+  "s8dd0e64f46": {
+    "text": "Only group managers",
+    "context": "Text on admin/settings/template-other",
+    "where": "views/admin/settings/template-other.ejs",
+    "uses": 1
+  },
   "s8df79ccb7a": {
     "text": "First response (business hours)",
     "context": "A table column heading on admin/settings/template-other",
@@ -8309,6 +8339,12 @@
     "where": "views/admin/settings/catalogue.ejs",
     "uses": 2
   },
+  "s91e589bca0": {
+    "text": "Comment deleted.",
+    "context": "A message shown after an action / A message shown beside a form or after an action",
+    "where": "src/routes/tickets.ts",
+    "uses": 2
+  },
   "s91e6d8f97d": {
     "text": "Text with variables in square brackets. Anything else - spaces, hyphens, commas, brackets - is kept as typed. A variable with no value leaves nothing, and the empty brackets or separators around it are removed. People with no first or last name keep the name from the directory or as typed. Empty: names are shown as the directory or the person gave them.",
     "context": "An explanation behind an (i) mark on admin/settings/users-other",
@@ -8505,6 +8541,12 @@
     "text": "Locations",
     "context": "A link on admin/settings/_dashboard-tabs",
     "where": "views/admin/settings/_dashboard-tabs.ejs",
+    "uses": 1
+  },
+  "s95e278fa77": {
+    "text": "Delete this comment",
+    "context": "Text on tickets/show",
+    "where": "views/tickets/show.ejs",
     "uses": 1
   },
   "s960629e81a": {
@@ -8937,6 +8979,12 @@
     "text": "Output name",
     "context": "The label of a form field on admin/settings/automation-edit",
     "where": "views/admin/settings/automation-edit.ejs",
+    "uses": 1
+  },
+  "s9c5de28e5d": {
+    "text": "Your role does not allow changing internal notes.",
+    "context": "A message shown beside a form or after an action",
+    "where": "src/routes/tickets.ts",
     "uses": 1
   },
   "s9c699bbb13": {
@@ -9573,6 +9621,12 @@
     "text": "Drawn with",
     "context": "The heading of a group of fields on admin/settings/dashboard-edit",
     "where": "views/admin/settings/dashboard-edit.ejs",
+    "uses": 1
+  },
+  "sa7ba2f79ae": {
+    "text": "Deleting comments",
+    "context": "Text on the page on admin/settings/template-other",
+    "where": "views/admin/settings/template-other.ejs",
     "uses": 1
   },
   "sa7ca6aa3aa": {
@@ -10599,6 +10653,12 @@
     "text": "They have not raised a ticket.",
     "context": "Text on the page on people/show",
     "where": "views/people/show.ejs",
+    "uses": 1
+  },
+  "sb9e8782039": {
+    "text": "That comment does not exist.",
+    "context": "A message shown beside a form or after an action",
+    "where": "src/routes/tickets.ts",
     "uses": 1
   },
   "sb9f1e20a0f": {
@@ -12993,6 +13053,12 @@
     "text": "When enabled, any user in your tenant who completes sign-in receives an account with the User role. When disabled, only accounts provisioned through SCIM can sign in.",
     "context": "An explanation behind an (i) mark on admin/settings/provisioning",
     "where": "views/admin/settings/provisioning.ejs",
+    "uses": 1
+  },
+  "se43811a170": {
+    "text": "Delete comment",
+    "context": "A button on tickets/show",
+    "where": "views/tickets/show.ejs",
     "uses": 1
   },
   "se48ae5a370": {
