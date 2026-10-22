@@ -78,6 +78,8 @@
         });
         chosen = next;
         draw();
+        // A pasted picture taken off the list leaves the text too.
+        forget(file.name);
         add.focus();
       });
       li.appendChild(name);
@@ -127,36 +129,244 @@
     take(e.dataTransfer.files);
   });
 
-  // A picture pasted into the text (asked for 22 Oct 2026): it joins the
-  // files like any other, and the text gets "[image: name]" where the caret
-  // was, which the ticket page draws as the picture (lib/inline-images.ts).
-  // Only a paste that is nothing but pictures: copying cells from Excel
-  // brings a picture of them too, and there the words are what was meant.
-  Array.prototype.forEach.call(form.querySelectorAll('textarea[data-paste-images]'), function (box) {
-    box.addEventListener('paste', function (e) {
-      var data = e.clipboardData;
-      if (!data || (data.getData('text/plain') || '').trim() !== '') return;
-      var pictures = [];
-      Array.prototype.forEach.call(data.items || [], function (item) {
-        if (item.kind === 'file' && /^image\/(png|jpeg|gif|webp)$/.test(item.type)) {
-          var blob = item.getAsFile();
-          if (blob) pictures.push(blob);
-        }
+  /*
+   * A text box that shows pictures (asked for 22 Oct 2026). A <textarea>
+   * holds only text, so where a box asks for it (data-paste-images) an
+   * editable area takes its place on screen, and the textarea stays in the
+   * form, hidden, holding what is posted: the words, with "[image: name]"
+   * where each picture is. The server and the stored ticket are what they
+   * were - plain text - and the ticket page draws the markers
+   * (lib/inline-images.ts). Nothing typed or pasted is kept as markup:
+   * a paste is plain text or pictures, formatting is refused, and the text
+   * is read back from text nodes and line breaks only.
+   *
+   * A pasted picture joins the files like any other. Taking it out of the
+   * text takes it off the list, and undo puts it back; its cross on the
+   * list takes it out of the text.
+   */
+  var pictures = {};
+  var editors = [];
+  var MARKER = /\[image:\s*([^\]\n]{1,200}?)\s*\]/g;
+
+  function has(name) {
+    return Array.prototype.some.call(chosen.files, function (f) { return f.name === name; });
+  }
+
+  function forget(name) {
+    if (!pictures[name]) return;
+    editors.forEach(function (ed) {
+      Array.prototype.forEach.call(ed.el.querySelectorAll('img[data-image]'), function (img) {
+        if (img.getAttribute('data-image') === name) img.parentNode.removeChild(img);
       });
-      if (!pictures.length) return;
-      e.preventDefault();
-      var markers = pictures.map(function (blob) {
-        var file = new File([blob], pastedName(blob.type), { type: blob.type, lastModified: Date.now() });
-        take([file]);
-        return '[image: ' + file.name + ']';
-      });
-      var start = box.selectionStart;
-      var before = box.value.slice(0, start);
-      var text = (before && !/\n$/.test(before) ? '\n' : '') + markers.join('\n') + '\n';
-      box.setRangeText(text, start, box.selectionEnd, 'end');
-      box.dispatchEvent(new Event('input', { bubbles: true }));
+      ed.sync();
     });
-  });
+    delete pictures[name];
+  }
+
+  // Which pasted pictures the text holds now, against the list: deleted ones
+  // come off it, undone deletions go back on.
+  function reconcile() {
+    var shown = {};
+    editors.forEach(function (ed) {
+      Array.prototype.forEach.call(ed.el.querySelectorAll('img[data-image]'), function (img) {
+        shown[img.getAttribute('data-image')] = true;
+      });
+    });
+    var next = new DataTransfer();
+    var changed = false;
+    Array.prototype.forEach.call(chosen.files, function (f) {
+      if (pictures[f.name] && !shown[f.name]) changed = true;
+      else next.items.add(f);
+    });
+    Object.keys(shown).forEach(function (name) {
+      if (pictures[name] && !has(name)) {
+        next.items.add(pictures[name].file);
+        changed = true;
+      }
+    });
+    if (changed) {
+      chosen = next;
+      draw();
+    }
+  }
+
+  // The words, with a marker for each picture: text nodes and line breaks
+  // only, so anything else that got in reads as its text.
+  function read(node) {
+    var out = '';
+    Array.prototype.forEach.call(node.childNodes, function (n) {
+      if (n.nodeType === 3) {
+        out += n.nodeValue.replace(/ /g, ' ');
+      } else if (n.nodeName === 'BR') {
+        out += '\n';
+      } else if (n.nodeName === 'IMG') {
+        if (n.getAttribute('data-image')) out += '[image: ' + n.getAttribute('data-image') + ']';
+      } else if (n.nodeType === 1) {
+        var block = /^(DIV|P|LI|H[1-6]|BLOCKQUOTE|PRE|UL|OL)$/.test(n.nodeName);
+        if (block && out && !/\n$/.test(out)) out += '\n';
+        out += read(n);
+        if (block && !/\n$/.test(out)) out += '\n';
+      }
+    });
+    return out;
+  }
+
+  function picture(name) {
+    var img = document.createElement('img');
+    img.src = pictures[name].url;
+    img.alt = name;
+    img.setAttribute('data-image', name);
+    return img;
+  }
+
+  // The posted text back on screen (a refused reply's draft). A marker for a
+  // picture this page does not hold - the browser cannot put files back -
+  // stays as its text.
+  function write(el, text) {
+    var at = 0;
+    var parts = [];
+    text.replace(MARKER, function (whole, name, index) {
+      parts.push(text.slice(at, index));
+      parts.push(pictures[name] ? { name: name } : whole);
+      at = index + whole.length;
+      return whole;
+    });
+    parts.push(text.slice(at));
+    parts.forEach(function (part) {
+      if (typeof part === 'string') {
+        if (part) el.appendChild(document.createTextNode(part));
+      } else {
+        el.appendChild(picture(part.name));
+      }
+    });
+  }
+
+  function picturesIn(data) {
+    var found = [];
+    Array.prototype.forEach.call(data.items || [], function (item) {
+      if (item.kind === 'file' && /^image\/(png|jpeg|gif|webp)$/.test(item.type)) {
+        var blob = item.getAsFile();
+        if (blob) found.push(blob);
+      }
+    });
+    return found;
+  }
+
+  function richBox(box) {
+    var el = document.createElement('div');
+    el.className = 'rich-box';
+    el.contentEditable = 'true';
+    el.spellcheck = true;
+    el.setAttribute('role', 'textbox');
+    el.setAttribute('aria-multiline', 'true');
+    el.setAttribute('data-placeholder', box.getAttribute('placeholder') || '');
+    if (box.required) el.setAttribute('aria-required', 'true');
+    var label = box.id ? form.querySelector('label[for="' + box.id + '"]') : null;
+    if (label) {
+      if (!label.id) label.id = box.id + '-label';
+      el.setAttribute('aria-labelledby', label.id);
+    }
+    write(el, box.value);
+
+    var ed = { el: el, box: box };
+    ed.sync = function () {
+      var text = read(el);
+      // The line break a browser keeps after the last line is not a line.
+      if (el.lastChild && el.lastChild.nodeName === 'BR') text = text.replace(/\n$/, '');
+      box.value = text;
+      el.classList.toggle('rich-box--empty', text === '' && !el.querySelector('img'));
+    };
+    editors.push(ed);
+
+    // The textarea stays in the form for the post and the browser's own
+    // "fill this in"; it hands its focus to the box it stands for.
+    box.classList.add('rich-box__source');
+    box.tabIndex = -1;
+    box.setAttribute('aria-hidden', 'true');
+    box.addEventListener('focus', function () { el.focus(); });
+    box.addEventListener('invalid', function () { setTimeout(function () { el.focus(); }, 0); });
+    box.parentNode.insertBefore(el, box);
+    ed.sync();
+
+    el.addEventListener('input', function () {
+      ed.sync();
+      reconcile();
+    });
+
+    // Bold, italics and the like: this is plain text.
+    el.addEventListener('beforeinput', function (e) {
+      if (/^format/.test(e.inputType)) e.preventDefault();
+    });
+
+    // Enter is a line break, not a new block of markup.
+    el.addEventListener('keydown', function (e) {
+      if (e.key === 'Enter' && !e.isComposing && document.execCommand('insertLineBreak')) e.preventDefault();
+    });
+
+    el.addEventListener('paste', function (e) {
+      var data = e.clipboardData;
+      if (!data) return;
+      e.preventDefault();
+      var text = data.getData('text/plain') || '';
+      // Only a paste that is nothing but pictures: copying cells from Excel
+      // brings a picture of them too, and there the words are what was meant.
+      var found = text.trim() === '' ? picturesIn(data) : [];
+      if (found.length) found.forEach(paste);
+      else if (text) document.execCommand('insertText', false, text);
+    });
+
+    // Text dragged in arrives as text; files are the form's (above).
+    el.addEventListener('drop', function (e) {
+      if (!e.dataTransfer || e.dataTransfer.files.length) return;
+      var text = e.dataTransfer.getData('text/plain');
+      e.preventDefault();
+      if (!text) return;
+      var spot = document.caretRangeFromPoint
+        ? document.caretRangeFromPoint(e.clientX, e.clientY)
+        : (function () {
+            var p = document.caretPositionFromPoint && document.caretPositionFromPoint(e.clientX, e.clientY);
+            if (!p) return null;
+            var r = document.createRange();
+            r.setStart(p.offsetNode, p.offset);
+            return r;
+          })();
+      if (spot) {
+        var sel = window.getSelection();
+        sel.removeAllRanges();
+        sel.addRange(spot);
+      }
+      document.execCommand('insertText', false, text);
+    });
+
+    function paste(blob) {
+      var file = new File([blob], pastedName(blob.type), { type: blob.type, lastModified: Date.now() });
+      var sel = window.getSelection();
+      var range = sel.rangeCount ? sel.getRangeAt(0).cloneRange() : null;
+      var reader = new FileReader();
+      reader.onload = function () {
+        // A data: address: the page's policy draws images from itself and
+        // data: only, and the bytes never leave the browser until the post.
+        pictures[file.name] = { file: file, url: String(reader.result) };
+        take([file]);
+        el.focus();
+        if (range && el.contains(range.startContainer)) {
+          sel.removeAllRanges();
+          sel.addRange(range);
+        }
+        var name = file.name.replace(/[^\w.-]/g, '');
+        document.execCommand('insertHTML', false, '<img src="' + pictures[file.name].url + '" alt="' + name + '" data-image="' + name + '">');
+        // Typing goes on under the picture (a <br> in the markup is dropped).
+        document.execCommand('insertLineBreak');
+        ed.sync();
+      };
+      reader.readAsDataURL(blob);
+    }
+  }
+
+  // Without these the plain textarea stays, and pictures cannot be pasted.
+  if (typeof document.execCommand === 'function' && 'contentEditable' in document.body) {
+    Array.prototype.forEach.call(form.querySelectorAll('textarea[data-paste-images]'), richBox);
+  }
   }
 
   // pasted-image-20261022-143005-2.png: unique on the ticket, and nothing in
