@@ -6675,7 +6675,7 @@
     "text": "Disable this account",
     "context": "A button on admin/settings/user-detail",
     "where": "views/admin/settings/user-detail.ejs",
-    "uses": 3
+    "uses": 2
   },
   "s76816eb9fe": {
     "text": "A notification with that name already exists.",
@@ -9933,7 +9933,7 @@
     "text": "Remove and anonymise",
     "context": "A button on admin/settings/user-detail",
     "where": "views/admin/settings/user-detail.ejs",
-    "uses": 3
+    "uses": 2
   },
   "saf9726a882": {
     "text": "X-Source: servicedesk",
@@ -13101,7 +13101,7 @@
     "text": "Administrator",
     "context": "Text on the page on admin/settings/user-detail / One choice in a dropdown on admin/settings/users",
     "where": "views/admin/settings/user-detail.ejs",
-    "uses": 3
+    "uses": 2
   },
   "se7d6ed2ec8": {
     "text": "The email address is used to sign in.",
@@ -14151,7 +14151,7 @@
     "text": "Remove account",
     "context": "A button on admin/settings/user-detail",
     "where": "views/admin/settings/user-detail.ejs",
-    "uses": 3
+    "uses": 2
   },
   "sfd37cec1c9": {
     "text": "From earlier steps:",

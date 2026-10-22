@@ -80,8 +80,6 @@
       <span class="badge badge--admin">Administrator</span> - fixed. This is the break-glass account; it keeps the administrator
       role so a broken identity provider can never lock everybody out.
     </p>
-  <% } else if (adminLocked) { %>
-    <p class="small"><span class="badge badge--admin">Administrator</span> - <%= adminLocked %></p>
   <% } else { %>
     <form method="post" action="/admin/settings/users/<%= user.id %>/role" class="stack">
       <input type="hidden" name="_csrf" value="<%= locals.csrfToken %>">
@@ -402,9 +400,7 @@
       press, so it is the quiet one; removing is not, so it is the red one.
     %>
     <div class="actions">
-    <% if (adminLocked) { %>
-      <% if (user.status === 'active') { %><button type="button" class="btn" disabled>Disable this account</button><% } %>
-    <% } else if (user.status === 'active') { %>
+    <% if (user.status === 'active') { %>
       <a class="btn" href="#disable-account">Disable this account</a>
     <% } else { %>
       <%# Enabling takes nothing away, so it needs no second press. %>
@@ -415,15 +411,11 @@
       </form>
     <% } %>
 
-    <% if (!isSelf && adminLocked) { %>
-      <button type="button" class="btn btn--danger" disabled>Remove account</button>
-      <button type="button" class="btn btn--danger" disabled>Remove and anonymise</button>
-    <% } else if (!isSelf) { %>
+    <% if (!isSelf) { %>
       <a class="btn btn--danger" href="#remove-account">Remove account</a>
       <a class="btn btn--danger" href="#erase-account">Remove and anonymise</a>
     <% } %>
     </div>
-    <% if (adminLocked && !isSelf) { %><p class="hint"><%= adminLocked %></p><% } %>
 
     <% if (user.status === 'active') { %>
       <div class="dialog" id="disable-account">

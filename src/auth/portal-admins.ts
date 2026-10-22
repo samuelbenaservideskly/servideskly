@@ -82,7 +82,10 @@ export function verifyPortalRequest(body: string, header: unknown): number | und
  * (asked for 18 Oct 2026).
  */
 export function portalManagesAdmins(): boolean {
-  return settings().provisioning.portalAdminsAt > 0;
+  // Never since 22 Oct 2026: the helpdesk adds and changes its own
+  // administrators. The portal's list still invites and promotes the
+  // addresses on it; it just no longer keeps anybody else from doing so.
+  return false;
 }
 
 export const ADMINS_IN_PORTAL = 'Administrators of this helpdesk are added in the customer portal, which gives each one a link to set their password.';

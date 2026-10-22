@@ -18,7 +18,7 @@ import { signInAs } from './support/session.js';
  * The administrators the customer portal manages (asked for 17 Oct 2026):
  * a signed list, applied whole; an invitation for an address with no
  * account; an identity provider's account promoted when it arrives; a
- * removal demotes; and nobody here can demote one the portal lists.
+ * removal demotes; and since 22 Oct 2026 the helpdesk manages them like anybody.
  */
 let app: Express;
 
@@ -129,15 +129,12 @@ describe('the signed list', () => {
     assert.match(link.text, /organisation account/);
   });
 
-  test('nobody here can demote one the portal lists; leaving the list demotes', async () => {
+  test('one the portal lists is managed here like anybody (22 Oct 2026); leaving the list demotes', async () => {
     const other = await signInAs('in.app.admin@example.com', 'admin');
     const listed = (await findUserByEmail('kept@example.com'))!;
     const page = await request(app).get('/admin/settings/users/' + listed.id).set('Cookie', other.cookie).expect(200);
-    assert.match(page.text, /managed in the customer portal/);
-    const refused = await request(app).post('/admin/settings/users/' + listed.id + '/role')
-      .set('Cookie', other.cookie).type('form').send({ _csrf: other.csrfToken, role: 'user' });
-    assert.equal(refused.status, 409);
-    assert.equal((await findUserByEmail('kept@example.com'))?.role, 'admin');
+    assert.doesNotMatch(page.text, /managed in the customer portal/);
+    assert.match(page.text, /action="\/admin\/settings\/users\/[^"]+\/role"/, 'the role form is offered');
 
     await send(['new.admin@example.com']).expect(200);
     assert.equal((await findUserByEmail('kept@example.com'))?.role, 'user');
@@ -149,18 +146,13 @@ describe('the signed list', () => {
     assert.ok(Number(audit?.n) >= 3);
   });
 
-  test('once the portal keeps the list, nobody is made an administrator here', async () => {
+  test('an administrator here may make somebody an administrator, list or not', async () => {
     const actor = await signInAs('promoter@example.com', 'admin');
     const plain = await signInAs('wants.admin@example.com', 'user');
-    const refused = await request(app).post('/admin/settings/users/' + plain.user.id + '/role')
-      .set('Cookie', actor.cookie).type('form').send({ _csrf: actor.csrfToken, role: 'admin' });
-    assert.equal(refused.status, 409);
-    assert.equal((await findUserByEmail('wants.admin@example.com'))?.role, 'user');
-    // A technician is still fine, and the page says where administrators come from.
     await request(app).post('/admin/settings/users/' + plain.user.id + '/role')
-      .set('Cookie', actor.cookie).type('form').send({ _csrf: actor.csrfToken, role: 'agent' }).expect(302);
+      .set('Cookie', actor.cookie).type('form').send({ _csrf: actor.csrfToken, role: 'admin' }).expect(302);
+    assert.equal((await findUserByEmail('wants.admin@example.com'))?.role, 'admin');
     const page = await request(app).get('/admin/settings/users/' + plain.user.id).set('Cookie', actor.cookie).expect(200);
-    assert.match(page.text, /added in the customer portal/);
-    assert.doesNotMatch(page.text, /<option value="admin"/);
+    assert.doesNotMatch(page.text, /added in the customer portal/);
   });
 });

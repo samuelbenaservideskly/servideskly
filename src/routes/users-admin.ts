@@ -62,7 +62,7 @@ import { settingsView } from './settings-shared.js';
 import { cannotEnableCodes } from '../auth/sign-in-codes.js';
 import { availabilityRouter, availabilityView, tracksAvailability, userInPath } from './availability.js';
 import type { UserRow } from '../services/users.js';
-import { ADMINS_IN_PORTAL, isPortalAdmin, portalManagesAdmins } from '../auth/portal-admins.js';
+import { ADMINS_IN_PORTAL, portalManagesAdmins } from '../auth/portal-admins.js';
 
 const BREAK_GLASS_URL = '/admin/settings/users/break-glass';
 
@@ -1071,23 +1071,14 @@ userAdminRouter.post(
   }),
 );
 
-/** One account's page. The break-glass account's is its tab. */
 /**
- * An administrator the customer portal lists is the portal's to demote,
- * disable or remove (auth/portal-admins.ts; asked for 17 Oct 2026) - here
- * one administrator could otherwise take the others out, and the portal
- * would go on listing people who no longer have access. Promoting and
- * enabling take nothing away, so anybody here may.
+ * One account's page. The break-glass account's is its tab.
+ *
+ * Administrators the customer portal set up used to be locked here (only
+ * the portal could demote, disable or remove them). Since 22 Oct 2026 the
+ * helpdesk manages its own administrators: nothing is sold, and the owner
+ * asked to change them here like anybody else.
  */
-const ADMIN_PROTECTED = 'This administrator is managed in the customer portal. Remove them there.';
-
-function adminProtected(_actor: UserRow | undefined, target: UserRow): boolean {
-  return target.role === 'admin' && isPortalAdmin(target.email);
-}
-
-function refuseOverAdmin(actor: UserRow, target: UserRow): void {
-  if (adminProtected(actor, target)) throw conflict(ADMIN_PROTECTED, 'admin_protected');
-}
 
 async function renderUser(req: Request, res: Response, user: UserRow): Promise<void> {
   {
@@ -1124,7 +1115,6 @@ async function renderUser(req: Request, res: Response, user: UserRow): Promise<v
         isLocal: isLocalAccount(user),
         isProtected: isLocalAdmin(user),
         isSelf: user.id === req.currentUser?.id,
-        adminLocked: adminProtected(req.currentUser, user) ? ADMIN_PROTECTED : null,
         // What the Anonymous placeholder would take on, said in the dialog
         // so nobody erases an account without knowing what moves.
         footprint: await erasureFootprint(user.id),
@@ -1252,7 +1242,6 @@ userAdminRouter.post(
     if (custom) {
       if (isLocalAdmin(target)) throw conflict('The local administrator account must keep the administrator role.', 'local_admin_protected');
       if (target.role === 'admin' && target.id === actor.id) throw conflict('You cannot remove your own administrator role.', 'self_demotion');
-      if (target.role === 'admin') refuseOverAdmin(actor, target);
       if (target.role === 'admin' && (await countAdmins()) <= 1) throw conflict('At least one administrator must remain.', 'last_admin');
       await setCustomRole(target.id, custom.id);
       auditRequest(req, { action: 'user.role.changed', targetType: 'user', targetId: target.id, detail: { from: target.role, to: 'role:' + custom.name } });
@@ -1277,7 +1266,6 @@ userAdminRouter.post(
     if (demotingAdmin && target.id === actor.id) {
       throw conflict('You cannot remove your own administrator role.', 'self_demotion');
     }
-    if (demotingAdmin) refuseOverAdmin(actor, target);
     if (demotingAdmin && (await countAdmins()) <= 1) {
       throw conflict('At least one administrator must remain.', 'last_admin');
     }
@@ -1349,7 +1337,6 @@ userAdminRouter.post(
       if (target.id === actor.id) {
         throw conflict('You cannot disable your own account.', 'self_disable');
       }
-      refuseOverAdmin(actor, target);
       if (target.role === 'admin' && (await countAdmins()) <= 1) {
         throw conflict('At least one active administrator must remain.', 'last_admin');
       }
@@ -1583,7 +1570,6 @@ userAdminRouter.post(
     if (target.id === actor.id) {
       throw conflict('You cannot remove your own account.', 'self_delete');
     }
-    refuseOverAdmin(actor, target);
 
     await deleteLocalAccount(target.id, actor.id);
     await sessionStore.destroyForUser(target.id);
@@ -1616,7 +1602,6 @@ userAdminRouter.post(
     if (isLocalAdmin(target)) {
       throw conflict('The break-glass account cannot be removed.');
     }
-    refuseOverAdmin(actor, target);
 
     const moved = await eraseUser(target, actor.id);
     await sessionStore.destroyForUser(target.id);

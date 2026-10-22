@@ -171,14 +171,12 @@ one made before is removed the first time the portal sends a list
   password; an identity provider's account is promoted at its first sign-in
   (`promoteIfListed` in `establishSession`) and needs no password. Off the
   list: demoted to user.
-- **Once the portal has sent a list, nobody is made an administrator here**
-  (`portalManagesAdmins()`, 18 Oct 2026): the role change, New account and
-  the CSV import refuse it, and the role lists drop the option - the portal
-  adds administrators and hands each a password link, the only way in
-  without a mailbox. One promoted here before that is left alone.
+- **The helpdesk manages its own administrators** (22 Oct 2026, reversing
+  18 Oct): an administrator here may promote anybody, and demote, disable
+  or remove one the portal listed. `portalManagesAdmins()` now always
+  answers false, and the "managed in the customer portal" lock is gone.
 - **Only its own addresses**: an administrator promoted under Settings -
-  Users is left alone. One on the list is protected here - nobody can demote,
-  disable or remove them except the portal.
+  Users is left alone by the portal's list.
 - Still never a token: the identity provider says who somebody is; the
   list, kept by the customer in the portal, says what they may do.
 
