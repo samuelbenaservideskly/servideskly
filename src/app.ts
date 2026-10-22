@@ -29,6 +29,7 @@ import { adminSetupRouter } from './routes/admin-setup.js';
 import { ticketRouter } from './routes/tickets.js';
 import { peopleRouter } from './routes/people.js';
 import { assetsRouter } from './routes/assets.js';
+import { registerAssetNotifications } from './services/asset-notify.js';
 import { searchRouter } from './routes/search.js';
 import { selectSearch } from './middleware/select-search.js';
 import { workDashboardLink, workDashboardRouter } from './routes/work-dashboard.js';
@@ -162,6 +163,8 @@ function assetVersion(): string {
 export function createApp(): Express {
   // Ticket events -> automations. Idempotent: one listener however many apps.
   installAutomations();
+  // Asset changes -> the assigned / unassigned emails (services/asset-notify.ts).
+  registerAssetNotifications();
 
   installSettingsWiring();
 

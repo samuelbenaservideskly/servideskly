@@ -34,6 +34,10 @@ export const NOTIFICATION_EVENTS = [
   // Not about a ticket: sent to one person, from the Users page. See
   // notifyPerson() in outbox.ts.
   'account.temporary_password',
+  // Assets (services/asset-notify.ts): to the person an asset is assigned to,
+  // or taken back from. Placeholders are the asset's (asset-variables.ts).
+  'asset.assigned',
+  'asset.unassigned',
 ] as const;
 export type NotificationEvent = (typeof NOTIFICATION_EVENTS)[number];
 
@@ -90,6 +94,8 @@ export const AUDIENCE: Record<
   'ticket.sla.breached': 'manager',
   // Sent to the one account it is about, at the address on that account.
   'account.temporary_password': 'person',
+  'asset.assigned': 'person',
+  'asset.unassigned': 'person',
 };
 
 const SIGNATURE = `
@@ -359,6 +365,33 @@ const SEED: Record<NotificationEvent, Omit<NotificationRow, 'id' | 'event' | 'is
        </table>
        <p style="margin:0">You will be asked to choose your own password the first time you sign in.</p>` +
         button('Sign in', '{{signInUrl}}'),
+      { signature: false },
+    ),
+  },
+  'asset.assigned': {
+    name: 'An asset is assigned to you',
+    description: 'To the person an asset is assigned to, when it is.',
+    subject: '{{Model}} is now assigned to you',
+    body_html: wrap(
+      `<p style="margin:0 0 12px">Hello {{FirstName}},</p>
+       <p style="margin:0">This is now assigned to you:</p>
+       <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="width:100%;margin:16px 0;background:#f9fafb;border:1px solid #e4e7ec;border-radius:10px">
+         <tr><td style="padding:14px 16px;font-size:14px;line-height:1.6;color:#1d1d1b">
+           <strong>{{Model}}</strong><br>Serial number: {{SerialNumber}}
+         </td></tr>
+       </table>
+       <p style="margin:0">If this is not right, reply to this email.</p>`,
+      { signature: false },
+    ),
+  },
+  'asset.unassigned': {
+    name: 'An asset is taken back',
+    description: 'To the person an asset was assigned to, when it no longer is.',
+    subject: '{{Model}} is no longer assigned to you',
+    body_html: wrap(
+      `<p style="margin:0 0 12px">Hello {{FirstName}},</p>
+       <p style="margin:0">{{Model}} (serial number {{SerialNumber}}) is no longer assigned to you.</p>
+       <p style="margin:12px 0 0">If this is not right, reply to this email.</p>`,
       { signature: false },
     ),
   },

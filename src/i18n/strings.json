@@ -401,6 +401,12 @@
     "where": "src/i18n/code-strings.ts",
     "uses": 4
   },
+  "s080952e6b2": {
+    "text": "To the person an asset was assigned to, when it no longer is.",
+    "context": "A message shown beside a form or after an action",
+    "where": "src/services/mail/notifications.ts",
+    "uses": 1
+  },
   "s0842ae9138": {
     "text": "A line under the label",
     "context": "The grey example inside an input on admin/settings/template-catalogue",
@@ -5439,6 +5445,12 @@
     "text": "Raised at or after a date and time",
     "context": "Text on admin/settings/api-keys",
     "where": "views/admin/settings/api-keys.ejs",
+    "uses": 1
+  },
+  "s637869e39f": {
+    "text": "To the person an asset is assigned to, when it is.",
+    "context": "A message shown beside a form or after an action",
+    "where": "src/services/mail/notifications.ts",
     "uses": 1
   },
   "s6384ffa771": {

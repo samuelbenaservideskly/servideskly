@@ -33,6 +33,7 @@ import {
   resetNotification,
   updateNotification,
 } from '../services/mail/notifications.js';
+import { assetVariableNames, sampleAssetVariables } from '../services/asset-variables.js';
 import { flushOutbox, listOutbox, retryMail } from '../services/mail/outbox.js';
 import { enabledLanguages } from '../i18n/index.js';
 import { pollMailbox } from '../services/mail/inbound.js';
@@ -379,6 +380,8 @@ function sampleValues(): Record<string, string> {
     ticketUrl: config.publicOrigin + '/tickets/example',
     slaClock: 'first response',
     slaDue: new Date().toISOString(),
+    // An asset's, for the asset notifications' preview.
+    ...sampleAssetVariables(),
   };
 }
 
@@ -397,7 +400,8 @@ async function notificationView(
     mailboxes: await listMailboxes(),
     relays: await listRelays(),
     relaysOnly: await relaysOnlyInForce(),
-    placeholders: PLACEHOLDERS,
+    // An asset's notification writes the asset's variables (asset-variables.ts).
+    placeholders: notification?.event.startsWith('asset.') ? await assetVariableNames() : PLACEHOLDERS,
     sample: sampleValues(),
     previewSubject: notification ? render(notification.subject, sampleValues()) : '',
     logoCid: LOGO_CID,
