@@ -146,7 +146,8 @@
    */
   var pictures = {};
   var editors = [];
-  var MARKER = /\[image:\s*([^\]\n]{1,200}?)\s*\]/g;
+  // "[image: name]", or "[image: name | 480]" once resized (lib/inline-images.ts).
+  var MARKER = /\[image:\s*([^\]\n|]{1,200}?)\s*(?:\|\s*(\d{1,4})\s*)?\]/g;
 
   function has(name) {
     return Array.prototype.some.call(chosen.files, function (f) { return f.name === name; });
@@ -200,7 +201,10 @@
       } else if (n.nodeName === 'BR') {
         out += '\n';
       } else if (n.nodeName === 'IMG') {
-        if (n.getAttribute('data-image')) out += '[image: ' + n.getAttribute('data-image') + ']';
+        if (n.getAttribute('data-image')) {
+          var width = n.getAttribute('width');
+          out += '[image: ' + n.getAttribute('data-image') + (width ? ' | ' + width : '') + ']';
+        }
       } else if (n.nodeType === 1) {
         var block = /^(DIV|P|LI|H[1-6]|BLOCKQUOTE|PRE|UL|OL)$/.test(n.nodeName);
         if (block && out && !/\n$/.test(out)) out += '\n';
@@ -211,11 +215,12 @@
     return out;
   }
 
-  function picture(name) {
+  function picture(name, width) {
     var img = document.createElement('img');
     img.src = pictures[name].url;
     img.alt = name;
     img.setAttribute('data-image', name);
+    if (width) img.setAttribute('width', width);
     return img;
   }
 
@@ -225,9 +230,9 @@
   function write(el, text) {
     var at = 0;
     var parts = [];
-    text.replace(MARKER, function (whole, name, index) {
+    text.replace(MARKER, function (whole, name, width, index) {
       parts.push(text.slice(at, index));
-      parts.push(pictures[name] ? { name: name } : whole);
+      parts.push(pictures[name] ? { name: name, width: width } : whole);
       at = index + whole.length;
       return whole;
     });
@@ -236,7 +241,7 @@
       if (typeof part === 'string') {
         if (part) el.appendChild(document.createTextNode(part));
       } else {
-        el.appendChild(picture(part.name));
+        el.appendChild(picture(part.name, part.width));
       }
     });
   }
@@ -285,12 +290,122 @@
     box.setAttribute('aria-hidden', 'true');
     box.addEventListener('focus', function () { el.focus(); });
     box.addEventListener('invalid', function () { setTimeout(function () { el.focus(); }, 0); });
-    box.parentNode.insertBefore(el, box);
+    var wrap = document.createElement('div');
+    wrap.className = 'rich-wrap';
+    box.parentNode.insertBefore(wrap, box);
+    wrap.appendChild(el);
     ed.sync();
+
+    /*
+     * Resizing a picture, as in Outlook: click it and drag a corner. The
+     * width is kept as an attribute (never a style - the policy refuses
+     * inline ones) and posted in its marker, "[image: name | 480]"; the
+     * height follows the picture's own proportions. Positions are set
+     * through the CSSOM, which the policy allows.
+     */
+    var picked = null;
+    var drag = null;
+    var size = document.createElement('span');
+    size.className = 'rich-size';
+    size.hidden = true;
+    var handles = ['nw', 'ne', 'sw', 'se'].map(function (corner) {
+      var h = document.createElement('span');
+      h.className = 'rich-handle rich-handle--' + corner;
+      h.setAttribute('data-corner', corner);
+      h.setAttribute('aria-hidden', 'true');
+      h.hidden = true;
+      h.addEventListener('pointerdown', startDrag);
+      wrap.appendChild(h);
+      return h;
+    });
+    wrap.appendChild(size);
+
+    function pick(img) {
+      if (picked) picked.classList.remove('rich-box__chosen');
+      picked = img;
+      if (picked) picked.classList.add('rich-box__chosen');
+      place();
+    }
+
+    function place() {
+      if (picked && !el.contains(picked)) picked = null;
+      if (!picked) {
+        handles.forEach(function (h) { h.hidden = true; });
+        return;
+      }
+      var w = wrap.getBoundingClientRect();
+      var r = picked.getBoundingClientRect();
+      var box2 = el.getBoundingClientRect();
+      // A picture scrolled out of the box has no handles in view.
+      var inView = r.bottom > box2.top && r.top < box2.bottom;
+      var at = { nw: [r.left, r.top], ne: [r.right, r.top], sw: [r.left, r.bottom], se: [r.right, r.bottom] };
+      handles.forEach(function (h) {
+        var p = at[h.getAttribute('data-corner')];
+        h.style.left = (p[0] - w.left) + 'px';
+        h.style.top = (p[1] - w.top) + 'px';
+        h.hidden = !inView;
+      });
+      size.style.left = (r.right - w.left + 8) + 'px';
+      size.style.top = (r.bottom - w.top - 24) + 'px';
+    }
+
+    function startDrag(e) {
+      if (!picked) return;
+      e.preventDefault();
+      var handle = e.currentTarget;
+      var corner = handle.getAttribute('data-corner');
+      drag = {
+        handle: handle,
+        x: e.clientX,
+        width: picked.getBoundingClientRect().width,
+        fromLeft: corner === 'nw' || corner === 'sw',
+        ratio: picked.naturalWidth ? picked.naturalHeight / picked.naturalWidth : 1,
+      };
+      handle.setPointerCapture(e.pointerId);
+      handle.addEventListener('pointermove', moveDrag);
+      handle.addEventListener('pointerup', endDrag);
+      handle.addEventListener('pointercancel', endDrag);
+      handle.addEventListener('lostpointercapture', endDrag);
+    }
+
+    function moveDrag(e) {
+      if (!drag || !picked) return;
+      var grow = (e.clientX - drag.x) * (drag.fromLeft ? -1 : 1);
+      var widest = el.clientWidth - 24;
+      var width = Math.round(Math.max(40, Math.min(widest, drag.width + grow)));
+      picked.setAttribute('width', String(width));
+      size.textContent = width + ' × ' + Math.round(width * drag.ratio);
+      size.hidden = false;
+      place();
+    }
+
+    function endDrag() {
+      if (!drag) return;
+      var handle = drag.handle;
+      handle.removeEventListener('pointermove', moveDrag);
+      handle.removeEventListener('pointerup', endDrag);
+      handle.removeEventListener('pointercancel', endDrag);
+      handle.removeEventListener('lostpointercapture', endDrag);
+      drag = null;
+      size.hidden = true;
+      ed.sync();
+      place();
+    }
+
+    el.addEventListener('click', function (e) {
+      pick(e.target && e.target.nodeName === 'IMG' && e.target.getAttribute('data-image') ? e.target : null);
+    });
+    el.addEventListener('scroll', place);
+    el.addEventListener('blur', function () {
+      // Leaving the box drops the handles; dragging one keeps them.
+      setTimeout(function () { if (!drag && document.activeElement !== el) pick(null); }, 0);
+    });
+    window.addEventListener('resize', place);
 
     el.addEventListener('input', function () {
       ed.sync();
       reconcile();
+      place();
     });
 
     // Bold, italics and the like: this is plain text.
@@ -299,7 +414,21 @@
     });
 
     // Enter is a line break, not a new block of markup.
+    // A chosen picture: Delete or Backspace removes it (undo brings it back),
+    // anything else typed lets it go.
     el.addEventListener('keydown', function (e) {
+      if (picked && (e.key === 'Delete' || e.key === 'Backspace')) {
+        e.preventDefault();
+        var range = document.createRange();
+        range.selectNode(picked);
+        var sel = window.getSelection();
+        sel.removeAllRanges();
+        sel.addRange(range);
+        pick(null);
+        document.execCommand('delete');
+        return;
+      }
+      if (picked && e.key !== 'Shift' && e.key !== 'Control' && e.key !== 'Alt' && e.key !== 'Meta') pick(null);
       if (e.key === 'Enter' && !e.isComposing && document.execCommand('insertLineBreak')) e.preventDefault();
     });
 

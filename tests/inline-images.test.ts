@@ -37,6 +37,14 @@ describe('textWithImages', () => {
     assert.match(html, /<img src="\/tickets\/t1\/attachments\/a1\?embed" alt="shot.png" loading="lazy"><\/a>\nthanks$/);
   });
 
+  test('a resized picture keeps its width, as an attribute, within limits', () => {
+    assert.match(textWithImages('[image: shot.png | 480]', 't1', files), /alt="shot.png" width="480" loading/);
+    assert.match(textWithImages('[image: shot.png | 5]', 't1', files), /width="40"/);
+    assert.match(textWithImages('[image: shot.png|9999]', 't1', files), /width="4000"/);
+    assert.doesNotMatch(textWithImages('[image: shot.png]', 't1', files), /width=/);
+    assert.doesNotMatch(textWithImages('[image: shot.png | 480]', 't1', files), /style=/);
+  });
+
   test('an unknown name, or a kind that is not drawn, stays as text', () => {
     assert.equal(textWithImages('[image: gone.png]', 't1', files), '[image: gone.png]');
     assert.equal(textWithImages('[image: logo.svg]', 't1', files), '[image: logo.svg]');

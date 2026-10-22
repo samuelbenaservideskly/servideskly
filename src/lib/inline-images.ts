@@ -9,7 +9,12 @@
  * API, an export) the marker simply reads as what it is.
  */
 
-const MARKER = /\[image:\s*([^\]\n]{1,200}?)\s*\]/g;
+// "[image: shot.png]", or "[image: shot.png | 480]" for a picture resized to
+// 480 pixels wide in the box (reply-files.js). A stored file name never holds
+// "|" (sanitiseFilename drops it), so the two cannot be confused.
+const MARKER = /\[image:\s*([^\]\n|]{1,200}?)\s*(?:\|\s*(\d{1,4})\s*)?\]/g;
+const MIN_WIDTH = 40;
+const MAX_WIDTH = 4000;
 
 /** The marker for a stored file name. */
 export const imageMarker = (name: string): string => '[image: ' + name + ']';
@@ -49,6 +54,7 @@ export function textWithImages(
   let at = 0;
   for (const match of text.matchAll(MARKER)) {
     const name = match[1]!;
+    const width = match[2] ? Math.min(MAX_WIDTH, Math.max(MIN_WIDTH, Number(match[2]))) : 0;
     const file =
       ownFiles.find((f) => isImage(f) && f.filename === name) ??
       [...ticketFiles].reverse().find((f) => isImage(f) && f.filename === name);
@@ -57,7 +63,10 @@ export function textWithImages(
       const href = '/tickets/' + encodeURIComponent(ticketId) + '/attachments/' + encodeURIComponent(file.id);
       html +=
         '<a class="tk-inline-img" href="' + escapeHtml(href) + '" target="_blank" rel="noopener">' +
-        '<img src="' + escapeHtml(href) + '?embed" alt="' + escapeHtml(name) + '" loading="lazy"></a>';
+        '<img src="' + escapeHtml(href) + '?embed" alt="' + escapeHtml(name) + '"' +
+        // An attribute, not a style: the page's policy refuses inline styles.
+        (width ? ' width="' + width + '"' : '') +
+        ' loading="lazy"></a>';
     } else {
       html += escapeHtml(match[0]);
     }
