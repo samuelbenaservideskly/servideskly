@@ -2146,4 +2146,38 @@ export const migrations: readonly Migration[] = [
          AND NOT EXISTS (SELECT 1 FROM ticket_templates WHERE name = 'Default Incident request');
     `,
   },
+  {
+    version: 70,
+    name: 'asset attachments',
+    sql: `
+      -- Files people attach to an asset (22 Oct 2026): checked like a
+      -- ticket's attachments, stored sealed beside the asset documents.
+      CREATE TABLE IF NOT EXISTS asset_attachments (
+        id           TEXT PRIMARY KEY,
+        asset_id     TEXT NOT NULL REFERENCES assets(id) ON DELETE CASCADE,
+        name         TEXT NOT NULL,
+        content_type TEXT NOT NULL,
+        byte_size    INTEGER NOT NULL,
+        stored_name  TEXT NOT NULL,
+        created_by   TEXT REFERENCES users(id) ON DELETE SET NULL,
+        created_at   TEXT NOT NULL
+      );
+      CREATE INDEX IF NOT EXISTS asset_attachments_asset_idx ON asset_attachments (asset_id, created_at);
+    `,
+    pg: `
+      -- Files people attach to an asset (22 Oct 2026): checked like a
+      -- ticket's attachments, stored sealed beside the asset documents.
+      CREATE TABLE IF NOT EXISTS asset_attachments (
+        id           TEXT PRIMARY KEY,
+        asset_id     TEXT NOT NULL REFERENCES assets(id) ON DELETE CASCADE,
+        name         TEXT NOT NULL,
+        content_type TEXT NOT NULL,
+        byte_size    BIGINT NOT NULL,
+        stored_name  TEXT NOT NULL,
+        created_by   TEXT REFERENCES users(id) ON DELETE SET NULL,
+        created_at   TEXT NOT NULL
+      );
+      CREATE INDEX IF NOT EXISTS asset_attachments_asset_idx ON asset_attachments (asset_id, created_at);
+    `,
+  },
 ];

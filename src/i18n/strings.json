@@ -73,9 +73,9 @@
   },
   "s01792a33c2": {
     "text": "Add files",
-    "context": "Text on tickets/_field / Text on tickets/show",
-    "where": "views/tickets/_field.ejs",
-    "uses": 2
+    "context": "A button on assets/show / Text on tickets/_field / Text on tickets/show",
+    "where": "views/assets/show.ejs",
+    "uses": 3
   },
   "s017b586052": {
     "text": "How many technicians are available today.",
@@ -940,6 +940,12 @@
     "context": "A message shown beside a form or after an action",
     "where": "src/services/erasure.ts",
     "uses": 2
+  },
+  "s1157defad7": {
+    "text": "Choose files",
+    "context": "Text on assets/show",
+    "where": "views/assets/show.ejs",
+    "uses": 1
   },
   "s1181ca0d6f": {
     "text": "The first {0} tickets raised in the period were read, as on the report.",
@@ -3557,6 +3563,12 @@
     "where": "views/admin/settings/users-other.ejs",
     "uses": 4
   },
+  "s3fc03e6cbc": {
+    "text": "Asset unassigned.",
+    "context": "A message shown after an action / A message shown beside a form or after an action",
+    "where": "src/routes/assets.ts",
+    "uses": 2
+  },
   "s3fd2c20e5c": {
     "text": "1 comment",
     "context": "Text on tickets/index",
@@ -6119,6 +6131,12 @@
     "where": "views/profile.ejs",
     "uses": 1
   },
+  "s6ca6a19e60": {
+    "text": "Unassign",
+    "context": "A button on assets/show",
+    "where": "views/assets/show.ejs",
+    "uses": 1
+  },
   "s6ccaa6415b": {
     "text": "Body",
     "context": "A table column heading on admin/settings/api-keys / The label of a form field on admin/settings/automation-edit / The label of a form field on admin/settings/mail-notification",
@@ -6202,6 +6220,12 @@
     "context": "An explanation behind an (i) mark on admin/settings/integration-generic",
     "where": "views/admin/settings/integration-generic.ejs",
     "uses": 1
+  },
+  "s6e377ece91": {
+    "text": "That file does not exist.",
+    "context": "A message shown beside a form or after an action",
+    "where": "src/routes/assets.ts",
+    "uses": 2
   },
   "s6e6e239515": {
     "text": "No favicon uploaded - a plain square in the brand colour is used.",
@@ -6857,6 +6881,12 @@
     "where": "views/admin/settings/catalogue.ejs",
     "uses": 1
   },
+  "s7a63bbfc53": {
+    "text": "File removed: {0}",
+    "context": "Text on assets/show. Keep each {0}, {1}...: it is a value",
+    "where": "views/assets/show.ejs",
+    "uses": 1
+  },
   "s7a69490214": {
     "text": "Save and test",
     "context": "A button on admin/settings/automation-edit",
@@ -7186,6 +7216,12 @@
     "context": "Text on the page on admin/settings/locale",
     "where": "views/admin/settings/locale.ejs",
     "uses": 1
+  },
+  "s80136d7c92": {
+    "text": "File removed.",
+    "context": "A message shown after an action / A message shown beside a form or after an action",
+    "where": "src/routes/assets.ts",
+    "uses": 2
   },
   "s8076a967f2": {
     "text": "Nobody is in this group yet. Add somebody below.",
@@ -7631,6 +7667,12 @@
     "where": "views/admin/settings/automation-edit.ejs",
     "uses": 1
   },
+  "s87785810be": {
+    "text": "File added.",
+    "context": "A message shown beside a form or after an action",
+    "where": "src/routes/assets.ts",
+    "uses": 1
+  },
   "s880eb5da1a": {
     "text": "Save widget",
     "context": "Text on boards/_widget-form",
@@ -7887,6 +7929,12 @@
     "text": "Nothing is open.",
     "context": "Text on the page on work-dashboard",
     "where": "views/work-dashboard.ejs",
+    "uses": 1
+  },
+  "s8ca42fd18f": {
+    "text": "Those files could not be added.",
+    "context": "A message shown beside a form or after an action",
+    "where": "src/routes/assets.ts",
     "uses": 1
   },
   "s8ce6684e54": {
@@ -9617,6 +9665,12 @@
     "where": "views/login-password.ejs",
     "uses": 1
   },
+  "sa9801c5257": {
+    "text": "File added: {0}",
+    "context": "Text on assets/show. Keep each {0}, {1}...: it is a value",
+    "where": "views/assets/show.ejs",
+    "uses": 1
+  },
   "sa9b1a6b758": {
     "text": "The saved wording, filled in with an example ticket. Save to see a change\n    here.",
     "context": "Text on the page on admin/settings/mail-notification",
@@ -9729,6 +9783,12 @@
     "text": "Your sign-in attempt expired. Please try again.",
     "context": "A message shown beside a form or after an action",
     "where": "src/routes/auth.ts",
+    "uses": 1
+  },
+  "sabc7e98928": {
+    "text": "Files",
+    "context": "A heading on assets/show",
+    "where": "views/assets/show.ejs",
     "uses": 1
   },
   "sabccc78cc9": {
@@ -11288,8 +11348,8 @@
   "sc642dc2ae3": {
     "text": "That asset no longer exists.",
     "context": "A message shown beside a form or after an action",
-    "where": "src/services/assets.ts",
-    "uses": 4
+    "where": "src/services/asset-documents.ts",
+    "uses": 5
   },
   "sc64fbda071": {
     "text": "{0} second ago",
@@ -11644,6 +11704,12 @@
     "context": "A permission a custom role can be given, a tick box on the Roles page",
     "where": "src/i18n/code-strings.ts",
     "uses": 1
+  },
+  "sce88b2484e": {
+    "text": "Those files are too large or too many.",
+    "context": "A message shown after an action / A message shown beside a form or after an action",
+    "where": "src/routes/assets.ts",
+    "uses": 2
   },
   "scea8426b8a": {
     "text": "Two letters, as the notification tab shows it: CZ beside EN reads as a pair where Czech beside English does not.",
@@ -12039,6 +12105,12 @@
     "text": "Only service desk staff can change ticket fields.",
     "context": "A message shown beside a form or after an action",
     "where": "src/routes/tickets.ts",
+    "uses": 1
+  },
+  "sd63076a33f": {
+    "text": "Choose at least one file.",
+    "context": "A message shown beside a form or after an action",
+    "where": "src/services/asset-documents.ts",
     "uses": 1
   },
   "sd67fc9e412": {
@@ -12519,6 +12591,12 @@
     "text": "No custom notifications yet. Press New notification.",
     "context": "Text on admin/settings/mail-notifications",
     "where": "views/admin/settings/mail-notifications.ejs",
+    "uses": 1
+  },
+  "sddc741880f": {
+    "text": "Attachments are switched off under Settings - Customisation - Attachments.",
+    "context": "A message shown beside a form or after an action",
+    "where": "src/services/asset-documents.ts",
     "uses": 1
   },
   "sddddb6cbd3": {
@@ -14133,7 +14211,7 @@
     "text": "That asset does not exist.",
     "context": "A message shown beside a form or after an action",
     "where": "src/routes/assets.ts",
-    "uses": 1
+    "uses": 2
   },
   "sfd1a1cae06": {
     "text": "The ticket cannot be resolved until this task is done",

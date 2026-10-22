@@ -225,3 +225,47 @@ describe('the asset list, Excel-like', () => {
     assert.equal(one.total, 2);
   });
 });
+
+describe('unassigning, and files on an asset (22 Oct 2026)', () => {
+  test('Unassign takes the asset back in one press, and says so in the history', async () => {
+    const id = await createAsset({ statusId: 'assigned', assignee: 'assets.user@example.com', values: { Model: 'Unassign me' } }, null);
+    const page = await as(agent).get('/inventory/' + id).expect(200);
+    assert.match(page.text, /action="\/inventory\/[^"]+\/unassign"/);
+    await post(agent, '/inventory/' + id + '/unassign', {}).expect(302);
+    assert.equal((await getAsset(id))?.assigned_to, null);
+    assert.ok((await listAssetEvents(id)).some((e) => e.kind === 'unassigned'));
+    const after = await as(agent).get('/inventory/' + id).expect(200);
+    assert.doesNotMatch(after.text, /\/unassign"/, 'nothing to take back any more');
+  });
+
+  test('files are added, listed, downloaded and removed; a file that is not what it says is refused', async () => {
+    const id = await createAsset({ statusId: 'in-stock', assignee: '', values: { Model: 'With a receipt' } }, null);
+    // A real PNG header, and a text file pretending to be one.
+    const png = Buffer.concat([Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]), Buffer.alloc(64)]);
+    const upload = (name: string, bytes: Buffer) =>
+      as(agent).post('/inventory/' + id + '/attachments').field('_csrf', agent.csrfToken).attach('files', bytes, name);
+
+    await upload('receipt.png', png).expect(302);
+    const page = await as(agent).get('/inventory/' + id).expect(200);
+    const link = page.text.match(/href="(\/inventory\/[^"]+\/attachments\/[^"]+)"/)?.[1];
+    assert.ok(link, 'listed with a download link');
+    const file = await as(agent).get(link!).expect(200);
+    assert.match(String(file.headers['content-disposition']), /attachment; filename="receipt\.png"/);
+    assert.equal(Buffer.compare(file.body as Buffer, png), 0, 'the same bytes back');
+
+    await upload('fake.png', Buffer.from('not an image at all')).expect(302);
+    const refused = await as(agent).get('/inventory/' + id).expect(200);
+    assert.match(refused.text, /do not match its \.png extension/);
+
+    const fileId = link!.split('/').pop()!;
+    await post(agent, '/inventory/' + id + '/attachments/' + fileId + '/delete', {}).expect(302);
+    await as(agent).get(link!).expect(404);
+    const kinds = (await listAssetEvents(id)).map((e) => e.kind);
+    assert.ok(kinds.includes('file') && kinds.includes('file_removed'));
+  });
+
+  test('a requester cannot reach a file', async () => {
+    const id = await createAsset({ statusId: 'in-stock', assignee: '', values: { Model: 'Private' } }, null);
+    await as(requester).get('/inventory/' + id + '/attachments/00000000-0000-0000-0000-000000000000').expect(404);
+  });
+});

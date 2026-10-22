@@ -9,7 +9,8 @@ import { bracedInDocx, fillDocx, isDocx, variableName } from '../lib/docx.js';
 import { openFile, sealFile } from '../lib/field-crypto.js';
 import { docxToPdf } from '../lib/pdf-convert.js';
 import { newId, nowIso } from '../lib/util.js';
-import { getAsset, assetTitle } from './assets.js';
+import { getAsset, assetTitle, recordAssetEvent } from './assets.js';
+import { attachmentLimits, formatBytes, sanitiseFilename, verifyType } from './attachments.js';
 import { assetVariableNames, assetVariables } from './asset-variables.js';
 
 /**
@@ -154,4 +155,81 @@ export async function generateDocument(
     [id, assetId, base + (pdfBytes ? '.pdf' : '.docx'), pdfBytes ? 'application/pdf' : DOCX_TYPE, bytes.length, await store(bytes), actor?.id ?? null, nowIso()],
   );
   return { file: (await findAssetFile(id))!, pdf: Boolean(pdfBytes) };
+}
+
+// ---------------------------------------------------------------------------
+// Attachments: files people add to an asset (22 Oct 2026)
+// ---------------------------------------------------------------------------
+
+/** At most this many files on one asset. */
+export const MAX_ASSET_ATTACHMENTS = 20;
+
+export interface AssetAttachmentRow {
+  id: string;
+  asset_id: string;
+  name: string;
+  content_type: string;
+  byte_size: number;
+  stored_name: string;
+  created_by: string | null;
+  created_at: string;
+  uploader_name?: string | null;
+}
+
+export async function listAssetAttachments(assetId: string): Promise<AssetAttachmentRow[]> {
+  const rows = await query<AssetAttachmentRow>(
+    `SELECT f.*, u.display_name AS uploader_name FROM asset_attachments f LEFT JOIN users u ON u.id = f.created_by
+      WHERE f.asset_id = ? ORDER BY f.created_at DESC`,
+    [assetId],
+  );
+  return rows.map((r) => ({ ...r, byte_size: Number(r.byte_size) }));
+}
+
+export async function findAssetAttachment(id: string): Promise<AssetAttachmentRow | undefined> {
+  const row = await queryOne<AssetAttachmentRow>('SELECT * FROM asset_attachments WHERE id = ?', [id]);
+  return row ? { ...row, byte_size: Number(row.byte_size) } : undefined;
+}
+
+/**
+ * Adds files to an asset, checked as a ticket's attachments are: the type
+ * from the file's own bytes (verifyType), the size limit from Settings -
+ * Customisation - Attachments, and MAX_ASSET_ATTACHMENTS. Every file is
+ * checked before any is stored, so a bad second file leaves nothing behind.
+ */
+export async function addAssetAttachments(
+  assetId: string,
+  files: readonly { originalname: string; buffer: Buffer }[],
+  actor: { id: string } | null,
+): Promise<number> {
+  const asset = await getAsset(assetId);
+  if (!asset) throw notFound('That asset no longer exists.');
+  if (files.length === 0) throw badRequest('Choose at least one file.', 'no_file');
+  const limits = attachmentLimits();
+  if (!limits.enabled) throw badRequest('Attachments are switched off under Settings - Customisation - Attachments.', 'attachments_off');
+  const existing = Number((await queryOne<{ n: number }>('SELECT count(*) AS n FROM asset_attachments WHERE asset_id = ?', [assetId]))?.n ?? 0);
+  if (existing + files.length > MAX_ASSET_ATTACHMENTS) throw badRequest('An asset holds at most ' + MAX_ASSET_ATTACHMENTS + ' files.', 'too_many_files');
+  const checked = files.map((file) => {
+    const name = sanitiseFilename(file.originalname);
+    if (file.buffer.length === 0) throw badRequest(name + ' is empty.', 'empty_file');
+    if (file.buffer.length > limits.maxBytes) throw badRequest(name + ' is larger than ' + formatBytes(limits.maxBytes) + '.', 'file_too_large');
+    const type = verifyType(name, file.buffer.subarray(0, 512));
+    return { name, type, buffer: file.buffer };
+  });
+  for (const file of checked) {
+    const stored = await store(file.buffer);
+    await execute(
+      'INSERT INTO asset_attachments (id, asset_id, name, content_type, byte_size, stored_name, created_by, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
+      [newId(), assetId, file.name, file.type.contentType, file.buffer.length, stored, actor?.id ?? null, nowIso()],
+    );
+    await recordAssetEvent(assetId, actor, 'file', 'File', '', file.name);
+  }
+  audit({ action: 'asset.attachment.added', actorId: actor?.id ?? null, targetType: 'asset', targetId: assetId, detail: { files: checked.map((f) => f.name) } });
+  return checked.length;
+}
+
+export async function deleteAssetAttachment(row: AssetAttachmentRow, actor: { id: string } | null): Promise<void> {
+  await execute('DELETE FROM asset_attachments WHERE id = ?', [row.id]);
+  if (/^[0-9a-f]{32}$/.test(row.stored_name)) await fs.rm(path.join(ASSET_FILE_DIR, row.stored_name), { force: true });
+  await recordAssetEvent(row.asset_id, actor, 'file_removed', 'File', row.name, '');
+  audit({ action: 'asset.attachment.deleted', actorId: actor?.id ?? null, targetType: 'asset', targetId: row.asset_id, detail: { file: row.name } });
 }

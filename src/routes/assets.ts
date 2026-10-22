@@ -31,7 +31,7 @@ import {
 } from '../services/assets.js';
 import { BLANK, filterParams, menuValues, readColumnFilters, type ColumnValue } from '../lib/column-filters.js';
 import { attempt, type FieldErrors } from './form-errors.js';
-import { findAssetFile, listGeneratedFor, readAssetFile } from '../services/asset-documents.js';
+import { addAssetAttachments, deleteAssetAttachment, findAssetAttachment, findAssetFile, listAssetAttachments, listGeneratedFor, readAssetFile, MAX_ASSET_ATTACHMENTS } from '../services/asset-documents.js';
 import { listUsers } from '../services/users.js';
 
 /**
@@ -209,7 +209,7 @@ assetsRouter.post(
 async function renderAsset(_req: Request, res: Response, id: string, extra: { errors?: FieldErrors; draft?: AssetInput; status?: number } = {}): Promise<void> {
   const asset = await getAsset(id);
   if (!asset) throw notFound('That asset does not exist.');
-  const [columns, statuses, events, comments, documents] = await Promise.all([enabledColumns(), listStatuses(), listAssetEvents(id), listAssetComments(id), listGeneratedFor(id)]);
+  const [columns, statuses, events, comments, documents, attachments] = await Promise.all([enabledColumns(), listStatuses(), listAssetEvents(id), listAssetComments(id), listGeneratedFor(id), listAssetAttachments(id)]);
   res.status(extra.status ?? 200).render('assets/show', {
     people: await assignablePeople(),
     title: assetTitle(asset),
@@ -219,6 +219,8 @@ async function renderAsset(_req: Request, res: Response, id: string, extra: { er
     events,
     comments,
     documents,
+    attachments,
+    maxAttachments: MAX_ASSET_ATTACHMENTS,
     errors: extra.errors ?? {},
     draft: extra.draft ?? null,
     ASSIGNED_TO,
@@ -254,6 +256,80 @@ assetsRouter.post(
     }
     flash(req, 'success', 'Asset saved.');
     res.redirect('/inventory/' + id);
+  }),
+);
+
+/** Unassign in one press: the same save as the form, so history, the email and automations follow. */
+assetsRouter.post(
+  '/:id/unassign',
+  writeLimiter,
+  asyncHandler(async (req, res) => {
+    const id = String(req.params.id);
+    const asset = await getAsset(id);
+    if (!asset) throw notFound('That asset does not exist.');
+    await updateAsset(id, { statusId: asset.status_id, assignee: '', values: asset.field_values }, req.currentUser ?? null);
+    flash(req, 'success', 'Asset unassigned.');
+    res.redirect('/inventory/' + id);
+  }),
+);
+
+/** Files people add to an asset: held in memory while checked, then stored sealed (asset-documents.ts). */
+const attachmentUpload = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 50 * 1024 * 1024, files: 10, fields: 5, parts: 15 },
+}).array('files', 10);
+
+assetsRouter.post(
+  '/:id/attachments',
+  writeLimiter,
+  asyncHandler(async (req, res) => {
+    const id = String(req.params.id);
+    const tooBig = await new Promise<boolean>((resolve, reject) => {
+      attachmentUpload(req, res, (err: unknown) => {
+        if (!err) resolve(false);
+        else if (err instanceof multer.MulterError) resolve(true);
+        else reject(err);
+      });
+    });
+    // The global CSRF check runs before a multipart body exists (app.ts).
+    assertCsrfToken(req);
+    if (tooBig) {
+      flash(req, 'error', 'Those files are too large or too many.', 'files');
+    } else {
+      const files = (req.files as Express.Multer.File[] | undefined) ?? [];
+      const added = await attempt(() => addAssetAttachments(id, files, req.currentUser ?? null));
+      if (added.ok) flash(req, 'success', added.value === 1 ? 'File added.' : added.value + ' files added.', 'files');
+      else flash(req, 'error', Object.values(added.errors)[0] ?? 'Those files could not be added.', 'files');
+    }
+    res.redirect('/inventory/' + id + '#files');
+  }),
+);
+
+assetsRouter.get(
+  '/:id/attachments/:fileId',
+  asyncHandler(async (req, res) => {
+    const row = await findAssetAttachment(String(req.params.fileId));
+    if (!row || row.asset_id !== String(req.params.id)) throw notFound('That file does not exist.');
+    const bytes = await readAssetFile(row);
+    // Always a download, with its verified type: never rendered on our origin.
+    res.setHeader('Content-Type', 'application/octet-stream');
+    res.setHeader('Content-Disposition', 'attachment; filename="' + row.name.replace(/[^\w .()-]+/g, '_') + '"');
+    res.setHeader('X-Content-Type-Options', 'nosniff');
+    res.setHeader('Content-Security-Policy', "default-src 'none'; sandbox");
+    res.send(bytes);
+  }),
+);
+
+assetsRouter.post(
+  '/:id/attachments/:fileId/delete',
+  writeLimiter,
+  asyncHandler(async (req, res) => {
+    const id = String(req.params.id);
+    const row = await findAssetAttachment(String(req.params.fileId));
+    if (!row || row.asset_id !== id) throw notFound('That file does not exist.');
+    await deleteAssetAttachment(row, req.currentUser ?? null);
+    flash(req, 'success', 'File removed.', 'files');
+    res.redirect('/inventory/' + id + '#files');
   }),
 );
 

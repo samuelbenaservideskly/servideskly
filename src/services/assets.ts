@@ -648,3 +648,9 @@ export function assetTitle(asset: Pick<AssetRow, 'field_values'>): string {
 export async function assigneeOfAsset(asset: Pick<AssetRow, 'assigned_to'>): Promise<UserRow | undefined> {
   return asset.assigned_to ? findUserById(asset.assigned_to) : undefined;
 }
+
+/** A line of an asset's history, written by another service (attachments). */
+export async function recordAssetEvent(assetId: string, actor: Actor, kind: string, field = '', oldValue = '', newValue = ''): Promise<void> {
+  await event(assetId, actor, kind, field, oldValue, newValue);
+  await execute('UPDATE assets SET updated_at = ? WHERE id = ?', [nowIso(), assetId]);
+}

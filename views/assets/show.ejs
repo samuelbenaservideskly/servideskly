@@ -66,6 +66,46 @@
         <dt>Changed</dt>
         <dd><%= formatDateTime(asset.updated_at) %></dd>
       </dl>
+      <% if (asset.assigned_to) { %>
+        <%# One press: the same save as the form, so the history, the "taken
+            back" email and any automation follow as usual. %>
+        <form method="post" action="/inventory/<%= asset.id %>/unassign" class="actions">
+          <input type="hidden" name="_csrf" value="<%= locals.csrfToken %>">
+          <button type="submit" class="btn">Unassign</button>
+        </form>
+      <% } %>
+    </div>
+
+    <%# Files people add to the asset: a receipt, a photo, a signed form.
+        Checked like a ticket's attachments (asset-documents.ts). %>
+    <div class="card stack" id="files">
+      <h2 class="section-title">Files</h2>
+      <% (locals.flashMessages || []).filter(function (m) { return m.where === 'files'; }).forEach(function (m) { %>
+        <div class="flash flash--<%= m.type %>" role="status"><%= m.message %></div>
+      <% }); %>
+      <% if (attachments.length) { %>
+        <ul class="timeline">
+          <% attachments.forEach(function (f) { %>
+            <li class="asset-file">
+              <a href="/inventory/<%= asset.id %>/attachments/<%= f.id %>" title="<%= f.name %>"><%= shortFileName(f.name, 36) %></a>
+              <% if (locals.canEditAssets !== false) { %>
+                <form method="post" action="/inventory/<%= asset.id %>/attachments/<%= f.id %>/delete" class="inline-form">
+                  <input type="hidden" name="_csrf" value="<%= locals.csrfToken %>">
+                  <%- include('../partials/bin-button', { label: 'Remove ' + f.name }) %>
+                </form>
+              <% } %>
+              <div class="small muted"><%= f.uploader_name || '' %> <span title="<%= formatDateTime(f.created_at) %>"><%= formatRelative(f.created_at) %></span></div>
+            </li>
+          <% }); %>
+        </ul>
+      <% } %>
+      <% if (locals.canEditAssets !== false && attachments.length < maxAttachments) { %>
+        <form method="post" action="/inventory/<%= asset.id %>/attachments" enctype="multipart/form-data" class="stack">
+          <input type="hidden" name="_csrf" value="<%= locals.csrfToken %>">
+          <input type="file" name="files" multiple aria-label="<%= t('Choose files') %>">
+          <div class="actions"><button type="submit" class="btn">Add files</button></div>
+        </form>
+      <% } %>
     </div>
 
     <% if (documents.length) { %>
@@ -94,6 +134,8 @@
               <% } else if (e.kind === 'assigned') { %><%= tx('Assigned to {0}', [e.new_value]) %>
               <% } else if (e.kind === 'unassigned') { %><%= tx('Taken back from {0}', [e.old_value]) %>
               <% } else if (e.kind === 'status') { %><%= tx('Status changed from {0} to {1}', [e.old_value || '-', e.new_value || '-']) %>
+              <% } else if (e.kind === 'file') { %><%= tx('File added: {0}', [e.new_value]) %>
+              <% } else if (e.kind === 'file_removed') { %><%= tx('File removed: {0}', [e.old_value]) %>
               <% } else { %><%= tx('{0} changed from "{1}" to "{2}"', [e.field, e.old_value, e.new_value]) %><% } %>
               <div class="small muted"><%= e.actor_name || t('Automatic') %> &middot; <span title="<%= formatDateTime(e.created_at) %>"><%= formatRelative(e.created_at) %></span></div>
             </li>
