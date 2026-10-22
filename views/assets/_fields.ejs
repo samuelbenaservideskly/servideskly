@@ -2,7 +2,7 @@
   An asset's fields, one per column switched on, by its format; the status
   and the person it is assigned to first. Used by the New asset dialog and
   the asset's page. `p` prefixes the ids so the two never clash.
-  Locals: columns, statuses, values, statusId, assignee, p.
+  Locals: columns, statuses, values, statusId, assignee, p, people.
 %>
 <div class="grid-2">
   <div class="field">
@@ -17,7 +17,14 @@
     <% if (c.format === 'person') { %>
       <div class="field">
         <label for="<%= p %>assignee"><%= c.label %></label>
-        <input id="<%= p %>assignee" name="assignee" type="email" maxlength="320" autocomplete="off" value="<%= assignee %>" placeholder="name@example.com">
+        <%# A searchable list of people (select-search.js), "First Last (email)";
+            it posts the address, as the plain field did. %>
+        <% var people = locals.people || []; var known = people.some(function (x) { return x.email.toLowerCase() === String(assignee || '').toLowerCase(); }); %>
+        <select id="<%= p %>assignee" name="assignee" data-search>
+          <option value="">Nobody</option>
+          <% if (assignee && !known) { %><option value="<%= assignee %>" selected><%= assignee %></option><% } %>
+          <% people.forEach(function (x) { %><option value="<%= x.email %>"<%= x.email.toLowerCase() === String(assignee || '').toLowerCase() ? ' selected' : '' %>><%= x.label %></option><% }); %>
+        </select>
       </div>
     <% } else if (c.format === 'textarea') { %>
       <div class="field field--full">
@@ -28,7 +35,7 @@
       <div class="field">
         <label for="<%= id %>"><%= c.label %></label>
         <select id="<%= id %>" name="v_<%= c.key %>">
-          <option value=""></option>
+          <option value="">Not set</option>
           <% c.choices.forEach(function (o) { %><option<%= o === value ? ' selected' : '' %>><%= o %></option><% }); %>
         </select>
       </div>

@@ -683,7 +683,7 @@ export const WRITE_EXAMPLES: WriteExample[] = [
     method: 'POST',
     path: '/tickets',
     needs: 'Create a ticket',
-    body: { template: 'Default request', title: 'VPN drops every hour', description: 'Since the update on Monday.', requester: 'emma@example.com', priority: 'high' },
+    body: { template: 'Default Incident request', title: 'VPN drops every hour', description: 'Since the update on Monday.', requester: 'emma@example.com', priority: 'high' },
     answer: '201 { "reference": "INC-000124", "id": "...", "url": "https://.../tickets/..." }',
   },
   {
@@ -746,7 +746,7 @@ export const WRITE_EXAMPLES: WriteExample[] = [
     method: 'POST',
     path: '/templates',
     needs: 'Create a ticket template',
-    body: { name: 'New starter laptop', type: 'service_request', summary: 'Order a laptop for a new colleague', basedOn: 'Default request' },
+    body: { name: 'New starter laptop', type: 'service_request', summary: 'Order a laptop for a new colleague', basedOn: 'Default Incident request' },
     answer: '201 { "id": "...", "name": "New starter laptop", "type": "service_request", "offered": false }',
   },
   {

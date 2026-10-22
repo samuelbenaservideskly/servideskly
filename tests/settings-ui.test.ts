@@ -152,12 +152,9 @@ describe('roles are assigned in the application, not during provisioning', () =>
 
   test('the users page is where roles are set', async () => {
     const page = await adminAgent.get('/admin/settings/users').expect(200);
-    // The one explanation worth keeping on this page: nothing else says that
-    // an Entra group does not grant a role, and an administrator would
-    // reasonably assume it did.
-    assert.match(page.text, /Roles are set here and nowhere else/i);
-    // Worded for any identity provider, not only Entra ID.
-    assert.match(page.text, /Groups and roles from your\s+identity provider are ignored/i);
+    // The explanation that roles come from here alone was removed at the
+    // owner's request (22 Oct 2026): the page is where they are set.
+    assert.doesNotMatch(page.text, /Roles are set here and nowhere else/i);
     assert.doesNotMatch(page.text, /name="lock"/, "there is no role lock any more");
   });
 });

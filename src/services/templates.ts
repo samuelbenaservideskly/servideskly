@@ -816,13 +816,8 @@ export async function updateTemplate(
   if (!existing) throw notFound('That template no longer exists.');
   await assertNameFree(input.name, id);
 
-  if (existing.is_default && !input.isActive) {
-    throw conflict(
-      'The default template cannot be retired, because it is the form every ticket is ' +
-        'raised on. Make another template the default first.',
-      'template_is_default',
-    );
-  }
+  // A default may be switched off too (asked for 22 Oct 2026): New ticket
+  // then opens the first working template instead (defaultTemplate).
 
   await execute(
     `UPDATE ticket_templates SET
@@ -1437,11 +1432,18 @@ export async function defaultTemplate(type?: TicketType): Promise<TemplateRow | 
           SELECT + ' WHERE is_default = 1 AND is_active = 1 AND parent_template_id IS NULL',
         ))),
   );
-  // ensureDefaultTemplate makes one at start-up and neither retiring nor
-  // deleting it is allowed, so this is a guard rather than a likely path -
-  // but a form can still be emptied after the fact, and an unfinished
-  // default would greet every requester with a form that cannot be sent.
-  return row && isUsable(row) ? row : undefined;
+  if (row && isUsable(row)) return row;
+  // The default switched off (allowed since 22 Oct 2026), or emptied: the
+  // first working template that is on - of the type asked for, else a
+  // service request, else any - rather than a form that cannot be sent.
+  const candidates = (await query<TemplateRow>(
+    SELECT + " WHERE is_active = 1 AND parent_template_id IS NULL AND type <> 'task' ORDER BY lower(name)",
+  )).map(withFields).filter((t): t is TemplateRow => Boolean(t) && isUsable(t!));
+  return (
+    (type ? candidates.find((t) => t.type === type) : undefined) ??
+    candidates.find((t) => t.type === 'service_request') ??
+    candidates[0]
+  );
 }
 
 /**
@@ -1539,7 +1541,7 @@ export async function ensureDefaultTemplate(): Promise<TemplateRow> {
 
   const created = await createTemplate(
     {
-      name: await freeName('Default request'),
+      name: await freeName('Default Incident request'),
       summary: 'The form a ticket is raised on when no other template is chosen.',
       title: '',
       body: '',

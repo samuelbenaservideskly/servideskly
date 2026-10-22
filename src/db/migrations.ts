@@ -2128,4 +2128,22 @@ export const migrations: readonly Migration[] = [
     pg: ASSET_FILES_SQL('BIGINT') + `
       ALTER TABLE mail_outbox ADD COLUMN IF NOT EXISTS asset_file_ids TEXT NOT NULL DEFAULT '[]';`,
   },
+  {
+    version: 69,
+    name: 'the default incident form is called Default Incident request',
+    sql: `
+      -- The seeded incident form says what it is (asked for 22 Oct 2026).
+      -- Only the untouched name, and never onto a name already taken.
+      UPDATE ticket_templates SET name = 'Default Incident request'
+       WHERE name = 'Default request' AND type = 'incident'
+         AND NOT EXISTS (SELECT 1 FROM ticket_templates WHERE name = 'Default Incident request');
+    `,
+    pg: `
+      -- The seeded incident form says what it is (asked for 22 Oct 2026).
+      -- Only the untouched name, and never onto a name already taken.
+      UPDATE ticket_templates SET name = 'Default Incident request'
+       WHERE name = 'Default request' AND type = 'incident'
+         AND NOT EXISTS (SELECT 1 FROM ticket_templates WHERE name = 'Default Incident request');
+    `,
+  },
 ];

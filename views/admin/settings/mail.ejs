@@ -2,12 +2,6 @@
 
 <%- include('_mail-tabs') %>
 
-<p class="small muted">
-  A mailbox sends the notifications and, if you let it, reads replies back in.
-  Add as many as you need: each can handle one technician group's tickets, and
-  the one marked default handles everything else.
-</p>
-
 <% if (relaysOnly) { %>
   <div class="card">
     <p class="small">
@@ -33,8 +27,7 @@
   <div class="card">
     <p><strong>No mailboxes yet.</strong></p>
     <p class="small muted">
-      Start with <a href="#new-mailbox">New mailbox</a>. Until there is one,
-      nothing is emailed and nothing is read.
+      Start with <a href="#new-mailbox">New mailbox</a>.
     </p>
   </div>
 <% } else { %>

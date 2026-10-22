@@ -28,11 +28,6 @@
   <input type="hidden" name="_csrf" value="<%= locals.csrfToken %>">
   <h2 class="section-title">Font</h2>
 
-  <p class="small muted">
-    Only fonts this service desk is licensed to use are offered. A custom
-    requester portal sets its own font in its CSS, from the same list.
-  </p>
-
   <div class="pick-list">
     <% fonts.forEach(function (f) { var current = (doc.branding.font || 'system') === f.key; %>
       <label class="pick-option">
@@ -117,7 +112,7 @@
     <% if (colourModes === 'both') { %>
       <div class="field">
         <div class="label-row">
-          <label for="defaultMode">What somebody who has chosen nothing sees</label>
+          <label for="defaultMode">Default colour mode</label>
           <%- include('../../partials/info', { text: 'The first thing a new visitor gets. Light, so a service desk looks the same to everybody who opens it for the first time; "Follow their computer" uses the setting their machine is on.' }) %>
         </div>
         <select id="defaultMode" name="defaultMode">
@@ -138,7 +133,7 @@
             <circle cx="42" cy="10" r="8.5" fill="<%= m.text %>" stroke="currentColor" stroke-opacity="0.2"></circle>
           </svg>
           <span class="mode-panel__title"><%= pair[1] %></span>
-          <span class="small muted"><%= m.own ? 'Own colours' : 'Worked out' %></span>
+          <% if (m.own) { %><span class="small muted">Own colours</span><% } %>
         </summary>
         <div class="mode-panel__body">
           <label class="check">
@@ -192,8 +187,7 @@
       <input id="logo-file" name="image" type="file" accept="<%= logoExtensions %>" required>
       <p class="hint">
         <%= logoExtensions.split(',').join(' ') %>, up to <%= maxBrandingKb %> KB.
-        A wide, transparent SVG or PNG works best. It is shown against a white
-        plate so it stays legible in the dark theme.
+        We suggest a wide SVG or PNG with a transparent background.
       </p>
     </div>
     <div class="actions">

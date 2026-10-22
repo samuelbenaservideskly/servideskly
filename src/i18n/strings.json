@@ -53,6 +53,12 @@
     "where": "views/admin/settings/api-keys.ejs",
     "uses": 1
   },
+  "s00e2c4fb0d": {
+    "text": "Own colours",
+    "context": "Text on the page on admin/settings/customization",
+    "where": "views/admin/settings/customization.ejs",
+    "uses": 1
+  },
   "s00e34a98f6": {
     "text": "Your password has been changed.",
     "context": "A message shown beside a form or after an action",
@@ -1763,12 +1769,6 @@
     "where": "views/admin/settings/_member-picker.ejs",
     "uses": 8
   },
-  "s2001e777b1": {
-    "text": "What somebody who has chosen nothing sees",
-    "context": "The label of a form field on admin/settings/customization",
-    "where": "views/admin/settings/customization.ejs",
-    "uses": 1
-  },
   "s201d5916c6": {
     "text": "Notifications about these groups' tickets go through this relay. A group follows one relay: ticking it here moves it from another. Groups not ticked anywhere use the default relay.",
     "context": "An explanation behind an (i) mark on admin/settings/_relay-dialog",
@@ -2295,6 +2295,12 @@
     "text": "Report something that is broken or not working as it should.",
     "context": "A message shown beside a form or after an action",
     "where": "src/services/templates.ts",
+    "uses": 1
+  },
+  "s2917eb3957": {
+    "text": "{0}, up to {1} KB.\n        We suggest a wide SVG or PNG with a transparent background.",
+    "context": "A note under a control on admin/settings/customization",
+    "where": "views/admin/settings/customization.ejs",
     "uses": 1
   },
   "s291dbbb34e": {
@@ -3547,9 +3553,9 @@
   },
   "s3fad99b521": {
     "text": "Nobody",
-    "context": "One choice in a dropdown on admin/settings/users-other / One choice in a dropdown on assets/index / A link on assets/show",
+    "context": "One choice in a dropdown on admin/settings/users-other / One choice in a dropdown on assets/_fields / One choice in a dropdown on assets/index",
     "where": "views/admin/settings/users-other.ejs",
-    "uses": 3
+    "uses": 4
   },
   "s3fd2c20e5c": {
     "text": "1 comment",
@@ -3621,6 +3627,12 @@
     "text": "That code is not right. Type the one your app shows now.",
     "context": "A message shown beside a form or after an action",
     "where": "src/routes/auth.ts",
+    "uses": 1
+  },
+  "s41353a64d4": {
+    "text": "Default colour mode",
+    "context": "The label of a form field on admin/settings/customization",
+    "where": "views/admin/settings/customization.ejs",
     "uses": 1
   },
   "s41458fac27": {
@@ -4033,9 +4045,9 @@
   },
   "s4895f73177": {
     "text": "Not set",
-    "context": "One choice in a dropdown on partials/availability / Text on tickets/_field",
-    "where": "views/partials/availability.ejs",
-    "uses": 2
+    "context": "One choice in a dropdown on assets/_fields / One choice in a dropdown on partials/availability / Text on tickets/_field",
+    "where": "views/assets/_fields.ejs",
+    "uses": 3
   },
   "s48f0d3d397": {
     "text": "Sign out",
@@ -4159,9 +4171,9 @@
   },
   "s4b168d88dc": {
     "text": "role",
-    "context": "A link on admin/settings/groups / A link on admin/settings/user-groups / Text on admin/settings/users",
-    "where": "views/admin/settings/groups.ejs",
-    "uses": 3
+    "context": "Text on admin/settings/users",
+    "where": "views/admin/settings/users.ejs",
+    "uses": 1
   },
   "s4b6bd9c0fe": {
     "text": "(switched off)",
@@ -4423,9 +4435,9 @@
   },
   "s500f2f9d39": {
     "text": "New role",
-    "context": "Text on admin/settings/roles / A link on admin/settings/roles / A heading on admin/settings/roles",
+    "context": "Text on admin/settings/roles / A heading on admin/settings/roles",
     "where": "views/admin/settings/roles.ejs",
-    "uses": 3
+    "uses": 2
   },
   "s501269dbce": {
     "text": "Each location is shown only to the user groups chosen under Locations. A requester who may not see one sees the status without it.",
@@ -5381,12 +5393,6 @@
     "where": "views/admin/settings/api-keys.ejs",
     "uses": 1
   },
-  "s621a360a62": {
-    "text": "Roles are set here and nowhere else.",
-    "context": "Text on admin/settings/users",
-    "where": "views/admin/settings/users.ejs",
-    "uses": 1
-  },
   "s6240211ba9": {
     "text": "request.json.type",
     "context": "The grey example inside an input on admin/settings/automation-edit",
@@ -5433,6 +5439,12 @@
     "text": "The median time to resolve, over the last 30 days.",
     "context": "A message shown beside a form or after an action",
     "where": "src/services/dashboards.ts",
+    "uses": 1
+  },
+  "s62dca007a0": {
+    "text": "Click here",
+    "context": "A link on admin/settings/roles",
+    "where": "views/admin/settings/roles.ejs",
     "uses": 1
   },
   "s62efe81a96": {
@@ -6865,9 +6877,9 @@
   },
   "s7b17fb0bd1": {
     "text": "name@example.com",
-    "context": "The grey example inside an input on assets/_fields / The grey example inside an input on login-forgot / The grey example inside an input on login",
-    "where": "views/assets/_fields.ejs",
-    "uses": 3
+    "context": "The grey example inside an input on login-forgot / The grey example inside an input on login",
+    "where": "views/login-forgot.ejs",
+    "uses": 2
   },
   "s7b264b40fb": {
     "text": "Allow HTTP steps to call the private network",
@@ -8081,12 +8093,6 @@
     "where": "views/tickets/show.ejs",
     "uses": 1
   },
-  "s8fa433c679": {
-    "text": "{0}, up to {1} KB.\n        A wide, transparent SVG or PNG works best. It is shown against a white\n        plate so it stays legible in the dark theme.",
-    "context": "A note under a control on admin/settings/customization",
-    "where": "views/admin/settings/customization.ejs",
-    "uses": 1
-  },
   "s8fbc15c902": {
     "text": "{0} replied",
     "context": "Text on work-dashboard. Keep each {0}, {1}...: it is a value",
@@ -8351,12 +8357,6 @@
     "where": "views/admin/settings/dashboard-edit.ejs",
     "uses": 2
   },
-  "s93f71c6b38": {
-    "text": "Nothing in an Entra token grants access here. Group membership, app roles\n    and addresses are all ignored, and signing in never changes a role that is\n    already set.",
-    "context": "Text on the page on admin/settings/authentication",
-    "where": "views/admin/settings/authentication.ejs",
-    "uses": 1
-  },
   "s93ff9273de": {
     "text": "Clock",
     "context": "The heading of a group of fields on admin/settings/locale",
@@ -8404,12 +8404,6 @@
     "context": "A table column heading on admin/settings/api-keys / A table column heading on admin/settings/portal-edit",
     "where": "views/admin/settings/api-keys.ejs",
     "uses": 2
-  },
-  "s9537b469a9": {
-    "text": "A mailbox sends the notifications and, if you let it, reads replies back in.\n  Add as many as you need: each can handle one technician group's tickets, and\n  the one marked default handles everything else.",
-    "context": "Text on the page on admin/settings/mail",
-    "where": "views/admin/settings/mail.ejs",
-    "uses": 1
   },
   "s9543342f4c": {
     "text": "Ticket fields",
@@ -11975,12 +11969,6 @@
     "where": "views/login.ejs",
     "uses": 1
   },
-  "sd52168049e": {
-    "text": "Only fonts this service desk is licensed to use are offered. A custom\n    requester portal sets its own font in its CSS, from the same list.",
-    "context": "Text on the page on admin/settings/customization",
-    "where": "views/admin/settings/customization.ejs",
-    "uses": 1
-  },
   "sd521c5d3df": {
     "text": "Missed by {0}",
     "context": "Text drawn on a page. Keep each {0}, {1}...: it is a value",
@@ -12094,12 +12082,6 @@
     "context": "A button on admin/settings/assets-documents / Text on tickets/show",
     "where": "views/admin/settings/assets-documents.ejs",
     "uses": 2
-  },
-  "sd6f8cbc5b5": {
-    "text": "ticket\n  templates",
-    "context": "A link on admin/settings/user-groups",
-    "where": "views/admin/settings/user-groups.ejs",
-    "uses": 1
   },
   "sd707dc2f19": {
     "text": "Logo",

@@ -32,6 +32,22 @@ import {
 import { BLANK, filterParams, menuValues, readColumnFilters, type ColumnValue } from '../lib/column-filters.js';
 import { attempt, type FieldErrors } from './form-errors.js';
 import { findAssetFile, listGeneratedFor, readAssetFile } from '../services/asset-documents.js';
+import { listUsers } from '../services/users.js';
+
+/**
+ * Who an asset can be assigned to, for the Assigned to dropdown: every
+ * active person, as "First Last (email)". More than eight options bring
+ * select-search.js's search box, so it works as a search field.
+ */
+async function assignablePeople(): Promise<{ email: string; label: string }[]> {
+  const { rows } = await listUsers({ limit: 5000, offset: 0 });
+  return rows
+    .filter((u) => u.status === 'active' && u.email && !u.email.endsWith('.invalid'))
+    .map((u) => {
+      const name = [u.first_name, u.last_name].filter(Boolean).join(' ').trim() || u.display_name;
+      return { email: u.email, label: name && name !== u.email ? name + ' (' + u.email + ')' : u.email };
+    });
+}
 
 /**
  * /assets: the list, a new asset, one asset (services/assets.ts). For anybody
@@ -99,6 +115,7 @@ async function renderList(req: Request, res: Response, extra: { errors?: FieldEr
   const filters = { q, status: statusId, assigned, sort, dir };
   const state = { ...filters, ...filterParams(columnFilters) };
   res.status(extra.status ?? 200).render('assets/index', {
+    people: await assignablePeople(),
     title: 'Assets',
     assets: found.items,
     total: found.total,
@@ -194,6 +211,7 @@ async function renderAsset(_req: Request, res: Response, id: string, extra: { er
   if (!asset) throw notFound('That asset does not exist.');
   const [columns, statuses, events, comments, documents] = await Promise.all([enabledColumns(), listStatuses(), listAssetEvents(id), listAssetComments(id), listGeneratedFor(id)]);
   res.status(extra.status ?? 200).render('assets/show', {
+    people: await assignablePeople(),
     title: assetTitle(asset),
     asset,
     columns,

@@ -4760,3 +4760,9 @@ th.th-filter--on .colfilter__button { color: var(--brand); }
    are a short list under its variables; the variable list wraps. */
 .asset-doc__problems { margin: 0.35rem 0 0; padding-left: 1.1rem; }
 .asset-doc__variables { overflow-wrap: anywhere; line-height: 1.8; }
+
+/* Counts in pills use tabular figures (22 Oct 2026): Inter's proportional
+   "1" has its stem right of centre and read as shifted in the round badge;
+   the tabular "1" has a foot and sits balanced, and every count is as wide
+   as the next. */
+.side-link__badge, .colfilter__count, .report-count { font-variant-numeric: tabular-nums; }

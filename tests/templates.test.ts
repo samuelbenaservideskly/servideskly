@@ -1029,14 +1029,15 @@ describe('the default template', () => {
     assert.equal(await findTemplate(current.id), undefined);
   });
 
-  test('the default cannot be retired either', async () => {
+  test('the default can be switched off; New ticket then opens the first working template', async () => {
     const current = await defaultTemplate();
     assert.ok(current);
-    await assert.rejects(
-      () => updateTemplate(current.id, { ...BASE, name: current.name, isActive: false }, null),
-      /default template cannot be retired/i,
-    );
-    assert.equal((await findTemplate(current.id))?.is_active, true);
+    await updateTemplate(current.id, { ...BASE, name: current.name, isActive: false }, null);
+    assert.equal((await findTemplate(current.id))?.is_active, false);
+    const fallback = await defaultTemplate();
+    assert.ok(!fallback || (fallback.id !== current.id && fallback.is_active), 'never the one switched off');
+    // Back on, so the tests after this one find it.
+    await updateTemplate(current.id, { ...BASE, name: current.name, isActive: true }, null);
   });
 
   test('the administration list is where the default is chosen', async () => {

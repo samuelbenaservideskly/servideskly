@@ -1723,12 +1723,20 @@ Delete on sight:
 
 Keep, in one sentence:
 
-- Anything that **prevents a mistake** the screen otherwise invites - "Roles
-  are set here and nowhere else; Entra ID groups are ignored" (nothing else
-  says so), "Membership grants nothing on its own".
+- Anything that **prevents a mistake** the screen otherwise invites, and
+  only if the owner has not asked for it to go. On 22 Oct 2026 the owner
+  removed "Roles are set here and nowhere else", "Membership grants nothing
+  on its own", the user groups and mailbox explanations, the font licence
+  line and the directory-roles paragraph as overexplanation: **when in
+  doubt, leave it out**.
 - **Facts a control cannot show** - attachment limits and accepted types, "no
   categories have been set up yet".
-- **Why an action is refused** - "Make another template the default first".
+- **Why an action is refused**.
+
+A default template **may be switched off** (22 Oct 2026); New ticket then
+opens the first working template (`defaultTemplate`). The seeded incident
+form is **Default Incident request** (migration 69 renamed an untouched
+"Default request").
 - An empty state says **what to press**, not why the page is empty.
 
 Two older rules, same spirit:

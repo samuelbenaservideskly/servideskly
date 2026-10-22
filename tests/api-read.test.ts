@@ -112,7 +112,7 @@ describe('more filters', () => {
     assert.equal(found.body.total, 1);
     const none = await get('/api/v1/tickets?search=100%25', reader).expect(200);
     assert.equal(none.body.total, 0, '% is taken literally');
-    const byTemplate = await get('/api/v1/tickets?template=Default%20request', reader).expect(200);
+    const byTemplate = await get('/api/v1/tickets?template=Default%20Incident%20request', reader).expect(200);
     assert.ok(byTemplate.body.items.some((t: { reference: string }) => t.reference === ref));
     const recent = await get('/api/v1/tickets?createdSince=2000-01-01T00:00:00Z&type=incident,service_request', reader).expect(200);
     assert.ok(recent.body.total >= 1);
