@@ -254,6 +254,16 @@
           <% if (!slaEnabled) { %><p class="hint">SLA is off, so this never starts. Turn it on under <a href="/admin/settings/templates/other/sla">Tickets - Other settings - SLA</a>.</p><% } %>
         </div>
       </div>
+      <%# Shown only while "Asset status changes" is chosen above (.only-asset-status in app.css). %>
+      <div class="only-asset-status">
+        <div class="field">
+          <label for="f-<%= n.id %>-tostatus">To</label>
+          <select id="f-<%= n.id %>-tostatus" name="toStatus">
+            <option value="">Any status</option>
+            <% assetStatuses.forEach(function (x) { %><option value="<%= x.id %>"<%= c.toStatus === x.id ? ' selected' : '' %>><%= x.name %></option><% }); %>
+          </select>
+        </div>
+      </div>
       <%# Shown only while "An HTTP request is received" is chosen above (.only-http in app.css). %>
       <div class="only-http">
       <div class="field">
@@ -522,6 +532,46 @@ Content-Type: application/json
         <textarea id="f-<%= n.id %>-body" name="body" rows="3" maxlength="4000"><%= c.body || '' %></textarea>
       </div>
       <label class="check"><input type="checkbox" name="internal" value="on"<%= c.internal === 'on' ? ' checked' : '' %>> Internal note</label>
+    <% } else if (n.type === 'asset_email') { %>
+      <div class="field">
+        <label for="f-<%= n.id %>-recipient">To</label>
+        <select id="f-<%= n.id %>-recipient" name="recipient">
+          <option value="assignee"<%= (c.recipient || 'assignee') === 'assignee' ? ' selected' : '' %>>Whoever has the asset</option>
+          <option value="manager"<%= c.recipient === 'manager' ? ' selected' : '' %>>Their manager</option>
+          <option value="email"<%= c.recipient === 'email' ? ' selected' : '' %>>An address</option>
+        </select>
+      </div>
+      <div class="field only-asset-address">
+        <label for="f-<%= n.id %>-aemail">Address</label>
+        <input id="f-<%= n.id %>-aemail" name="email" type="text" maxlength="320" value="<%= c.email || '' %>" placeholder="it@example.com">
+      </div>
+      <div class="field automation-step__wide">
+        <div class="label-row">
+          <label for="f-<%= n.id %>-asubject">Subject</label>
+          <%- include('_automation-variables') %>
+        </div>
+        <input id="f-<%= n.id %>-asubject" name="subject" type="text" maxlength="300" value="<%= c.subject || '' %>" placeholder="Your {{asset.Model}}">
+      </div>
+      <div class="field automation-step__wide">
+        <label for="f-<%= n.id %>-abody">Message</label>
+        <textarea id="f-<%= n.id %>-abody" name="body" rows="6" maxlength="10000" placeholder="Hello {{asset.FirstName}},"><%= c.body || '' %></textarea>
+      </div>
+    <% } else if (n.type === 'asset_comment') { %>
+      <div class="field automation-step__wide">
+        <div class="label-row">
+          <label for="f-<%= n.id %>-acomment">Comment</label>
+          <%- include('_automation-variables') %>
+        </div>
+        <textarea id="f-<%= n.id %>-acomment" name="body" rows="3" maxlength="4000"><%= c.body || '' %></textarea>
+      </div>
+    <% } else if (n.type === 'asset_status') { %>
+      <div class="field">
+        <label for="f-<%= n.id %>-astatus">Status</label>
+        <select id="f-<%= n.id %>-astatus" name="statusId">
+          <option value="">Choose a status</option>
+          <% assetStatuses.forEach(function (x) { %><option value="<%= x.id %>"<%= c.statusId === x.id ? ' selected' : '' %>><%= x.name %></option><% }); %>
+        </select>
+      </div>
     <% } else if (n.type === 'http_request' || n.type === 'http_request_auth') { %>
       <% if (n.type === 'http_request_auth') { %>
         <div class="field">

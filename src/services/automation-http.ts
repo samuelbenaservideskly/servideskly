@@ -80,6 +80,8 @@ export interface RunContext {
   /** null before a "Create a ticket" step, in a run a request started without one. */
   ticket: TicketListItem | null;
   outputs: Map<string, StepOutput>;
+  /** An asset run's variables (services/asset-variables.ts), read as {{asset.Model}}. */
+  asset?: Record<string, string> | null;
 }
 
 // ---------------------------------------------------------------------------
@@ -108,6 +110,7 @@ export function variableValue(name: string, ctx: RunContext): string {
   if (head === 'ticket') {
     return rest.length === 1 && (TICKET_VARIABLES as readonly string[]).includes(rest[0]!) ? ticketValue(ctx.ticket, rest[0]!) : '';
   }
+  if (head === 'asset') return rest.length === 1 ? (ctx.asset?.[rest[0]!] ?? '') : '';
   const out = ctx.outputs.get(head ?? '');
   if (!out) return '';
   const [field, ...path] = rest;
@@ -147,7 +150,11 @@ export function unknownVariables(text: string, outputNames: ReadonlySet<string>)
   const bad: string[] = [];
   for (const [whole, name] of text.matchAll(VARIABLE)) {
     const [head, ...rest] = name!.split('.');
-    const ok = head === 'ticket'
+    // {{asset.X}}: any single name - the columns are the administrator's, so
+    // an unknown one simply reads as empty.
+    const ok = head === 'asset'
+      ? rest.length === 1
+      : head === 'ticket'
       ? rest.length === 1 && (TICKET_VARIABLES as readonly string[]).includes(rest[0]!)
       : outputNames.has(head!) && ['status', 'ok', 'body', 'error', 'json', 'header'].includes(rest[0] ?? '');
     if (!ok) bad.push(whole);

@@ -587,6 +587,19 @@ export async function notifyPerson(
   return true;
 }
 
+/**
+ * One email an automation wrote itself (Email about the asset, 21 Oct
+ * 2026): no notification, no ticket - a subject and a body to one address,
+ * from the default mailbox or relay. Returns whether anything was queued.
+ */
+export async function mailOne(to: string, subject: string, bodyHtml: string): Promise<boolean> {
+  if (!to) return false;
+  const sender = await senderFor({ mailbox_id: null }, null);
+  if (!sender) return false;
+  await queueMail({ ...sender, ticketId: null, to, subject, bodyHtml });
+  return true;
+}
+
 /** Who an automation sends a notification to. */
 export type AutomationRecipient = 'requester' | 'group' | 'assignee' | 'manager' | 'approver' | { email: string };
 

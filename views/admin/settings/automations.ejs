@@ -104,7 +104,7 @@
       </div>
       <div class="field">
         <label for="trigger">When</label>
-        <select id="trigger" name="trigger">
+        <select id="trigger" name="trigger" data-no-search>
           <% triggers.forEach(function (t) { %>
             <option value="<%= t.key %>"<%= values.trigger === t.key ? ' selected' : '' %>><%= t.label %></option>
           <% }); %>

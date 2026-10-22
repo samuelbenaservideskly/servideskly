@@ -4742,3 +4742,16 @@ th.th-filter--on { background: color-mix(in srgb, var(--brand) 9%, var(--surface
 th.th-filter--on .colfilter__button { color: var(--brand); }
 .clear-columns { display: flex; align-items: center; gap: 0.4rem; margin: 0 0 0.75rem; color: var(--text-muted); }
 .clear-columns .ico { width: 0.9rem; height: 0.9rem; color: var(--brand); }
+
+/* Asset automations (21 Oct 2026): "To" only while "Asset status changes"
+   is the trigger, and an email step's address only while "An address" is
+   chosen - the same :has() technique as the SLA clock above. */
+.only-asset-status { display: contents; }
+@supports selector(:has(*)) {
+  .automation-step:not(:has(select[name="event"] option[value="asset.status.changed"]:checked)) .only-asset-status {
+    display: none;
+  }
+  .automation-step:not(:has(select[name="recipient"] option[value="email"]:checked)) .only-asset-address {
+    display: none;
+  }
+}

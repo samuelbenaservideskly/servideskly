@@ -38,7 +38,12 @@ import {
   type NodeType,
   type Pin,
   type TriggerKey,
+  ASSET_STEPS,
+  SHARED_STEPS,
+  isAssetTrigger,
 } from '../services/automation.js';
+import { listStatuses as listAssetStatuses } from '../services/assets.js';
+import { assetVariableNames } from '../services/asset-variables.js';
 import { BODY_TYPES, HTTP_METHODS, MAX_TIMEOUT_S, TICKET_VARIABLES, testHttpStep } from '../services/automation-http.js';
 import {
   AUTH_TYPES,
@@ -83,7 +88,7 @@ const CONNECTIONS = '/admin/settings/advanced/connections';
 
 /** The settings each step type reads from its form. Nothing else is stored. */
 const FIELDS: Record<NodeType, string[]> = {
-  trigger: ['event', 'apiKeyId', 'clock'],
+  trigger: ['event', 'apiKeyId', 'clock', 'toStatus'],
   if: ['field', 'op', 'value', 'variable'],
   send_notification: ['notificationId', 'recipient', 'email'],
   set_status: ['status', 'variable', 'addNote', 'note', 'noteInternal'],
@@ -97,6 +102,9 @@ const FIELDS: Record<NodeType, string[]> = {
   create_notification: ['name', 'subject', 'body', 'ifExists'],
   http_request: ['method', 'url', 'query', 'headers', 'bodyType', 'body', 'timeout', 'retries', 'output', 'onError'],
   http_request_auth: ['connectionId', 'method', 'url', 'query', 'headers', 'bodyType', 'body', 'timeout', 'retries', 'output', 'onError'],
+  asset_email: ['recipient', 'email', 'subject', 'body', 'documentId'],
+  asset_comment: ['body'],
+  asset_status: ['statusId'],
 };
 
 // ---------------------------------------------------------------------------
@@ -144,6 +152,9 @@ function summary(node: GraphNode, names: Map<string, string>): string {
       return [c.method, host].filter(Boolean).join(' ') + (node.type === 'http_request_auth' && c.connectionId ? ' via ' + (names.get(c.connectionId) ?? '?') : '');
     }
     case 'add_comment': return (c.body ?? '').slice(0, 30);
+    case 'asset_comment': return (c.body ?? '').slice(0, 30);
+    case 'asset_status': return names.get(c.statusId ?? '') ?? '';
+    case 'asset_email': return c.recipient === 'email' ? (c.email ?? '') : c.recipient === 'manager' ? 'to their manager' : c.recipient === 'assignee' ? 'to whoever has it' : '';
 
     case 'attach_files': return c.internal === 'on' ? 'as internal files' : 'visible to the requester';
     case 'create_template':
@@ -459,12 +470,16 @@ automationAdminRouter.get(
     ]);
     // Every id a step can name, to its name: connections, templates, groups.
     const activeTemplates = await listActiveTemplates();
+    const assetStatuses = await listAssetStatuses();
     const connectionNames = new Map<string, string>([
       ...connections.map((c) => [c.id, c.name] as [string, string]),
       ...activeTemplates.map((t) => [t.id, t.name] as [string, string]),
       ...groups.map((g) => [g.id, g.name] as [string, string]),
       ...userGroups.map((g) => [g.id, g.name] as [string, string]),
+      ...assetStatuses.map((x) => [x.id, x.name] as [string, string]),
     ]);
+    // An asset trigger is offered the asset steps; a ticket one, the ticket steps.
+    const assetRun = isAssetTrigger(row.graph.nodes.find((n) => n.type === 'trigger')?.config.event);
     // The trigger first, then the order the steps were added.
     const nodes = [...row.graph.nodes].sort((a, b) => (a.type === 'trigger' ? -1 : b.type === 'trigger' ? 1 : 0));
     res.render(
@@ -487,7 +502,12 @@ automationAdminRouter.get(
           title: nodeSpec(n.type)?.label + (summary(n, connectionNames) ? ' - ' + summary(n, connectionNames).slice(0, 40) : ''),
         })),
         picture: diagram(row.graph, outputs, connectionNames),
-        nodeTypes: NODE_TYPES.filter((t) => t.kind !== 'trigger'),
+        nodeTypes: NODE_TYPES.filter(
+          (t) => t.kind !== 'trigger' && (assetRun ? ASSET_STEPS.includes(t.key) || SHARED_STEPS.includes(t.key) : !ASSET_STEPS.includes(t.key)),
+        ),
+        assetRun,
+        assetStatuses,
+        assetVariables: assetRun ? await assetVariableNames() : [],
         triggers: TRIGGERS,
         slaClocks: SLA_CLOCKS,
         slaEnabled: settings().sla.enabled,

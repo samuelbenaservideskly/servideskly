@@ -45,6 +45,9 @@ export function wantsSelectSearch(html: string): boolean {
     // A page may ask for the panel on a short list too (`data-search`), and
     // then the script has to be served even though nothing here is long.
     if (/\bdata-search\b/i.test(attrs ?? '')) return true;
+    // One that opts out is not a reason to serve the script either (the
+    // automations list's trigger choice, 21 Oct 2026).
+    if (/\bdata-no-search\b/i.test(attrs ?? '')) continue;
     if (((inner ?? '').match(/<option\b/gi) ?? []).length > SEARCH_FROM) return true;
   }
   return false;

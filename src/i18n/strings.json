@@ -2009,6 +2009,12 @@
     "where": "src/routes/tickets.ts",
     "uses": 1
   },
+  "s2415234539": {
+    "text": "Your {{asset.Model}}",
+    "context": "The grey example inside an input on admin/settings/automation-edit",
+    "where": "views/admin/settings/automation-edit.ejs",
+    "uses": 1
+  },
   "s2419329067": {
     "text": "search",
     "context": "Text on admin/settings/api-keys",
@@ -2644,6 +2650,12 @@
     "context": "A table column heading on admin/settings/assets-columns / The label of a form field on admin/settings/assets-columns / The label of a form field on admin/settings/users-other",
     "where": "views/admin/settings/assets-columns.ejs",
     "uses": 4
+  },
+  "s2f77668a9d": {
+    "text": "Message",
+    "context": "The label of a form field on admin/settings/automation-edit",
+    "where": "views/admin/settings/automation-edit.ejs",
+    "uses": 1
   },
   "s2f8f858452": {
     "text": "Enter the new password twice.",
@@ -3813,7 +3825,7 @@
     "text": "Comment",
     "context": "The label of a form field on admin/settings/automation-edit",
     "where": "views/admin/settings/automation-edit.ejs",
-    "uses": 1
+    "uses": 2
   },
   "s450019ee6d": {
     "text": "This field is not on the form, so the mode only matters once it is.",
@@ -4803,7 +4815,7 @@
     "text": "Address",
     "context": "The label of a form field on admin/settings/_mailbox-dialog / A table column heading on admin/settings/api-keys / The label of a form field on admin/settings/automation-edit",
     "where": "views/admin/settings/_mailbox-dialog.ejs",
-    "uses": 7
+    "uses": 8
   },
   "s570df6c7d5": {
     "text": "{0} month ago",
@@ -5361,7 +5373,7 @@
     "text": "Choose a status",
     "context": "One choice in a dropdown on admin/settings/automation-edit",
     "where": "views/admin/settings/automation-edit.ejs",
-    "uses": 1
+    "uses": 2
   },
   "s62845f31a2": {
     "text": "Rule",
@@ -5811,7 +5823,7 @@
     "text": "Subject",
     "context": "The label of a form field on admin/settings/automation-edit / The label of a form field on admin/settings/mail-notification / Text on the page on admin/settings/mail-notification",
     "where": "views/admin/settings/automation-edit.ejs",
-    "uses": 5
+    "uses": 6
   },
   "s68bb8fb8bf": {
     "text": "Choose a key",
@@ -8211,7 +8223,7 @@
     "text": "Status",
     "context": "A table column heading on admin/settings/assets-statuses / The label of a form field on admin/settings/automation-edit / A table column heading on admin/settings/groups",
     "where": "views/admin/settings/assets-statuses.ejs",
-    "uses": 28
+    "uses": 29
   },
   "s9234069589": {
     "text": "Active",
@@ -8783,6 +8795,12 @@
     "where": "src/i18n/code-strings.ts",
     "uses": 3
   },
+  "s9b4e4d3b89": {
+    "text": "Their manager",
+    "context": "One choice in a dropdown on admin/settings/automation-edit",
+    "where": "views/admin/settings/automation-edit.ejs",
+    "uses": 1
+  },
   "s9b85457083": {
     "text": "How each figure is counted",
     "context": "A heading on reports",
@@ -9281,6 +9299,12 @@
     "where": "src/services/mail/notifications.ts",
     "uses": 1
   },
+  "sa5342f0aa5": {
+    "text": "Whoever has the asset",
+    "context": "One choice in a dropdown on admin/settings/automation-edit",
+    "where": "views/admin/settings/automation-edit.ejs",
+    "uses": 1
+  },
   "sa53bcafb67": {
     "text": "Dashboards",
     "context": "A section of Settings, in the list on the left / A permission a custom role can be given, a tick box on the Roles page / A label for a screen reader on admin/settings/_dashboard-tabs",
@@ -9701,6 +9725,12 @@
     "where": "views/partials/header.ejs",
     "uses": 1
   },
+  "sac78229d6b": {
+    "text": "Any status",
+    "context": "One choice in a dropdown on admin/settings/automation-edit",
+    "where": "views/admin/settings/automation-edit.ejs",
+    "uses": 1
+  },
   "sac903755d6": {
     "text": "with JSON;",
     "context": "Text on admin/settings/api-keys",
@@ -9711,6 +9741,12 @@
     "text": "Automation:",
     "context": "Text on admin/settings/api-keys",
     "where": "views/admin/settings/api-keys.ejs",
+    "uses": 1
+  },
+  "sad3d7108d1": {
+    "text": "{{asset.{0}}}",
+    "context": "Text on admin/settings/_automation-variables",
+    "where": "views/admin/settings/_automation-variables.ejs",
     "uses": 1
   },
   "sad47331626": {
@@ -10552,6 +10588,12 @@
     "context": "A message shown beside a form or after an action",
     "where": "src/routes/auth.ts",
     "uses": 3
+  },
+  "sbba550c4b4": {
+    "text": "Hello {{asset.FirstName}},",
+    "context": "The grey example inside an input on admin/settings/automation-edit",
+    "where": "views/admin/settings/automation-edit.ejs",
+    "uses": 1
   },
   "sbbad3c9c6d": {
     "text": "Add a task",
@@ -11397,6 +11439,12 @@
     "text": "style",
     "context": "Text on admin/settings/mail-notification",
     "where": "views/admin/settings/mail-notification.ejs",
+    "uses": 1
+  },
+  "scb89166a11": {
+    "text": "it@example.com",
+    "context": "The grey example inside an input on admin/settings/automation-edit",
+    "where": "views/admin/settings/automation-edit.ejs",
     "uses": 1
   },
   "scbadfc2e50": {
@@ -12509,6 +12557,12 @@
     "where": "views/admin/settings/users.ejs",
     "uses": 1
   },
+  "sdf1f52df26": {
+    "text": "An address",
+    "context": "One choice in a dropdown on admin/settings/automation-edit",
+    "where": "views/admin/settings/automation-edit.ejs",
+    "uses": 1
+  },
   "sdf25bfbac0": {
     "text": "Custom requester portals may run their own script, written in the portal's JavaScript tab. Scripts never run on the sign-in page, the approval page or in Settings.",
     "context": "Text on the page on admin/settings/advanced-javascript",
@@ -13253,6 +13307,12 @@
     "where": "views/admin/settings/_entra-tabs.ejs",
     "uses": 2
   },
+  "sedeb07c195": {
+    "text": "From the asset:",
+    "context": "Text on the page on admin/settings/_automation-variables",
+    "where": "views/admin/settings/_automation-variables.ejs",
+    "uses": 1
+  },
   "sedf77d4f0d": {
     "text": "The account for {0} is already set up.",
     "context": "The sentence under a heading on admin-setup",
@@ -13491,7 +13551,7 @@
     "text": "To",
     "context": "The label of a form field on admin/settings/automation-edit / The label of a form field on partials/availability / The label of a form field on reports",
     "where": "views/admin/settings/automation-edit.ejs",
-    "uses": 3
+    "uses": 5
   },
   "sf4b4198fb5": {
     "text": "Raised by",
@@ -14053,7 +14113,7 @@
   },
   "sfde7d34ed3": {
     "text": "From the ticket:",
-    "context": "Text on the page on admin/settings/_automation-variables",
+    "context": "Text on admin/settings/_automation-variables",
     "where": "views/admin/settings/_automation-variables.ejs",
     "uses": 1
   },

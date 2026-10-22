@@ -23,6 +23,11 @@ import { createCustomNotification, findNotificationByName } from './mail/notific
 import { TICKET_TYPES, TYPE_LABELS } from './tickets.js';
 import { raiseFromRule } from './mail/rules.js';
 import { systemRequesterId } from './mail/inbound.js';
+import { AsyncLocalStorage } from 'node:async_hooks';
+import { addAssetComment, getAsset, listStatuses as listAssetStatuses, onAssetChange, setAssetStatus, type AssetChange } from './assets.js';
+import { assetVariables } from './asset-variables.js';
+import { mailOne } from './mail/outbox.js';
+import { findUserById } from './users.js';
 import { skippedNote, storeIncomingAttachments } from './mail/inbound-attachments.js';
 import type { IncomingAttachment } from './mail/transport.js';
 import { findUserByEmail } from './users.js';
@@ -72,7 +77,14 @@ export const TRIGGERS = [
   { key: 'http.received', label: 'An HTTP request is received' },
   // From the SLA sweep (every 15 minutes), once per ticket and clock.
   { key: 'sla.breached', label: 'SLA is breached' },
+  // Assets (services/assets.ts, step 4): the run acts on the asset, not a ticket.
+  { key: 'asset.created', label: 'Asset is created' },
+  { key: 'asset.status.changed', label: 'Asset status changes' },
+  { key: 'asset.assigned', label: 'Asset is assigned' },
 ] as const;
+
+/** Whether a trigger starts a run about an asset rather than a ticket. */
+export const isAssetTrigger = (event: string | undefined): boolean => (event ?? '').startsWith('asset.');
 
 /** Which SLA clock an "SLA is breached" trigger waits for; empty is either. */
 export const SLA_CLOCKS = [
@@ -119,7 +131,15 @@ export const NODE_TYPES = [
   { key: 'create_notification', label: 'Create a notification', kind: 'action', pins: ['next'] },
   { key: 'http_request', label: 'Send HTTP request', kind: 'action', pins: ['next'] },
   { key: 'http_request_auth', label: 'Send authenticated HTTP request', kind: 'action', pins: ['next'] },
+  { key: 'asset_email', label: 'Email about the asset', kind: 'action', pins: ['next'] },
+  { key: 'asset_comment', label: 'Add a comment to the asset', kind: 'action', pins: ['next'] },
+  { key: 'asset_status', label: "Set the asset's status", kind: 'action', pins: ['next'] },
 ] as const;
+
+/** The steps that act on an asset; every other action acts on a ticket. */
+export const ASSET_STEPS: readonly string[] = ['asset_email', 'asset_comment', 'asset_status'];
+/** Steps any run may use, whatever it is about. */
+export const SHARED_STEPS: readonly string[] = ['if', 'http_request', 'http_request_auth'];
 export type NodeType = (typeof NODE_TYPES)[number]['key'];
 export type Pin = 'next' | 'true' | 'false';
 
@@ -507,6 +527,21 @@ export function missingSettings(node: GraphNode, outputs: ReadonlySet<string> = 
       return httpStepProblem(c, false, outputs);
     case 'http_request_auth':
       return httpStepProblem(c, true, outputs);
+    case 'asset_email': {
+      if (!['assignee', 'manager', 'email'].includes(c.recipient ?? '')) return 'choose who it goes to.';
+      if (c.recipient === 'email' && !/^[^@\s]+@[^@\s]+$/.test(c.email ?? '') && !/\{\{/.test(c.email ?? '')) return 'enter an email address.';
+      if (!(c.subject ?? '').trim()) return 'write the subject.';
+      if (!(c.body ?? '').trim()) return 'write the message.';
+      const bad = unknownVariables((c.subject ?? '') + ' ' + (c.body ?? ''), outputs);
+      return bad.length > 0 ? 'unknown variable ' + bad[0] + '.' : '';
+    }
+    case 'asset_comment': {
+      if (!(c.body ?? '').trim()) return 'write the comment.';
+      const bad = unknownVariables(c.body ?? '', outputs);
+      return bad.length > 0 ? 'unknown variable ' + bad[0] + '.' : '';
+    }
+    case 'asset_status':
+      return c.statusId ? '' : 'choose a status.';
     default:
       return 'unknown node.';
   }
@@ -743,6 +778,8 @@ export async function runAutomation(
     templates?: readonly string[];
     /** Files the request carried, for an "Attach the files" step. */
     files?: IncomingAttachment[];
+    /** The asset an asset trigger started this for (step 4 of assets). */
+    assetId?: string;
   } = {},
 ): Promise<RunResult> {
   // The ticket the steps act on. A run started by a request may have none
@@ -781,11 +818,23 @@ export async function runAutomation(
           break;
         }
         let pin: Pin = 'next';
-        const run: RunContext = { ticket: ticket ?? null, outputs };
+        // An asset run reads the asset afresh each step: an earlier one may have changed it.
+        const asset = started.assetId ? await getAsset(started.assetId) : undefined;
+        if (started.assetId && !asset) {
+          steps.push('asset gone');
+          break;
+        }
+        const run: RunContext = { ticket: ticket ?? null, outputs, asset: asset ? await assetVariables(asset) : null };
         // A key limited to some templates acts only on their tickets.
         const templateOf = (ticket as unknown as { template_id?: string | null } | undefined)?.template_id ?? '';
         if (ticket && started.templates && started.templates.length > 0 && !started.templates.includes(templateOf)) {
           throw new Error('the API key may not act on tickets from this template');
+        }
+        if (ASSET_STEPS.includes(node.type)) {
+          if (!asset) throw new Error((nodeSpec(node.type)?.label ?? 'A step') + ' needs an asset: start the automation with an asset trigger');
+          steps.push(nodeSpec(node.type)!.label + ': ' + (await assetAct(node, asset.id, actorId, run)));
+          stack.push(...next(node.id, 'next').reverse());
+          continue;
         }
         const needsTicket = node.type !== 'create_ticket' && node.type !== 'http_request' && node.type !== 'http_request_auth' &&
           node.type !== 'create_template' && node.type !== 'create_notification' &&
@@ -917,9 +966,94 @@ async function onEvent(event: TicketEvent): Promise<void> {
   }
 }
 
+// ---------------------------------------------------------------------------
+// Assets (step 4)
+// ---------------------------------------------------------------------------
+
+const escapeHtml = (text: string) =>
+  text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+
+/** A plain message as a plain email: escaped, its line breaks kept. */
+function messageHtml(text: string): string {
+  const paragraphs = text.split(/\n{2,}/).map((p) => '<p style="margin:0 0 12px">' + escapeHtml(p).replace(/\n/g, '<br>') + '</p>');
+  return '<div style="font-family:Arial,Helvetica,sans-serif;font-size:14px;line-height:1.5;color:#1d1d1b">' + paragraphs.join('') + '</div>';
+}
+
+/** One asset step, on the asset the run is about. */
+async function assetAct(node: GraphNode, assetId: string, actorId: string | null, run: RunContext): Promise<string> {
+  const c = node.config;
+  const actor = actorId ? { id: actorId } : null;
+  switch (node.type) {
+    case 'asset_comment':
+      await addAssetComment(assetId, fillVariables(c.body ?? '', run, 'raw'), actor);
+      return 'comment added';
+    case 'asset_status': {
+      const status = (await listAssetStatuses()).find((x) => x.id === c.statusId);
+      if (!status) throw new Error('the status it sets no longer exists');
+      await setAssetStatus(assetId, status.id, actor);
+      return 'status ' + status.name;
+    }
+    case 'asset_email': {
+      const asset = (await getAsset(assetId))!;
+      const holder = asset.assigned_to ? await findUserById(asset.assigned_to) : undefined;
+      const to =
+        c.recipient === 'assignee' ? holder?.email ?? ''
+          : c.recipient === 'manager' ? (holder?.manager_id ? (await findUserById(holder.manager_id))?.email ?? '' : '')
+            : fillVariables(c.email ?? '', run, 'raw').trim();
+      if (!to) return 'not sent: ' + (c.recipient === 'manager' ? 'the person it is assigned to has no manager' : 'nobody to send it to');
+      const subject = fillVariables(c.subject ?? '', run, 'raw').replace(/[\r\n]+/g, ' ').trim().slice(0, 300);
+      const sent = await mailOne(to, subject, messageHtml(fillVariables(c.body ?? '', run, 'raw')));
+      return sent ? 'queued for ' + to : 'not sent: no mailbox or relay to send it';
+    }
+    default:
+      return 'skipped';
+  }
+}
+
+/** Whether an asset change is what this trigger waits for. */
+export function assetTriggerMatches(config: Record<string, string>, change: AssetChange): boolean {
+  switch (config.event) {
+    case 'asset.created':
+      return change.created;
+    case 'asset.status.changed':
+      return !change.created && change.statusFrom !== change.statusTo && (!config.toStatus || config.toStatus === change.statusTo);
+    case 'asset.assigned':
+      return change.assigneeTo !== null && change.assigneeTo !== change.assigneeFrom;
+    default:
+      return false;
+  }
+}
+
+/** Set while an asset run works, so what it changes does not start more runs. */
+const assetRunning = new AsyncLocalStorage<true>();
+
+async function onAssetEvent(change: AssetChange): Promise<void> {
+  if (assetRunning.getStore()) return;
+  const automations = (await listAutomations()).filter((a) => a.is_enabled);
+  for (const automation of automations) {
+    const trigger = automation.graph.nodes.find((n) => n.type === 'trigger');
+    if (!trigger || !assetTriggerMatches(trigger.config, change)) continue;
+    const go = () => assetRunning.run(true, () => runAutomation(automation, null, { assetId: change.assetId }));
+    if (callsOut(automation)) {
+      const run = go()
+        .catch((err: unknown) => log.error({ err, automationId: automation.id }, 'background automation run failed'))
+        .finally(() => background.delete(run));
+      background.add(run);
+    } else {
+      await go();
+    }
+  }
+}
+
+let installed = false;
+
 /** Called once at start-up (and by createApp, so tests get it too). */
 export function installAutomations(): void {
   onTicketEvent(onEvent);
+  if (!installed) {
+    installed = true;
+    onAssetChange(onAssetEvent);
+  }
 }
 
 export interface RunRow {
