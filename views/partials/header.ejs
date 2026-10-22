@@ -112,14 +112,14 @@
       <%# Full or compact (icons only), as Outlook's folder pane: a form post,
           remembered in a cookie (middleware/theme.ts). Not on a phone, where
           the sidebar slides in and out anyway. %>
-      <form method="post" action="/sidebar" class="sidebar__fold">
+      <%# Both buttons are drawn and the shell's class shows the right one, so
+          public/js/sidebar.js can fold it at once without a reload (22 Oct
+          2026); without the script each still posts as before. %>
+      <form method="post" action="/sidebar" class="sidebar__fold" data-sidebar-fold>
         <input type="hidden" name="_csrf" value="<%= locals.csrfToken %>">
         <input type="hidden" name="returnTo" value="<%= locals.currentUrl || path || '/' %>">
-        <% if (locals.sidebarCompact) { %>
-          <button type="submit" name="sidebar" value="full" class="icon-button" title="<%= t('Always show the sidebar') %>"><%- include('icon', { name: 'panelOpen' }) %><span class="visually-hidden"><%= t('Always show the sidebar') %></span></button>
-        <% } else { %>
-          <button type="submit" name="sidebar" value="compact" class="icon-button" title="<%= t('Fold the sidebar to icons') %>"><%- include('icon', { name: 'panelClose' }) %><span class="visually-hidden"><%= t('Fold the sidebar to icons') %></span></button>
-        <% } %>
+        <button type="submit" name="sidebar" value="full" class="icon-button sidebar__unfold" title="<%= t('Always show the sidebar') %>"><%- include('icon', { name: 'panelOpen' }) %><span class="visually-hidden"><%= t('Always show the sidebar') %></span></button>
+        <button type="submit" name="sidebar" value="compact" class="icon-button sidebar__fold-in" title="<%= t('Fold the sidebar to icons') %>"><%- include('icon', { name: 'panelClose' }) %><span class="visually-hidden"><%= t('Fold the sidebar to icons') %></span></button>
       </form>
       <a class="sidebar__close" href="#top" aria-label="Close menu"><%- include('icon', { name: 'x' }) %></a>
     </div>

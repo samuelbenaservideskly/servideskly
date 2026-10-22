@@ -53,7 +53,7 @@ describe('search in long dropdowns', () => {
     const policy = String(page.headers['content-security-policy']);
     assert.match(policy, /script-src 'self'/);
     assert.doesNotMatch(policy, /unsafe-inline/);
-    assert.match(page.text, /<script src="\/assets\/js\/select-search\.js\?v=[^"]+" defer><\/script>\s*<\/body>/);
+    assert.match(page.text, /<script src="\/assets\/js\/select-search\.js\?v=[^"]+" defer><\/script>\s*(?:<script src="\/assets\/js\/sidebar\.js\?v=[^"]+" defer><\/script>\s*)?<\/body>/);
 
     // A page with no long dropdown keeps the strict policy. Sign-in is the
     // example that cannot drift: select-search skips /login outright, so it

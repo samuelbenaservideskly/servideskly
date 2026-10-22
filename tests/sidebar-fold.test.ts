@@ -33,21 +33,42 @@ describe('folding the sidebar', () => {
       .send({ _csrf: agent.csrfToken, sidebar: 'compact', returnTo: '/tickets?status=active' })
       .expect(303);
     assert.equal(fold.headers.location, '/tickets?status=active', 'back where it was, filters and all');
-    const cookie = String(fold.headers['set-cookie']).match(/helpdesk_sidebar=compact/);
-    assert.ok(cookie);
+    const setCookie = fold.headers['set-cookie'] as unknown as string[];
+    const cookie = setCookie.find((c) => c.startsWith('helpdesk_fold=')) ?? '';
+    assert.match(cookie, /helpdesk_fold=compact/);
+    // sidebar.js writes it too, so a script must be able to.
+    assert.doesNotMatch(cookie, /HttpOnly/i);
 
-    const page = await request(app).get('/tickets').set('Cookie', agent.cookie + '; helpdesk_sidebar=compact').expect(200);
+    const page = await request(app).get('/tickets').set('Cookie', agent.cookie + '; helpdesk_fold=compact').expect(200);
     assert.match(page.text, /<div class="shell shell--compact">/);
     assert.match(page.text, /class="side-link" href="\/tickets"[^>]*title="Tickets"/);
     assert.match(page.text, /name="sidebar" value="full"/);
 
     const unfold = await request(app)
       .post('/sidebar')
-      .set('Cookie', agent.cookie + '; helpdesk_sidebar=compact')
+      .set('Cookie', agent.cookie + '; helpdesk_fold=compact')
       .type('form')
       .send({ _csrf: agent.csrfToken, sidebar: 'full', returnTo: '//elsewhere.example' })
       .expect(303);
     assert.equal(unfold.headers.location, '/', 'never off the site');
-    assert.match(String(unfold.headers['set-cookie']), /helpdesk_sidebar=;/);
+    assert.match(String(unfold.headers['set-cookie']), /helpdesk_fold=;/);
+  });
+
+  test('it folds at once with sidebar.js; both buttons are drawn for it', async () => {
+    const page = await request(app).get('/tickets').set('Cookie', agent.cookie).expect(200);
+    assert.match(page.text, /<form method="post" action="\/sidebar" class="sidebar__fold" data-sidebar-fold>/);
+    assert.match(page.text, /value="full" class="icon-button sidebar__unfold"/);
+    assert.match(page.text, /value="compact" class="icon-button sidebar__fold-in"/);
+    assert.match(page.text, /<script src="\/assets\/js\/sidebar\.js\?v=[^"]*" defer><\/script>/);
+    assert.match(String(page.headers['content-security-policy']), /script-src 'self'/);
+    assert.doesNotMatch(String(page.headers['content-security-policy']), /unsafe-inline/);
+  });
+
+  test('the old httpOnly cookie is moved to the new one, once', async () => {
+    const page = await request(app).get('/tickets').set('Cookie', agent.cookie + '; helpdesk_sidebar=compact').expect(200);
+    assert.match(page.text, /<div class="shell shell--compact">/);
+    const set = String(page.headers['set-cookie']);
+    assert.match(set, /helpdesk_fold=compact/);
+    assert.match(set, /helpdesk_sidebar=;/);
   });
 });

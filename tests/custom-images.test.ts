@@ -141,7 +141,7 @@ describe('copy buttons', () => {
       const res = await as(admin).get(other).expect(200);
       assert.doesNotMatch(res.text, /copy\.js/, other);
       const scripts = res.text.match(/<script src="[^"]+"/g) ?? [];
-      assert.ok(scripts.every((s) => s.includes('/assets/js/select-search.js')), other);
+      assert.ok(scripts.every((s) => s.includes('/assets/js/select-search.js') || s.includes('/assets/js/sidebar.js')), other);
     }
   });
 

@@ -66,19 +66,32 @@ export function writeTheme(res: Response, theme: Theme): void {
 /**
  * The sidebar: full, with its labels, or compact - icons only, each name in
  * its tooltip - as Outlook's folder pane folds (asked for 21 Oct 2026).
- * A cookie like the colour mode, chosen with a form post, so no script; a
- * phone keeps its slide-in menu either way.
+ * A cookie like the colour mode, chosen with a form post; a phone keeps its
+ * slide-in menu either way.
+ *
+ * Folding happens at once since 22 Oct 2026 (public/js/sidebar.js): the
+ * script toggles the class and writes this cookie itself, so it is not
+ * httpOnly - it holds a display preference, nothing else. It has a new name
+ * because a script cannot replace an httpOnly cookie: the old one
+ * (`helpdesk_sidebar`) is read once more and moved over (`themePreference`).
  */
-export const SIDEBAR_COOKIE = 'helpdesk_sidebar';
+export const SIDEBAR_COOKIE = 'helpdesk_fold';
+const OLD_SIDEBAR_COOKIE = 'helpdesk_sidebar';
+
+function sidebarCookies(req: Request): { now?: string; old?: string } {
+  const header = req.headers.cookie;
+  if (!header) return {};
+  try {
+    const all = cookieLib.parse(header);
+    return { now: all[SIDEBAR_COOKIE], old: all[OLD_SIDEBAR_COOKIE] };
+  } catch {
+    return {};
+  }
+}
 
 export function readSidebarCompact(req: Request): boolean {
-  const header = req.headers.cookie;
-  if (!header) return false;
-  try {
-    return cookieLib.parse(header)[SIDEBAR_COOKIE] === 'compact';
-  } catch {
-    return false;
-  }
+  const { now, old } = sidebarCookies(req);
+  return (now ?? old) === 'compact';
 }
 
 export function writeSidebar(res: Response, compact: boolean): void {
@@ -87,7 +100,7 @@ export function writeSidebar(res: Response, compact: boolean): void {
     return;
   }
   res.cookie(SIDEBAR_COOKIE, 'compact', {
-    httpOnly: true,
+    httpOnly: false,
     secure: config.session.secureCookies,
     sameSite: 'lax',
     path: '/',
@@ -116,6 +129,12 @@ export function themePreference(): RequestHandler {
     // opening it.
     res.locals.themeLabel = theme === 'system' ? 'System default' : theme === 'dark' ? 'Dark' : 'Light';
     res.locals.sidebarCompact = readSidebarCompact(req);
+    // The old httpOnly cookie, moved to the one the script can change.
+    const { now, old } = sidebarCookies(req);
+    if (old !== undefined) {
+      if (now === undefined) writeSidebar(res, old === 'compact');
+      res.clearCookie(OLD_SIDEBAR_COOKIE, { path: '/' });
+    }
     next();
   };
 }

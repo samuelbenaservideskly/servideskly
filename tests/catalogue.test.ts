@@ -300,7 +300,7 @@ describe('the administration page', () => {
     // The dialogs are :target anchors, not scripted modals. The only script a
     // page here may carry is the dropdown search, added for a long list.
     const scripts = page.text.match(/<script[^>]*>/gi) ?? [];
-    assert.ok(scripts.every((s) => s.includes('/assets/js/select-search.js')), 'no other script: ' + scripts.join(', '));
+    assert.ok(scripts.every((s) => s.includes('/assets/js/select-search.js') || s.includes('/assets/js/sidebar.js')), 'no other script: ' + scripts.join(', '));
   });
 
   test('a validation error reopens the dialog it came from', async () => {

@@ -53,6 +53,16 @@ export function wantsSelectSearch(html: string): boolean {
   return false;
 }
 
+/**
+ * The scripts a page is given by what its HTML holds. The search panel for
+ * long lists, and the sidebar's fold button, which folds at once with
+ * sidebar.js (22 Oct 2026) and reloads the page without it.
+ */
+const PAGE_SCRIPTS: { file: string; wanted: (html: string) => boolean }[] = [
+  { file: 'select-search.js', wanted: wantsSelectSearch },
+  { file: 'sidebar.js', wanted: (html) => html.includes('data-sidebar-fold') },
+];
+
 function skipped(path: string, query: Record<string, unknown>): boolean {
   return (
     query.portalFrame !== undefined ||
@@ -72,17 +82,22 @@ export function selectSearch(): RequestHandler {
       // an HTML document counts too.
       const type = String(res.getHeader('Content-Type') ?? '');
       const html = typeof body === 'string' && (type ? type.startsWith('text/html') : /^\s*<!doctype html/i.test(body));
-      if (typeof body === 'string' && html && !res.headersSent && wantsSelectSearch(body)) {
-        const policy = res.getHeader('Content-Security-Policy');
-        if (typeof policy === 'string' && policy.includes("script-src 'none'")) {
-          res.setHeader('Content-Security-Policy', policy.replace("script-src 'none'", "script-src 'self'"));
+      if (typeof body === 'string' && html && !res.headersSent) {
+        let page: string = body;
+        for (const script of PAGE_SCRIPTS) {
+          if (!script.wanted(page)) continue;
+          const policy = res.getHeader('Content-Security-Policy');
+          if (typeof policy === 'string' && policy.includes("script-src 'none'")) {
+            res.setHeader('Content-Security-Policy', policy.replace("script-src 'none'", "script-src 'self'"));
+          }
+          // Allowed now (either by this or by the page's own exception).
+          const allowed = String(res.getHeader('Content-Security-Policy') ?? '').match(/script-src [^;]*'self'/);
+          if (allowed && !page.includes('/assets/js/' + script.file)) {
+            const tag = '<script src="/assets/js/' + script.file + '?v=' + String(req.app.locals.assetVersion ?? '') + '" defer></script>';
+            page = page.includes('</body>') ? page.replace('</body>', tag + '\n</body>') : page + tag;
+          }
         }
-        // Allowed now (either by this or by the page's own exception).
-        const allowed = String(res.getHeader('Content-Security-Policy') ?? '').match(/script-src [^;]*'self'/);
-        if (allowed && !body.includes('/assets/js/select-search.js')) {
-          const tag = '<script src="/assets/js/select-search.js?v=' + String(req.app.locals.assetVersion ?? '') + '" defer></script>';
-          body = body.includes('</body>') ? body.replace('</body>', tag + '\n</body>') : body + tag;
-        }
+        body = page;
       }
       return send(body as never);
     };

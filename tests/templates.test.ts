@@ -735,7 +735,8 @@ describe('the form builder', () => {
       assert.doesNotMatch(other.text, /form-builder\.js/, elsewhere);
       const scripts = other.text.match(/<script src="[^"]+"/g) ?? [];
       // ...and New ticket the file chips, as a reply has (asked for 21 Oct 2026).
-      const allowed = (src: string) => src.includes('/assets/js/select-search.js') || (elsewhere === '/tickets/new' && src.includes('/assets/js/reply-files.js'));
+      // The sidebar's fold, on every page with the sidebar (22 Oct 2026).
+      const allowed = (src: string) => src.includes('/assets/js/select-search.js') || src.includes('/assets/js/sidebar.js') || (elsewhere === '/tickets/new' && src.includes('/assets/js/reply-files.js'));
       assert.ok(scripts.every(allowed), elsewhere + ': ' + scripts.join(', '));
       assert.doesNotMatch(String(other.headers['content-security-policy']), /unsafe-inline/, elsewhere);
       assert.match(String(other.headers['content-security-policy']), /connect-src 'none'/, elsewhere);

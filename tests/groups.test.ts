@@ -306,7 +306,7 @@ describe('the administration pages', () => {
     assert.doesNotMatch(page.text, /dialog--open/, 'nothing was refused, so nothing is open');
     assert.doesNotMatch(page.text, /Sort order/, 'the order field is gone');
     // A long column menu may bring the list search (select-search.js); nothing else.
-    assert.doesNotMatch(page.text, /<script(?![^>]*select-search\.js)/i, 'the dialog must not need JavaScript');
+    assert.doesNotMatch(page.text, /<script(?![^>]*(?:select-search|sidebar)\.js)/i, 'the dialog must not need JavaScript');
   });
 
   test('a refused submission reopens the dialog rather than losing it', async () => {

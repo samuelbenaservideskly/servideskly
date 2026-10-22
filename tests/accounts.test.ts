@@ -216,7 +216,7 @@ describe('the administration page', () => {
     assert.doesNotMatch(page.text, /dialog--open/, 'nothing was refused, so nothing is open');
     // The only script is the eye beside the password box; the dialog opens without it.
     const scripts = page.text.match(/<script src="[^"]+"/g) ?? [];
-    assert.ok(scripts.every((s) => /password-reveal\.js|select-search\.js/.test(s)), 'the dialog must not need JavaScript: ' + scripts.join(', '));
+    assert.ok(scripts.every((s) => /password-reveal\.js|select-search\.js|sidebar\.js/.test(s)), 'the dialog must not need JavaScript: ' + scripts.join(', '));
   });
 
   test('an administrator can create an account through the form', async () => {
