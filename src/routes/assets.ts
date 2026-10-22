@@ -28,6 +28,7 @@ import {
   type AssetInput,
 } from '../services/assets.js';
 import { attempt, type FieldErrors } from './form-errors.js';
+import { findAssetFile, listGeneratedFor, readAssetFile } from '../services/asset-documents.js';
 
 /**
  * /assets: the list, a new asset, one asset (services/assets.ts). For anybody
@@ -171,7 +172,7 @@ assetsRouter.post(
 async function renderAsset(_req: Request, res: Response, id: string, extra: { errors?: FieldErrors; draft?: AssetInput; status?: number } = {}): Promise<void> {
   const asset = await getAsset(id);
   if (!asset) throw notFound('That asset does not exist.');
-  const [columns, statuses, events, comments] = await Promise.all([enabledColumns(), listStatuses(), listAssetEvents(id), listAssetComments(id)]);
+  const [columns, statuses, events, comments, documents] = await Promise.all([enabledColumns(), listStatuses(), listAssetEvents(id), listAssetComments(id), listGeneratedFor(id)]);
   res.status(extra.status ?? 200).render('assets/show', {
     title: assetTitle(asset),
     asset,
@@ -179,6 +180,7 @@ async function renderAsset(_req: Request, res: Response, id: string, extra: { er
     statuses,
     events,
     comments,
+    documents,
     errors: extra.errors ?? {},
     draft: extra.draft ?? null,
     ASSIGNED_TO,
@@ -186,6 +188,20 @@ async function renderAsset(_req: Request, res: Response, id: string, extra: { er
 }
 
 assetsRouter.get('/:id', asyncHandler(async (req, res) => renderAsset(req, res, String(req.params.id))));
+
+/** A document sent about this asset (step 5): a download, never shown in place. */
+assetsRouter.get(
+  '/:id/files/:fileId',
+  asyncHandler(async (req, res) => {
+    const row = await findAssetFile(String(req.params.fileId));
+    if (!row || row.kind !== 'generated' || row.asset_id !== String(req.params.id)) throw notFound('That document does not exist.');
+    const bytes = await readAssetFile(row);
+    res.setHeader('Content-Type', 'application/octet-stream');
+    res.setHeader('Content-Disposition', 'attachment; filename="' + row.name.replace(/[^\w .()-]+/g, '_') + '"');
+    res.setHeader('X-Content-Type-Options', 'nosniff');
+    res.send(bytes);
+  }),
+);
 
 assetsRouter.post(
   '/:id',

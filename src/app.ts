@@ -106,6 +106,8 @@ function isAttachmentUploadPath(path: string): boolean {
   if (path === '/admin/settings/users/import') return true;
   // The assets import (routes/assets.ts), checked there the same way.
   if (path === '/inventory/import') return true;
+  // A document template for assets (routes/assets-admin.ts), the same way.
+  if (path === '/admin/settings/assets/documents') return true;
   if (path === '/admin/settings/customization/images') return true;
 
   // /admin/settings/customization/{logo|favicon}/upload

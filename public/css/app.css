@@ -4755,3 +4755,8 @@ th.th-filter--on .colfilter__button { color: var(--brand); }
     display: none;
   }
 }
+
+/* Asset documents (Settings - Assets - Documents): a template's problems
+   are a short list under its variables; the variable list wraps. */
+.asset-doc__problems { margin: 0.35rem 0 0; padding-left: 1.1rem; }
+.asset-doc__variables { overflow-wrap: anywhere; line-height: 1.8; }

@@ -22,6 +22,7 @@ import {
 import { mailLog, newMessageId, transportFor } from './transport.js';
 import { inlineImagesFor } from './inline-images.js';
 import { findAttachment, readAttachment } from '../attachments.js';
+import { findAssetFile, readAssetFile } from '../asset-documents.js';
 import { sealText } from '../../lib/field-crypto.js';
 import type { MailAttachment } from './transport.js';
 
@@ -45,6 +46,8 @@ export interface OutboxRow {
   in_reply_to: string;
   /** Ids of this ticket's attachments to send with it. Read at send time. */
   attachment_ids: string[];
+  /** Ids of asset documents to send with it (migration 68). Read at send time. */
+  asset_file_ids?: string[];
   /** Sent through an SMTP relay rather than a mailbox. */
   via_relay: boolean;
   /** Which relay; null with via_relay means the default relay. */
@@ -73,6 +76,8 @@ export interface QueueInput {
   relayId?: string | null;
   /** Sent ahead of everything else waiting (a sign-in code). */
   urgent?: boolean;
+  /** Asset documents to send with it (services/asset-documents.ts). */
+  assetFileIds?: string[];
 }
 
 export async function queueMail(input: QueueInput): Promise<OutboxRow> {
@@ -82,8 +87,8 @@ export async function queueMail(input: QueueInput): Promise<OutboxRow> {
   await execute(
     `INSERT INTO mail_outbox
        (id, mailbox_id, ticket_id, to_address, subject, body_html, message_id, in_reply_to,
-        attachment_ids, via_relay, relay_id, urgent, status, attempts, created_at)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'queued', 0, ?)`,
+        attachment_ids, via_relay, relay_id, urgent, asset_file_ids, status, attempts, created_at)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'queued', 0, ?)`,
     [
       id,
       input.mailboxId,
@@ -99,6 +104,7 @@ export async function queueMail(input: QueueInput): Promise<OutboxRow> {
       input.viaRelay ? 1 : 0,
       input.viaRelay ? (input.relayId ?? null) : null,
       input.urgent ? 1 : 0,
+      JSON.stringify(input.assetFileIds ?? []),
       nowIso(),
     ],
   );
@@ -305,10 +311,24 @@ const MAX_MAIL_BYTES = 15 * 1024 * 1024;
 
 async function filesFor(message: OutboxRow): Promise<MailAttachment[]> {
   const ids = Array.isArray(message.attachment_ids) ? message.attachment_ids : [];
-  if (ids.length === 0) return [];
+  const assetIds = Array.isArray(message.asset_file_ids) ? message.asset_file_ids : [];
+  if (ids.length === 0 && assetIds.length === 0) return [];
 
   const files: MailAttachment[] = [];
   let total = 0;
+
+  // Asset documents: a copy filled in for this message, kept on the asset.
+  for (const id of assetIds.slice(0, 5)) {
+    const row = await findAssetFile(String(id));
+    if (!row || row.kind !== 'generated' || total + row.byte_size > MAX_MAIL_BYTES) continue;
+    try {
+      const content = await readAssetFile(row);
+      files.push({ filename: row.name, contentType: row.content_type, content });
+      total += content.byteLength;
+    } catch (err) {
+      mailLog.warn({ err, assetFileId: row.id }, 'could not read an asset document to send');
+    }
+  }
 
   for (const id of ids.slice(0, 20)) {
     const row = await findAttachment(String(id));
@@ -592,12 +612,17 @@ export async function notifyPerson(
  * 2026): no notification, no ticket - a subject and a body to one address,
  * from the default mailbox or relay. Returns whether anything was queued.
  */
-export async function mailOne(to: string, subject: string, bodyHtml: string): Promise<boolean> {
+export async function mailOne(to: string, subject: string, bodyHtml: string, assetFileIds: string[] = []): Promise<boolean> {
   if (!to) return false;
   const sender = await senderFor({ mailbox_id: null }, null);
   if (!sender) return false;
-  await queueMail({ ...sender, ticketId: null, to, subject, bodyHtml });
+  await queueMail({ ...sender, ticketId: null, to, subject, bodyHtml, assetFileIds });
   return true;
+}
+
+/** Whether mailOne() has anything to send through, before a document is made for it. */
+export async function canMailOne(): Promise<boolean> {
+  return (await senderFor({ mailbox_id: null }, null)) !== null;
 }
 
 /** Who an automation sends a notification to. */

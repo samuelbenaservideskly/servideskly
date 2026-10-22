@@ -44,6 +44,7 @@ import {
 } from '../services/automation.js';
 import { listStatuses as listAssetStatuses } from '../services/assets.js';
 import { assetVariableNames } from '../services/asset-variables.js';
+import { listDocumentTemplates } from '../services/asset-documents.js';
 import { BODY_TYPES, HTTP_METHODS, MAX_TIMEOUT_S, TICKET_VARIABLES, testHttpStep } from '../services/automation-http.js';
 import {
   AUTH_TYPES,
@@ -508,6 +509,7 @@ automationAdminRouter.get(
         assetRun,
         assetStatuses,
         assetVariables: assetRun ? await assetVariableNames() : [],
+        assetDocuments: assetRun ? await listDocumentTemplates() : [],
         triggers: TRIGGERS,
         slaClocks: SLA_CLOCKS,
         slaEnabled: settings().sla.enabled,

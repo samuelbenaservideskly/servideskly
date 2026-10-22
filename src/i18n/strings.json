@@ -139,9 +139,9 @@
   },
   "s02db55bac5": {
     "text": "Variables",
-    "context": "Text on admin/settings/portal-edit / Text on the page on admin/settings/users-other",
-    "where": "views/admin/settings/portal-edit.ejs",
-    "uses": 2
+    "context": "A heading on admin/settings/assets-documents / Text on admin/settings/portal-edit / Text on the page on admin/settings/users-other",
+    "where": "views/admin/settings/assets-documents.ejs",
+    "uses": 3
   },
   "s02f68b6356": {
     "text": "Send notification",
@@ -911,6 +911,12 @@
     "where": "views/profile.ejs",
     "uses": 1
   },
+  "s10eea54398": {
+    "text": "Word document",
+    "context": "The label of a form field on admin/settings/assets-documents",
+    "where": "views/admin/settings/assets-documents.ejs",
+    "uses": 1
+  },
   "s10f0cdbbdc": {
     "text": "That is too long to post. Shorten it, or attach it as a file.",
     "context": "A message shown beside a form or after an action",
@@ -1246,6 +1252,12 @@
     "context": "Text on the page on admin/settings/automation-edit / A heading on admin/settings/automation-edit",
     "where": "views/admin/settings/automation-edit.ejs",
     "uses": 2
+  },
+  "s16e0c9d3e1": {
+    "text": "That document no longer exists.",
+    "context": "A message shown beside a form or after an action",
+    "where": "src/services/asset-documents.ts",
+    "uses": 1
   },
   "s16f0ee47f9": {
     "text": "API key",
@@ -3935,6 +3947,12 @@
     "where": "views/assets/show.ejs",
     "uses": 1
   },
+  "s46b7bda94a": {
+    "text": "No document",
+    "context": "One choice in a dropdown on admin/settings/automation-edit",
+    "where": "views/admin/settings/automation-edit.ejs",
+    "uses": 1
+  },
   "s46e48e0945": {
     "text": "-- Inherit from the sub category --",
     "context": "One choice in a dropdown on admin/settings/catalogue",
@@ -4329,6 +4347,12 @@
     "text": "To the approver named on the ticket, when it is raised.",
     "context": "A message shown beside a form or after an action",
     "where": "src/services/mail/notifications.ts",
+    "uses": 1
+  },
+  "s4f311a313e": {
+    "text": "Documents sent",
+    "context": "A heading on assets/show",
+    "where": "views/assets/show.ejs",
     "uses": 1
   },
   "s4f50bda41e": {
@@ -4805,6 +4829,12 @@
     "where": "views/admin/settings/group-detail.ejs",
     "uses": 2
   },
+  "s56ce0c84e8": {
+    "text": "Add a document",
+    "context": "A heading on admin/settings/assets-documents",
+    "where": "views/admin/settings/assets-documents.ejs",
+    "uses": 1
+  },
   "s56e916b1e3": {
     "text": "Add a subcategory",
     "context": "A link on admin/settings/catalogue",
@@ -5068,6 +5098,12 @@
     "context": "A ticket's status - a badge on the ticket and in the queue / A figure from Reports, shown on a dashboard widget / A figure in Reports",
     "where": "src/i18n/code-strings.ts",
     "uses": 10
+  },
+  "s5bf5e802e3": {
+    "text": "Documents are sent as .docx. Sending them as PDF needs LibreOffice on the server.",
+    "context": "Text on the page on admin/settings/assets-documents",
+    "where": "views/admin/settings/assets-documents.ejs",
+    "uses": 1
   },
   "s5c1e1acf71": {
     "text": "They see this group in Reports and on the Manager dashboard, and receive its SLA alerts and the reason a ticket in it was deleted. A manager need not be a member.",
@@ -6815,6 +6851,12 @@
     "where": "views/admin/settings/automation-edit.ejs",
     "uses": 1
   },
+  "s7ad66067c1": {
+    "text": "Variables it uses",
+    "context": "A table column heading on admin/settings/assets-documents",
+    "where": "views/admin/settings/assets-documents.ejs",
+    "uses": 1
+  },
   "s7b0bd218a8": {
     "text": "Advanced settings",
     "context": "A section of Settings, in the list on the left / A label for a screen reader on admin/settings/_advanced-tabs / A link on admin/settings/_mail-tabs",
@@ -7481,6 +7523,12 @@
     "where": "views/login-register-confirm.ejs",
     "uses": 1
   },
+  "s865e89de78": {
+    "text": "Upload",
+    "context": "A button on admin/settings/assets-documents",
+    "where": "views/admin/settings/assets-documents.ejs",
+    "uses": 1
+  },
   "s866cb124df": {
     "text": "That code is not right, so the app is still on.",
     "context": "A message shown after an action / A message shown beside a form or after an action",
@@ -7619,6 +7667,12 @@
     "where": "src/i18n/code-strings.ts",
     "uses": 1
   },
+  "s89437f0297": {
+    "text": "Attach a document",
+    "context": "The label of a form field on admin/settings/automation-edit",
+    "where": "views/admin/settings/automation-edit.ejs",
+    "uses": 1
+  },
   "s8956f3e5cf": {
     "text": "Signing in asks for your password and then a code from the app. {0}",
     "context": "Text on the page on profile",
@@ -7744,6 +7798,12 @@
     "context": "Text on boards/show / Text on reports",
     "where": "views/boards/show.ejs",
     "uses": 2
+  },
+  "s8b64ba4b43": {
+    "text": "A document must be 5 MB or smaller.",
+    "context": "A message shown beside a form or after an action",
+    "where": "src/services/asset-documents.ts",
+    "uses": 1
   },
   "s8b73fc8c36": {
     "text": "e.g. Service desk",
@@ -8799,6 +8859,12 @@
     "text": "Their manager",
     "context": "One choice in a dropdown on admin/settings/automation-edit",
     "where": "views/admin/settings/automation-edit.ejs",
+    "uses": 1
+  },
+  "s9b72d66331": {
+    "text": "Upload a Word document (.docx).",
+    "context": "A message shown beside a form or after an action",
+    "where": "src/services/asset-documents.ts",
     "uses": 1
   },
   "s9b85457083": {
@@ -10091,6 +10157,12 @@
     "where": "views/admin/settings/_member-picker.ejs",
     "uses": 1
   },
+  "sb3386b48bd": {
+    "text": "That document does not exist.",
+    "context": "A message shown beside a form or after an action",
+    "where": "src/routes/assets.ts",
+    "uses": 1
+  },
   "sb34f17f02e": {
     "text": "Heading",
     "context": "A heading on admin/settings/template-catalogue / The label of a form field on admin/settings/template-catalogue",
@@ -10173,6 +10245,12 @@
     "text": "Removed.",
     "context": "A message shown after an action",
     "where": "src/routes/availability.ts",
+    "uses": 1
+  },
+  "sb4e929d8bc": {
+    "text": "Documents",
+    "context": "A link on admin/settings/_assets-tabs",
+    "where": "views/admin/settings/_assets-tabs.ejs",
     "uses": 1
   },
   "sb4f2a50ef6": {
@@ -11459,6 +11537,12 @@
     "where": "views/admin/settings/automation-edit.ejs",
     "uses": 1
   },
+  "scbea8a1a85": {
+    "text": "Filled in with this asset and attached. Add documents under Settings - Assets - Documents.",
+    "context": "An explanation behind an (i) mark on admin/settings/automation-edit",
+    "where": "views/admin/settings/automation-edit.ejs",
+    "uses": 1
+  },
   "scbec677c07": {
     "text": "TLS from the start (465)",
     "context": "Text on admin/settings/_mailbox-dialog",
@@ -11993,6 +12077,12 @@
     "where": "views/admin/settings/user-group-detail.ejs",
     "uses": 1
   },
+  "sd6bd8c0aee": {
+    "text": "Document",
+    "context": "A table column heading on admin/settings/assets-documents",
+    "where": "views/admin/settings/assets-documents.ejs",
+    "uses": 1
+  },
   "sd6e0a07e39": {
     "text": "A short description displayed wherever the group can be selected.",
     "context": "An explanation behind an (i) mark on admin/settings/groups",
@@ -12001,9 +12091,9 @@
   },
   "sd6eafe8235": {
     "text": "Download",
-    "context": "Text on tickets/show",
-    "where": "views/tickets/show.ejs",
-    "uses": 1
+    "context": "A button on admin/settings/assets-documents / Text on tickets/show",
+    "where": "views/admin/settings/assets-documents.ejs",
+    "uses": 2
   },
   "sd6f8cbc5b5": {
     "text": "ticket\n  templates",
@@ -12385,9 +12475,9 @@
   },
   "sdc937b5989": {
     "text": "None",
-    "context": "Text on admin/settings/roles",
-    "where": "views/admin/settings/roles.ejs",
-    "uses": 1
+    "context": "Text on the page on admin/settings/assets-documents / Text on admin/settings/roles",
+    "where": "views/admin/settings/assets-documents.ejs",
+    "uses": 2
   },
   "sdca5fa430c": {
     "text": "Not sure",
@@ -13919,6 +14009,12 @@
     "where": "views/admin/settings/template-edit.ejs",
     "uses": 1
   },
+  "sfae6ee7f3a": {
+    "text": "A Word document (.docx) with variables in double braces, such as {{FirstName}}. An automation step Email about the asset fills it in and attaches it.",
+    "context": "An explanation behind an (i) mark on admin/settings/assets-documents",
+    "where": "views/admin/settings/assets-documents.ejs",
+    "uses": 1
+  },
   "sfaeba14bba": {
     "text": "No templates yet.",
     "context": "Text on admin/settings/templates",
@@ -14181,7 +14277,7 @@
     "text": "Actions",
     "context": "A table column heading on admin/settings/_member-picker / Read only by a screen reader on admin/settings/api-keys / Read only by a screen reader on admin/settings/assets-columns",
     "where": "views/admin/settings/_member-picker.ejs",
-    "uses": 20
+    "uses": 21
   },
   "sff82a31ee6": {
     "text": "For an email",

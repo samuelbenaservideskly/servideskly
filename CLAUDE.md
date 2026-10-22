@@ -2916,6 +2916,39 @@ import, assigned / unassigned mail, automations, .docx documents).
   notifications and automations (later steps) hang off.
 - Permissions: `assets.manage` (the built-in technician has it) for the
   pages, `settings.assets` for Settings - Assets.
+- **CSV import** (`services/asset-import.ts`, `/inventory/import`): the
+  template is the columns switched on now, plus Status; a header names a
+  column by label or key. Checked whole, one bad row imports nothing; a
+  serial number already here (or twice in the sheet) is skipped and listed.
+- **Assigned / taken back** (`services/asset-notify.ts`): built-in
+  notifications `asset.assigned` and `asset.unassigned`, audience `person`,
+  sent by `notifyPerson()` from an `onAssetChange` listener that
+  `createApp()` registers.
+- **Variables** are one list (`services/asset-variables.ts`) for the
+  notifications, the automations and the documents: every column by key,
+  FirstName, LastName, FullName, Email, Department, JobTitle, Manager,
+  Company (the asset's, else the person's), Status, AssetLink, Today. In a
+  notification or document `{{Model}}`; in an automation `{{asset.Model}}`.
+  Letters only: the notification renderer reads `\w+`.
+- **Automations** (step 4): triggers `asset.created`,
+  `asset.status.changed` (optional `toStatus`), `asset.assigned`; steps
+  `asset_email`, `asset_comment`, `asset_status`. A run gets `assetId`; an
+  asset step needs an asset, a ticket step a ticket, and the editor offers
+  only the kind that fits (plus If and HTTP). An asset run is inside
+  `assetRunning` (AsyncLocalStorage), so the status it sets starts nothing.
+- **Documents** (step 5, `services/asset-documents.ts`, migration 68):
+  a .docx under Settings - Assets - Documents, checked on upload (every
+  `{{...}}`, read across Word's runs; what is not a variable is listed).
+  `lib/docx.ts` fills a paragraph's text across runs - Word splits
+  `{{FirstName}}` wherever it likes - writing into the run the variable
+  starts in. `lib/unzip.ts` reads it, `zipFiles()` writes it back.
+  **PDF needs LibreOffice**: `SOFFICE_PATH` (lib/pdf-convert.ts); unset or
+  failing, the .docx is sent and the run log says so. Every copy sent is
+  kept on the asset (`asset_files` kind 'generated') and attached through
+  `mail_outbox.asset_file_ids`, read at send.
+- `data-no-search` on a select now also keeps `select-search.js` off the
+  page (middleware/select-search.ts): eleven triggers would otherwise have
+  given the automations list a script.
 
 ---
 

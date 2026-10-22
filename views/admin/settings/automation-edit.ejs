@@ -556,6 +556,16 @@ Content-Type: application/json
         <label for="f-<%= n.id %>-abody">Message</label>
         <textarea id="f-<%= n.id %>-abody" name="body" rows="6" maxlength="10000" placeholder="Hello {{asset.FirstName}},"><%= c.body || '' %></textarea>
       </div>
+      <div class="field">
+        <div class="label-row">
+          <label for="f-<%= n.id %>-adoc">Attach a document</label>
+          <%- include('../../partials/info', { text: 'Filled in with this asset and attached. Add documents under Settings - Assets - Documents.' }) %>
+        </div>
+        <select id="f-<%= n.id %>-adoc" name="documentId">
+          <option value="">No document</option>
+          <% assetDocuments.forEach(function (d) { %><option value="<%= d.id %>"<%= c.documentId === d.id ? ' selected' : '' %>><%= d.name %></option><% }); %>
+        </select>
+      </div>
     <% } else if (n.type === 'asset_comment') { %>
       <div class="field automation-step__wide">
         <div class="label-row">

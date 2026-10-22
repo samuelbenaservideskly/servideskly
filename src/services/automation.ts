@@ -26,7 +26,8 @@ import { systemRequesterId } from './mail/inbound.js';
 import { AsyncLocalStorage } from 'node:async_hooks';
 import { addAssetComment, getAsset, listStatuses as listAssetStatuses, onAssetChange, setAssetStatus, type AssetChange } from './assets.js';
 import { assetVariables } from './asset-variables.js';
-import { mailOne } from './mail/outbox.js';
+import { canMailOne, mailOne } from './mail/outbox.js';
+import { generateDocument } from './asset-documents.js';
 import { findUserById } from './users.js';
 import { skippedNote, storeIncomingAttachments } from './mail/inbound-attachments.js';
 import type { IncomingAttachment } from './mail/transport.js';
@@ -1002,8 +1003,18 @@ async function assetAct(node: GraphNode, assetId: string, actorId: string | null
             : fillVariables(c.email ?? '', run, 'raw').trim();
       if (!to) return 'not sent: ' + (c.recipient === 'manager' ? 'the person it is assigned to has no manager' : 'nobody to send it to');
       const subject = fillVariables(c.subject ?? '', run, 'raw').replace(/[\r\n]+/g, ' ').trim().slice(0, 300);
-      const sent = await mailOne(to, subject, messageHtml(fillVariables(c.body ?? '', run, 'raw')));
-      return sent ? 'queued for ' + to : 'not sent: no mailbox or relay to send it';
+      if (!(await canMailOne())) return 'not sent: no mailbox or relay to send it';
+      // A document filled in for this asset (step 5): a PDF when LibreOffice
+      // is there, else the .docx - and the run says which.
+      let attached = '';
+      const files: string[] = [];
+      if (c.documentId) {
+        const made = await generateDocument(c.documentId, assetId, actor);
+        files.push(made.file.id);
+        attached = ', with ' + made.file.name + (made.pdf ? '' : ' (as .docx: no PDF converter is set up)');
+      }
+      await mailOne(to, subject, messageHtml(fillVariables(c.body ?? '', run, 'raw')), files);
+      return 'queued for ' + to + attached;
     }
     default:
       return 'skipped';

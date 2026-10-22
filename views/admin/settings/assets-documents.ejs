@@ -1,0 +1,61 @@
+<%- include('_layout') %>
+
+<%- include('_assets-tabs') %>
+
+<form method="post" action="/admin/settings/assets/documents" enctype="multipart/form-data" class="card stack">
+  <input type="hidden" name="_csrf" value="<%= locals.csrfToken %>">
+  <div class="label-row">
+    <h2 class="section-title">Add a document</h2>
+    <%- include('../../partials/info', { text: 'A Word document (.docx) with variables in double braces, such as {{FirstName}}. An automation step Email about the asset fills it in and attaches it.' }) %>
+  </div>
+  <% if (error) { %><p class="field-error" role="alert"><%= error %></p><% } %>
+  <div class="field">
+    <label for="doc-file">Word document</label>
+    <input id="doc-file" name="file" type="file" accept=".docx" required>
+  </div>
+  <div class="actions"><button type="submit" class="btn btn--primary">Upload</button></div>
+  <% if (!pdf) { %>
+    <p class="small muted">Documents are sent as .docx. Sending them as PDF needs LibreOffice on the server.</p>
+  <% } %>
+</form>
+
+<% if (documents.length) { %>
+  <div class="table-scroll">
+    <table class="table">
+      <thead>
+        <tr>
+          <th scope="col">Document</th>
+          <th scope="col">Variables it uses</th>
+          <th scope="col"><span class="visually-hidden">Actions</span></th>
+        </tr>
+      </thead>
+      <tbody>
+        <% documents.forEach(function (d) { %>
+          <tr id="row-<%= d.id %>"<%= d.id === added ? ' class=asset-doc--new' : '' %>>
+            <td><%= d.name %></td>
+            <td class="small">
+              <% if (d.doc_variables.length) { %><span class="mono"><%= d.doc_variables.map(function (v) { return '{{' + v + '}}'; }).join(' ') %></span><% } else { %><span class="muted">None</span><% } %>
+              <% if (d.doc_problems.length) { %>
+                <ul class="field-error asset-doc__problems" role="alert"><% d.doc_problems.forEach(function (p) { %><li><%= p %></li><% }); %></ul>
+              <% } %>
+            </td>
+            <td class="row-actions">
+              <a class="btn btn--quiet btn--small" href="/admin/settings/assets/documents/<%= d.id %>/download">Download</a>
+              <form method="post" action="/admin/settings/assets/documents/<%= d.id %>/delete" class="inline-form">
+                <input type="hidden" name="_csrf" value="<%= locals.csrfToken %>">
+                <%- include('../../partials/bin-button', { label: 'Remove ' + d.name }) %>
+              </form>
+            </td>
+          </tr>
+        <% }); %>
+      </tbody>
+    </table>
+  </div>
+<% } %>
+
+<div class="card stack">
+  <h2 class="section-title">Variables</h2>
+  <p class="small mono asset-doc__variables"><%= variables.map(function (v) { return '{{' + v + '}}'; }).join('  ') %></p>
+</div>
+
+<%- include('_layout_end') %>

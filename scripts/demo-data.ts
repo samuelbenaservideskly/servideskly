@@ -36,6 +36,7 @@ const { createTicket } = await import('../src/services/tickets.js');
 const { addBusinessMinutes } = await import('../src/services/sla.js');
 const { applyAllDisplayNames } = await import('../src/services/display-names.js');
 const { setManager } = await import('../src/services/teams.js');
+const { createAsset } = await import('../src/services/assets.js');
 const { config } = await import('../src/config.js');
 const { newId } = await import('../src/lib/util.js');
 
@@ -135,6 +136,43 @@ for (const company of COMPANIES) {
   // behalf of works for them (services/teams.ts).
   for (const member of staff.slice(1)) await setManager(member.id, staff[0]!.id, null);
   requesters.push(...staff);
+}
+
+// Assets (services/assets.ts): a laptop for each requester, a phone for
+// some, and a few in stock, so Assets has something to show.
+const MODELS = [
+  { model: 'ThinkPad T14 Gen 4', vendor: 'Lenovo', type: 'Laptop' },
+  { model: 'Latitude 7440', vendor: 'Dell', type: 'Laptop' },
+  { model: 'EliteBook 840 G10', vendor: 'HP', type: 'Laptop' },
+  { model: 'MacBook Air 13', vendor: 'Apple', type: 'Laptop' },
+];
+const PHONES = [
+  { model: 'iPhone 15', vendor: 'Apple', type: 'Phone' },
+  { model: 'Galaxy S24', vendor: 'Samsung', type: 'Phone' },
+];
+let serial = 1000;
+const boughtOn = () => new Date(Date.now() - Math.floor(random() * 700) * 86_400_000).toISOString().slice(0, 10);
+const assetValues = (kind: { model: string; vendor: string; type: string }, company: string) => ({
+  Model: kind.model,
+  Vendor: kind.vendor,
+  Type: kind.type,
+  SerialNumber: kind.vendor.slice(0, 2).toUpperCase() + '-' + (serial += 7),
+  DateBought: boughtOn(),
+  PoNumber: 'PO-2025-' + String(100 + Math.floor(random() * 800)),
+  Company: company,
+});
+let assetsMade = 0;
+for (const person of requesters) {
+  await createAsset({ statusId: 'assigned', assignee: person.email, values: assetValues(pick(MODELS), person.company ?? '') }, null);
+  assetsMade += 1;
+  if (random() < 0.25) {
+    await createAsset({ statusId: 'assigned', assignee: person.email, values: assetValues(pick(PHONES), person.company ?? '') }, null);
+    assetsMade += 1;
+  }
+}
+for (let i = 0; i < 5; i += 1) {
+  await createAsset({ statusId: i === 4 ? 'in-repair' : 'in-stock', assignee: '', values: assetValues(pick(MODELS), '') }, null);
+  assetsMade += 1;
 }
 
 const DESK = { name: 'Service Desk', domain: 'servicedesk.demo' };
@@ -277,7 +315,7 @@ for (let daysAgo = 75; daysAgo >= 0; daysAgo -= 1) {
 await applyAllDisplayNames();
 await execute("INSERT INTO seed_markers (key, done_at) VALUES ('demo_data', ?)", [new Date().toISOString()]);
 
-console.log('\nDemo data: ' + requesters.length + ' requesters at ' + COMPANIES.length + ' companies, ' + groups.length + ' groups, ' + made + ' tickets over 75 days.');
+console.log('\nDemo data: ' + requesters.length + ' requesters at ' + COMPANIES.length + ' companies, ' + groups.length + ' groups, ' + made + ' tickets over 75 days, ' + assetsMade + ' assets.');
 console.log('Run it with: npm run dev:demo   (http://localhost:3001)');
 console.log('Sign in as admin@local, or as a manager or technician (password: the local seed password):');
 for (const t of technicians) console.log('  ' + t.email.padEnd(36) + t.role.padEnd(12) + t.group);

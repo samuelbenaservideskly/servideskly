@@ -1,4 +1,10 @@
 import { Router, type Request, type Response } from 'express';
+import multer from 'multer';
+import { notFound } from '../lib/errors.js';
+import { assertCsrfToken } from '../middleware/csrf.js';
+import { pdfAvailable } from '../lib/pdf-convert.js';
+import { addDocumentTemplate, deleteDocumentTemplate, findAssetFile, listDocumentTemplates, MAX_TEMPLATE_BYTES, readAssetFile } from '../services/asset-documents.js';
+import { assetVariableNames } from '../services/asset-variables.js';
 import { asyncHandler } from '../lib/async-handler.js';
 import { writeLimiter } from '../middleware/security.js';
 import { flash } from '../middleware/view-locals.js';
@@ -131,5 +137,73 @@ assetsAdminRouter.post(
   writeLimiter,
   asyncHandler(async (req, res) => {
     await done(req, res, BASE + '/statuses', () => deleteStatus(String(req.params.id), req.currentUser ?? null), 'Status removed.');
+  }),
+);
+
+// ---------------------------------------------------------------------------
+// Documents (step 5): Word templates with variables
+// ---------------------------------------------------------------------------
+
+/** Memory storage: the file is checked, then sealed to disk by the service. */
+const documentUpload = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: MAX_TEMPLATE_BYTES, files: 1, fields: 5, parts: 8 },
+}).single('file');
+
+async function renderDocuments(res: Response, extra: { error?: string; added?: string } = {}, status = 200): Promise<void> {
+  res.status(status).render(
+    'admin/settings/assets-documents',
+    settingsView('assets', {
+      tab: 'documents',
+      documents: await listDocumentTemplates(),
+      variables: await assetVariableNames(),
+      pdf: pdfAvailable(),
+      error: extra.error ?? '',
+      added: extra.added ?? '',
+    }),
+  );
+}
+
+assetsAdminRouter.get('/documents', asyncHandler(async (_req, res) => renderDocuments(res)));
+
+assetsAdminRouter.post(
+  '/documents',
+  writeLimiter,
+  asyncHandler(async (req, res) => {
+    const tooBig = await new Promise<boolean>((resolve, reject) => {
+      documentUpload(req, res, (err: unknown) => {
+        if (!err) resolve(false);
+        else if (err instanceof multer.MulterError) resolve(true);
+        else reject(err);
+      });
+    });
+    // The global CSRF check runs before a multipart body exists (app.ts).
+    assertCsrfToken(req);
+    if (tooBig) return renderDocuments(res, { error: 'A document must be 5 MB or smaller.' }, 400);
+    if (!req.file || req.file.size === 0) return renderDocuments(res, { error: 'Choose a Word document (.docx) to upload.' }, 400);
+    const added = await attempt(() => addDocumentTemplate(req.file!.originalname, req.file!.buffer, req.currentUser ?? null));
+    if (!added.ok) return renderDocuments(res, { error: Object.values(added.errors)[0] ?? 'That document could not be added.' }, 400);
+    return renderDocuments(res, { added: added.value.id });
+  }),
+);
+
+assetsAdminRouter.get(
+  '/documents/:id/download',
+  asyncHandler(async (req, res) => {
+    const row = await findAssetFile(String(req.params.id));
+    if (!row || row.kind !== 'template') throw notFound('That document does not exist.');
+    const bytes = await readAssetFile(row);
+    res.setHeader('Content-Type', row.content_type);
+    res.setHeader('Content-Disposition', 'attachment; filename="' + row.name.replace(/[^\w .-]+/g, '_') + '.docx"');
+    res.setHeader('X-Content-Type-Options', 'nosniff');
+    res.send(bytes);
+  }),
+);
+
+assetsAdminRouter.post(
+  '/documents/:id/delete',
+  writeLimiter,
+  asyncHandler(async (req, res) => {
+    await done(req, res, BASE + '/documents', () => deleteDocumentTemplate(String(req.params.id), req.currentUser ?? null), 'Document removed.');
   }),
 );

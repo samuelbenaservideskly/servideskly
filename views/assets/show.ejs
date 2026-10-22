@@ -68,6 +68,20 @@
       </dl>
     </div>
 
+    <% if (documents.length) { %>
+      <div class="card stack">
+        <h2 class="section-title">Documents sent</h2>
+        <ul class="timeline">
+          <% documents.forEach(function (d) { %>
+            <li>
+              <a href="/inventory/<%= asset.id %>/files/<%= d.id %>"><%= d.name %></a>
+              <div class="small muted"><span title="<%= formatDateTime(d.created_at) %>"><%= formatRelative(d.created_at) %></span></div>
+            </li>
+          <% }); %>
+        </ul>
+      </div>
+    <% } %>
+
     <div class="card stack">
       <h2 class="section-title">History</h2>
       <% if (!events.length) { %>

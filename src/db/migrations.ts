@@ -106,6 +106,30 @@ const ASSETS_SQL = (int: string) => `
     ON CONFLICT (key) DO NOTHING;
 `;
 
+/**
+ * Documents for assets (services/asset-documents.ts): an uploaded .docx with
+ * variables (kind 'template', no asset), and each copy filled in for an asset
+ * and sent (kind 'generated'). The bytes are a file under UPLOAD_DIR, sealed;
+ * the variables a template was found to use, and the ones it gets wrong,
+ * are recorded at upload.
+ */
+const ASSET_FILES_SQL = (int: string) => `
+  CREATE TABLE IF NOT EXISTS asset_files (
+    id            TEXT PRIMARY KEY,
+    kind          TEXT NOT NULL CHECK (kind IN ('template', 'generated')),
+    asset_id      TEXT REFERENCES assets(id) ON DELETE CASCADE,
+    name          TEXT NOT NULL,
+    content_type  TEXT NOT NULL,
+    byte_size     ${int} NOT NULL,
+    stored_name   TEXT NOT NULL,
+    doc_variables TEXT NOT NULL DEFAULT '[]',
+    doc_problems  TEXT NOT NULL DEFAULT '[]',
+    created_by    TEXT REFERENCES users(id) ON DELETE SET NULL,
+    created_at    TEXT NOT NULL
+  );
+  CREATE INDEX IF NOT EXISTS asset_files_asset_idx ON asset_files (asset_id, created_at);
+`;
+
 export const migrations: readonly Migration[] = [
   {
     version: 1,
@@ -2095,5 +2119,13 @@ export const migrations: readonly Migration[] = [
     name: 'assets',
     sql: ASSETS_SQL('INTEGER'),
     pg: ASSETS_SQL('BIGINT'),
+  },
+  {
+    version: 68,
+    name: 'asset documents',
+    sql: ASSET_FILES_SQL('INTEGER') + `
+      ALTER TABLE mail_outbox ADD COLUMN asset_file_ids TEXT NOT NULL DEFAULT '[]';`,
+    pg: ASSET_FILES_SQL('BIGINT') + `
+      ALTER TABLE mail_outbox ADD COLUMN IF NOT EXISTS asset_file_ids TEXT NOT NULL DEFAULT '[]';`,
   },
 ];
