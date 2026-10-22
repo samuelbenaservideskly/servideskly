@@ -3,6 +3,7 @@ import { audit } from '../lib/audit.js';
 import { badRequest, conflict, notFound } from '../lib/errors.js';
 import { newId, nowIso } from '../lib/util.js';
 import { CUSTOM_FIELD_TYPES } from './templates.js';
+import { BLANK, columnClauses, MAX_VALUES, withoutColumn, type ColumnFilters, type ColumnValue } from '../lib/column-filters.js';
 import { findUserByEmail, findUserById, type UserRow } from './users.js';
 
 /**
@@ -305,10 +306,25 @@ export interface AssetFilters {
   dir?: 'asc' | 'desc';
   page?: number;
   perPage?: number;
+  /** Excel-like column filters (lib/column-filters.ts): ticked values per column key, or 'status'. */
+  columns?: ColumnFilters;
 }
 
-/** A page of assets, searched, filtered and sorted in SQL. Sorting is a whitelist. */
-export async function listAssets(filters: AssetFilters): Promise<{ items: AssetListItem[]; total: number }> {
+const FROM = ' FROM assets a LEFT JOIN asset_statuses s ON s.id = a.status_id LEFT JOIN users u ON u.id = a.assigned_to';
+
+/** The SQL for each column a header can filter on: the status, the person, every value by its key. */
+async function columnExprs(): Promise<Record<string, string>> {
+  const exprs: Record<string, string> = { status: 'a.status_id', [ASSIGNED_TO]: 'a.assigned_to' };
+  for (const c of await listColumns()) if (c.format !== 'person') exprs[c.key] = sqlJsonText('a.field_values', c.key);
+  return exprs;
+}
+
+/** The keys a header may filter on. */
+export async function assetColumnKeys(): Promise<string[]> {
+  return Object.keys(await columnExprs());
+}
+
+async function assetWhere(filters: AssetFilters): Promise<{ clause: string; params: unknown[] }> {
   const where: string[] = [];
   const params: unknown[] = [];
   if (filters.q) {
@@ -328,7 +344,33 @@ export async function listAssets(filters: AssetFilters): Promise<{ items: AssetL
     where.push('a.assigned_to = ?');
     params.push(filters.assignedTo);
   }
-  const clause = where.length ? ' WHERE ' + where.join(' AND ') : '';
+  if (filters.columns) {
+    const cols = columnClauses(filters.columns, await columnExprs());
+    where.push(...cols.where);
+    params.push(...cols.params);
+  }
+  return { clause: where.length ? ' WHERE ' + where.join(' AND ') : '', params };
+}
+
+/**
+ * One column's values, with how many assets have each, under every other
+ * filter: what its header menu offers, as Excel's AutoFilter does.
+ */
+export async function assetColumnValues(filters: AssetFilters, key: string): Promise<ColumnValue[]> {
+  const expr = (await columnExprs())[key];
+  if (!expr) return [];
+  const { clause, params } = await assetWhere({ ...filters, columns: withoutColumn(filters.columns ?? {}, key) });
+  const label = key === 'status' ? 'max(s.name)' : key === ASSIGNED_TO ? 'max(u.display_name)' : 'max(' + expr + ')';
+  const rows = await query<{ v: string | null; label: string | null; n: number }>(
+    'SELECT ' + expr + ' AS v, ' + label + ' AS label, count(*) AS n' + FROM + clause + ' GROUP BY ' + expr + ' ORDER BY n DESC LIMIT ' + MAX_VALUES,
+    params as never[],
+  );
+  return rows.map((r) => ({ value: r.v ?? BLANK, label: r.v ? (r.label ?? r.v) : '', count: Number(r.n) }));
+}
+
+/** A page of assets, searched, filtered and sorted in SQL. Sorting is a whitelist. */
+export async function listAssets(filters: AssetFilters): Promise<{ items: AssetListItem[]; total: number }> {
+  const { clause, params } = await assetWhere(filters);
 
   const columns = await listColumns();
   const dir = filters.dir === 'asc' ? 'ASC' : 'DESC';
@@ -342,7 +384,7 @@ export async function listAssets(filters: AssetFilters): Promise<{ items: AssetL
   const perPage = Math.min(Math.max(filters.perPage ?? 50, 1), 200);
   const page = Math.max(filters.page ?? 1, 1);
   const total = await queryOne<{ n: number }>(
-    'SELECT count(*) AS n FROM assets a LEFT JOIN asset_statuses s ON s.id = a.status_id LEFT JOIN users u ON u.id = a.assigned_to' + clause,
+    'SELECT count(*) AS n' + FROM + clause,
     params as never[],
   );
   const rows = await query<AssetListItem>(LIST_SELECT + clause + ' ORDER BY ' + order + ', a.id LIMIT ? OFFSET ?', [

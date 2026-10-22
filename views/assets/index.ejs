@@ -28,36 +28,25 @@
     </select>
   </span>
   <% if (filters.sort) { %><input type="hidden" name="sort" value="<%= filters.sort %>"><input type="hidden" name="dir" value="<%= filters.dir %>"><% } %>
+  <%- include('../partials/keep-columns', { state: state }) %>
   <button type="submit" class="btn">Show</button>
   <% if (filters.q || filters.status || filters.assigned) { %><a class="btn btn--quiet" href="/inventory">Clear</a><% } %>
 </form>
 
-<%
-  function sortLink(key) {
-    return link({ sort: key, dir: filters.sort === key && filters.dir === 'asc' ? 'desc' : 'asc', page: undefined });
-  }
-  function ariaSort(key) {
-    if (filters.sort !== key) return 'none';
-    return filters.dir === 'desc' ? 'descending' : 'ascending';
-  }
-  var headers = shown.map(function (c) { return { key: c.key, label: c.label }; });
-  headers.push({ key: 'status', label: t('Status') });
-%>
+<%- include('../partials/clear-columns', { state: state, path: '/inventory' }) %>
+
+<% var headers = shown.map(function (c) { return { key: c.key, label: c.label }; }); headers.push({ key: 'status', label: t('Status') }); %>
+<% var columnFiltered = Object.keys(state).some(function (k) { return k.indexOf('cf_') === 0; }); %>
 
 <% if (!assets.length) { %>
-  <p class="empty"><%= filters.q || filters.status || filters.assigned ? t('No assets match.') : t('No assets yet. Add one with New asset.') %></p>
+  <p class="empty"><%= filters.q || filters.status || filters.assigned || columnFiltered ? t('No assets match.') : t('No assets yet. Add one with New asset.') %></p>
 <% } else { %>
   <div class="table-scroll">
     <table class="table asset-table">
       <thead>
         <tr>
           <% headers.forEach(function (h) { %>
-            <th scope="col" aria-sort="<%= ariaSort(h.key) %>">
-              <a class="th-sort<%= filters.sort === h.key ? ' th-sort--on' : '' %>" href="<%= sortLink(h.key) %>">
-                <%= h.label %>
-                <span class="th-sort__mark" aria-hidden="true"></span>
-              </a>
-            </th>
+            <%- include('../partials/col-head', { key: h.key, label: h.label, path: '/inventory', state: state, menu: columnMenus[h.key] }) %>
           <% }); %>
         </tr>
       </thead>

@@ -25,8 +25,11 @@ import {
   listStatuses,
   updateAsset,
   type AssetColumn,
+  type AssetFilters,
   type AssetInput,
+  assetColumnValues,
 } from '../services/assets.js';
+import { BLANK, filterParams, menuValues, readColumnFilters, type ColumnValue } from '../lib/column-filters.js';
 import { attempt, type FieldErrors } from './form-errors.js';
 import { findAssetFile, listGeneratedFor, readAssetFile } from '../services/asset-documents.js';
 
@@ -68,18 +71,33 @@ async function renderList(req: Request, res: Response, extra: { errors?: FieldEr
   const page = Number.isInteger(asked) && asked > 0 ? asked : 1;
 
   const [columns, statuses] = await Promise.all([enabledColumns(), listStatuses()]);
-  const found = await listAssets({
+  // The table shows the short columns; several lines belong on the asset's page.
+  const shown = columns.filter((c) => c.format !== 'textarea').slice(0, 7);
+  // Excel-like headers (lib/column-filters.ts): each shown column, and Status.
+  const filterable = [...shown.map((c) => c.key), 'status'];
+  const columnFilters = readColumnFilters(req.query as Record<string, unknown>, filterable);
+  const query: AssetFilters = {
     ...(q ? { q } : {}),
     ...(statusId ? { statusId } : {}),
     ...(assigned === 'none' ? { unassigned: true } : assigned ? { assignedTo: assigned } : {}),
     ...(sort ? { sort } : {}),
     dir,
-    page,
-    perPage: PER_PAGE,
+    columns: columnFilters,
+  };
+  const [found, menuRows] = await Promise.all([
+    listAssets({ ...query, page, perPage: PER_PAGE }),
+    Promise.all(filterable.map((key) => assetColumnValues(query, key))),
+  ]);
+  // Each header's menu: its values (a blank one reads Nobody or Empty) and what is ticked.
+  const blankLabel = (key: string) => (key === ASSIGNED_TO ? 'Nobody' : key === 'status' ? 'No status' : 'Empty');
+  const columnMenus: Record<string, { values: ColumnValue[]; selected: string[] }> = {};
+  filterable.forEach((key, i) => {
+    const rows = menuRows[i]!.map((r) => ({ ...r, label: r.value === BLANK ? blankLabel(key) : r.label || r.value }));
+    const selected = columnFilters[key] ?? [];
+    columnMenus[key] = { values: menuValues(rows, selected, (v) => (v === BLANK ? blankLabel(key) : v)), selected };
   });
-  // The table shows the short columns; several lines belong on the asset's page.
-  const shown = columns.filter((c) => c.format !== 'textarea').slice(0, 7);
   const filters = { q, status: statusId, assigned, sort, dir };
+  const state = { ...filters, ...filterParams(columnFilters) };
   res.status(extra.status ?? 200).render('assets/index', {
     title: 'Assets',
     assets: found.items,
@@ -90,7 +108,9 @@ async function renderList(req: Request, res: Response, extra: { errors?: FieldEr
     shown,
     statuses,
     filters,
-    link: (over: Record<string, string | number | undefined>) => '/inventory' + queryString({ ...filters, ...over }),
+    state,
+    columnMenus,
+    link: (over: Record<string, string | number | undefined>) => '/inventory' + queryString({ ...state, ...over }),
     assetTitle,
     errors: extra.errors ?? {},
     draft: extra.draft ?? null,

@@ -194,3 +194,24 @@ describe('importing assets from a CSV', () => {
     await upload(requester, 'Model\nX').expect(404);
   });
 });
+
+describe('the asset list, Excel-like', () => {
+  test('every header has a menu; filters on two columns narrow the same list; a value counts what is left', async () => {
+    await createAsset({ statusId: 'in-stock', assignee: '', values: { Model: 'Filter Model A', Vendor: 'Acme' } }, null);
+    await createAsset({ statusId: 'retired', assignee: '', values: { Model: 'Filter Model A', Vendor: 'Acme' } }, null);
+    await createAsset({ statusId: 'in-stock', assignee: '', values: { Model: 'Filter Model B', Vendor: 'Acme' } }, null);
+
+    const page = await as(agent).get('/inventory').expect(200);
+    assert.match(page.text, /name="cf_Model"/);
+    assert.match(page.text, /name="cf_status"/);
+
+    const both = await as(agent).get('/inventory?cf_Model=Filter+Model+A&cf_status=in-stock').expect(200);
+    const rows = both.text.split('<tbody>')[1]!.split('</tbody>')[0]!;
+    assert.equal((rows.match(/<tr>/g) ?? []).length, 1, 'Model A and In stock: one asset');
+    assert.match(both.text, /Clear column filters/);
+    assert.match(both.text, /<input type="hidden" name="cf_Model" value="Filter Model A">/, 'kept by the search bar');
+
+    const one = await listAssets({ columns: { Model: ['Filter Model A'] } });
+    assert.equal(one.total, 2);
+  });
+});

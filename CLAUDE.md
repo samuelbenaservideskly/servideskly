@@ -2946,6 +2946,10 @@ import, assigned / unassigned mail, automations, .docx documents).
   failing, the .docx is sent and the run log says so. Every copy sent is
   kept on the asset (`asset_files` kind 'generated') and attached through
   `mail_outbox.asset_file_ids`, read at send.
+- **The list has the Excel-like headers** (`partials/col-head.ejs`): each
+  shown column and Status, filtered in SQL through `columnExprs()` in
+  assets.ts - `sqlJsonText` over `field_values` for a value, `a.status_id`,
+  `a.assigned_to` - and counted per header by `assetColumnValues`.
 - `data-no-search` on a select now also keeps `select-search.js` off the
   page (middleware/select-search.ts): eleven triggers would otherwise have
   given the automations list a script.
