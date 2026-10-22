@@ -3008,6 +3008,33 @@ with a bar on the left) and carry a short flag beside the status, so nothing
 wraps. A requester's or assignee's name opens their page under Users for an
 administrator; for a technician a requester's name opens their tickets.
 
+### Excel-like column headers (21 Oct 2026)
+
+Every list's header sorts and filters like Excel's AutoFilter:
+`src/lib/column-filters.ts` and `views/partials/col-head.ejs` (on the ticket
+queue, Users, the audit trail, Reports' ticket lists, People, templates,
+automations, notifications). **A new table uses them.**
+
+- **In the address**: `cf_<column>=<value>`, once per ticked value; values in
+  one column are ORed, columns ANDed. Links, paging and the filter bars keep
+  them (`keep-columns.ejs`), and `clear-columns.ejs` above the list drops
+  them - there even when the filters leave nothing and no table is drawn.
+- **The SQL is a whitelist** per table (`TICKET_FILTER_COLUMNS`,
+  `USER_FILTER_COLUMNS`, `DRILL_COLUMNS`...); values are bound. A blank value
+  means an empty cell ("Unassigned", "None").
+- **A menu's values are counted over what the other filters leave**
+  (`withoutColumn`), at most `MAX_VALUES`, so ticking a second value in the
+  same column stays possible.
+- **Short lists held whole** use `filterRows`, `sortRows` and `rowMenus`.
+- **No script**: a `<details>` whose panel is `position: fixed` with no
+  offsets (so a table's scroll box does not clip it), and whose summary
+  covers the page while open (a click elsewhere closes it). More than 8
+  values bring select-search.js's list search, the approved script - so a
+  list page may now be served `script-src 'self'`.
+- **The opening tag is written raw** in the partial: the i18n rewriter takes
+  a conditional `scope="col"` between tags for text and escapes it.
+- Sealed columns (department, job title, office, phone) cannot be filtered
+  in SQL; People filters by company only.
 
 ### The ticket table: sortable, and one SLA treatment
 
