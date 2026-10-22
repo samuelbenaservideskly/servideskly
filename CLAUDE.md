@@ -1,5 +1,9 @@
 # Project context
 
+> **The current handover (22 Oct 2026) is kept in the private
+> servideskly-portal repository**, at `../servideskly-portal/docs/handover/`:
+> start there. It names hosting details, so it is never committed here.
+
 > **Start with [TODO.md](TODO.md)**: what was done last, what is not yet
 > checked, and what is next.
 >
