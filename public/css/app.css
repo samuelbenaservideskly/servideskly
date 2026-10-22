@@ -4766,3 +4766,19 @@ th.th-filter--on .colfilter__button { color: var(--brand); }
    the tabular "1" has a foot and sits balanced, and every count is as wide
    as the next. */
 .side-link__badge, .colfilter__count, .report-count { font-variant-numeric: tabular-nums; }
+
+/* The role form's groups under chevrons, and a permission's levels as one
+   row of three radios (permission levels, 22 Oct 2026). */
+.role-permissions { grid-template-columns: 1fr; gap: 0.5rem; }
+.role-permissions__group { border: 1px solid var(--border); border-radius: 8px; padding: 0; display: block; }
+.role-permissions__group > summary { cursor: pointer; display: flex; align-items: center; gap: 0.5rem; padding: 0.6rem 0.8rem; font-weight: 600; font-size: 0.92rem; }
+.role-permissions__group[open] > summary { border-bottom: 1px solid var(--border); }
+.role-permissions__list { display: grid; gap: 0.5rem; padding: 0.7rem 0.8rem; }
+.role-level { margin: 0; padding: 0.4rem 0; border: 0; border-bottom: 1px solid var(--border); display: grid; gap: 0.2rem; min-width: 0; }
+.role-level:last-child { border-bottom: 0; }
+/* The name on its own line, the three choices in one row under it. */
+.role-level__name { font-size: 0.9rem; font-weight: 550; }
+.role-level__choices { display: flex; flex-wrap: wrap; gap: 0.2rem 1.1rem; }
+/* A Settings section seen read only: one disabled fieldset around it all. */
+.settings-readonly { margin: 0; padding: 0; border: 0; min-width: 0; }
+.settings-readonly-note { display: inline-block; margin: 0 0 0.75rem; padding: 0.2rem 0.6rem; border-radius: 999px; background: var(--surface-2); color: var(--text-muted); font-weight: 600; }

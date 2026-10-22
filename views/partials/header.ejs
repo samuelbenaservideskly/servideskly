@@ -133,7 +133,7 @@
       <% if (locals.can && can('reports.view')) { %>
         <%- link('/reports', 'chart', t('Reports'), path.indexOf('/reports') === 0 && !(locals.sidebarPins || []).some(function (p) { return p.href === locals.currentUrl; })) %>
       <% } %>
-      <% if (locals.can && can('assets.manage')) { %>
+      <% if (locals.canRead && canRead('assets.manage')) { %>
         <%- link('/inventory', 'box', t('Assets'), path.indexOf('/inventory') === 0) %>
       <% } %>
       <%# Only for somebody the directory is open to; see routes/people.ts. %>
@@ -165,9 +165,9 @@
           Settings, apart from the daily work above. %>
       <% if (locals.isAdmin || (locals.canOpenSettings && canOpenSettings())) { %>
         <nav class="sidebar__nav sidebar__nav--setup" aria-label="Settings">
-          <% if (locals.isAdmin || can('automation.manage')) { %><%- link('/admin/settings/advanced/automation', 'workflow', t('Automation'), path.indexOf('/admin/settings/advanced/automation') === 0) %><% } %>
-          <% if (locals.isAdmin || can('settings.groups')) { %><%- link('/admin/settings/groups', 'users', t('Groups'), path.indexOf('/admin/settings/groups') === 0) %><% } %>
-          <% if (locals.isAdmin || can('settings.users')) { %><%- link('/admin/settings/users', 'user', t('Users'), path.indexOf('/admin/settings/users') === 0) %><% } %>
+          <% if (locals.isAdmin || canRead('automation.manage')) { %><%- link('/admin/settings/advanced/automation', 'workflow', t('Automation'), path.indexOf('/admin/settings/advanced/automation') === 0) %><% } %>
+          <% if (locals.isAdmin || canRead('settings.groups')) { %><%- link('/admin/settings/groups', 'users', t('Groups'), path.indexOf('/admin/settings/groups') === 0) %><% } %>
+          <% if (locals.isAdmin || canRead('settings.users')) { %><%- link('/admin/settings/users', 'user', t('Users'), path.indexOf('/admin/settings/users') === 0) %><% } %>
           <%- link('/admin/settings', 'settings', t('Settings'), path.indexOf('/admin/settings') === 0
                 && path.indexOf('/admin/settings/advanced/automation') !== 0
                 && path.indexOf('/admin/settings/groups') !== 0

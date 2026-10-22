@@ -2,7 +2,7 @@ import type { Request, RequestHandler, Response } from 'express';
 import { settings } from '../settings/index.js';
 import { isStaff } from '../services/users.js';
 import { brandingVersion } from '../services/branding.js';
-import { can, canOpenSettings, roleById } from '../auth/permissions.js';
+import { can, canOpenSettings, canRead, roleById } from '../auth/permissions.js';
 
 export type FlashType = 'success' | 'error' | 'info';
 
@@ -38,6 +38,8 @@ export function viewLocals(): RequestHandler {
     res.locals.isAdmin = req.currentUser?.role === 'admin';
     // Custom roles (auth/permissions.ts): asked when a page is drawn.
     res.locals.can = (permission: string) => can(req.currentUser, permission);
+    // Read only or more (permission levels, 22 Oct 2026): enough to show a link or a page.
+    res.locals.canRead = (permission: string) => canRead(req.currentUser, permission);
     res.locals.canOpenSettings = () => canOpenSettings(req.currentUser);
     // Shown under the person's name in the sidebar instead of the base role.
     res.locals.roleName = req.currentUser?.role_id && req.currentUser.role !== 'admin' ? (roleById(req.currentUser.role_id)?.name ?? '') : '';
@@ -45,8 +47,8 @@ export function viewLocals(): RequestHandler {
       const user = req.currentUser;
       if (!user) return false;
       if (user.role === 'admin') return true;
-      if (slug === 'advanced') return can(user, 'settings.advanced') || can(user, 'automation.manage') || can(user, 'api.manage');
-      return can(user, 'settings.' + slug);
+      if (slug === 'advanced') return canRead(user, 'settings.advanced') || canRead(user, 'automation.manage') || canRead(user, 'api.manage');
+      return canRead(user, 'settings.' + slug);
     };
     res.locals.currentPath = req.path;
     // Branding is read per request, so a change in Customisation shows up

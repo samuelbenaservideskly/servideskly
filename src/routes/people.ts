@@ -8,7 +8,7 @@ import { groupsForUser } from '../services/groups.js';
 import { listUserGroups, userGroupIdsFor } from '../services/user-groups.js';
 import { settings } from '../settings/index.js';
 import { listTickets, PRIORITY_LABELS, STATUS_LABELS, TYPE_LABELS } from '../services/tickets.js';
-import { can, roleById } from '../auth/permissions.js';
+import { can, canRead, roleById } from '../auth/permissions.js';
 import { assetsAssignedTo, assetTitle } from '../services/assets.js';
 
 /**
@@ -176,7 +176,7 @@ peopleRouter.get(
     ].filter((line) => line.value);
 
     // What is assigned to them, for those who manage assets.
-    const assets = seesTickets && can(viewer, 'assets.manage') ? await assetsAssignedTo(person.id) : [];
+    const assets = seesTickets && canRead(viewer, 'assets.manage') ? await assetsAssignedTo(person.id) : [];
 
     res.render('people/show', {
       title: person.display_name,

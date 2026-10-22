@@ -21,14 +21,34 @@
     <input id="<%= id %>-description" name="description" type="text" maxlength="300" value="<%= v ? v.description : '' %>">
     <% if (problems.description) { %><p class="field-error" role="alert"><%= problems.description %></p><% } %>
   </div>
+  <%# Each group under a chevron (22 Oct 2026: with levels the list got long).
+      A permission with levels is three radios - None, Read only, Read and
+      write - so the two can never both be chosen; the rest are tick boxes. %>
   <div class="role-permissions">
     <% groups.forEach(function (g) { %>
-      <fieldset class="role-permissions__group" data-no-search>
-        <legend><%= t(g) %></legend>
-        <% permissions.filter(function (p) { return p.group === g; }).forEach(function (p) { %>
-          <label class="check"><input type="checkbox" name="permissions" value="<%= p.key %>"<%= ticked.indexOf(p.key) >= 0 ? ' checked' : '' %>> <span><%= t(p.label) %></span></label>
-        <% }); %>
-      </fieldset>
+      <% var inGroup = permissions.filter(function (p) { return p.group === g; }); %>
+      <% var chosen = inGroup.filter(function (p) { return ticked.indexOf(p.key) >= 0 || ticked.indexOf(p.key + ':read') >= 0; }).length; %>
+      <details class="role-permissions__group">
+        <summary><span><%= t(g) %></span><% if (chosen) { %> <span class="pill pill--ok"><%= chosen %></span><% } %></summary>
+        <div class="role-permissions__list" data-no-search>
+          <% inGroup.forEach(function (p) { %>
+            <% if (p.levels) { %>
+              <% var level = ticked.indexOf(p.key) >= 0 ? 'write' : ticked.indexOf(p.key + ':read') >= 0 ? 'read' : ''; %>
+              <fieldset class="role-level">
+                <legend class="visually-hidden"><%= t(p.label) %></legend>
+                <span class="role-level__name" aria-hidden="true"><%= t(p.label) %></span>
+                <span class="role-level__choices">
+                <label class="check"><input type="radio" name="level_<%= p.key %>" value=""<%= level === '' ? ' checked' : '' %>> <span>None</span></label>
+                <label class="check"><input type="radio" name="level_<%= p.key %>" value="read"<%= level === 'read' ? ' checked' : '' %>> <span>Read only</span></label>
+                <label class="check"><input type="radio" name="level_<%= p.key %>" value="write"<%= level === 'write' ? ' checked' : '' %>> <span>Read and write</span></label>
+                </span>
+              </fieldset>
+            <% } else { %>
+              <label class="check"><input type="checkbox" name="permissions" value="<%= p.key %>"<%= ticked.indexOf(p.key) >= 0 ? ' checked' : '' %>> <span><%= t(p.label) %></span></label>
+            <% } %>
+          <% }); %>
+        </div>
+      </details>
     <% }); %>
   </div>
   <p class="small muted">Ticking "Work on tickets as a technician" makes the role's people technicians: they see the queue and can be assigned tickets. Without it they raise tickets like a user. Roles themselves, and giving them to people, stay with administrators.</p>
@@ -52,7 +72,7 @@
           <% roles.forEach(function (r) { %>
             <tr id="row-<%= r.id %>">
               <td><strong><%= r.name %></strong><% if (r.description) { %><div class="small muted"><%= r.description %></div><% } %></td>
-              <td class="small"><%= r.permissions.length ? permissions.filter(function (p) { return r.permissions.indexOf(p.key) >= 0; }).map(function (p) { return t(p.label); }).join(', ') : t('None') %></td>
+              <td class="small"><%= r.permissions.length ? permissions.filter(function (p) { return r.permissions.indexOf(p.key) >= 0 || r.permissions.indexOf(p.key + ':read') >= 0; }).map(function (p) { return t(p.label) + (r.permissions.indexOf(p.key) < 0 ? ' (' + t('read only') + ')' : ''); }).join(', ') : t('None') %></td>
               <td><%= members.get(r.id) || 0 %></td>
               <td class="row-actions">
                 <a class="btn btn--quiet btn--small" href="#role-<%= r.id %>">Edit</a>

@@ -79,7 +79,7 @@ import {
   TYPE_LABELS,
   type TicketType,
   addComment,
-  canSeeTicket, seesInternal,
+  canSeeTicket, seesInternal, writesInternal,
   approvalBlocks,
   tasksBlock,
   createTicket,
@@ -1101,7 +1101,7 @@ ticketRouter.post(
     const raw = (req.body ?? {}) as Record<string, unknown>;
     const text = typeof raw.body === 'string' ? normaliseText(raw.body).trim() : '';
     // Only staff whose role reads internal notes may write one, whatever the form claims.
-    const isInternal = seesInternal(viewer) && raw.internal === 'on';
+    const isInternal = writesInternal(viewer) && raw.internal === 'on';
     // "Email the requester" (21 Oct 2026): unticked, a reply and its files are
     // only added to the ticket. A form without the box (`notifyChoice` absent)
     // emails as replies always did.
@@ -1580,7 +1580,7 @@ ticketRouter.post(
     const body = (req.body ?? {}) as Record<string, unknown>;
 
     // Only staff may mark an attachment internal, whatever the form claims.
-    const isInternal = isStaff(viewer.role) && body.internal === 'on';
+    const isInternal = writesInternal(viewer) && body.internal === 'on';
 
     // Sending a ticket's files out to the requester is a decision, so it is
     // made here, by somebody, rather than by a notification doing it always.

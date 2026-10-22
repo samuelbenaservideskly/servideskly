@@ -28,16 +28,26 @@ export interface Permission {
   key: string;
   label: string;
   group: 'Tickets' | 'Assets' | 'Reports and people' | 'Settings' | 'Automation and API';
+  /**
+   * Offered as None / Read only / Read and write (22 Oct 2026). Read and
+   * write is stored as the key itself, so a role from before keeps its
+   * meaning; read only as `<key>:read` (READ). The rest are one thing, on
+   * or off: looking (Reports), or a single action (Delete tickets).
+   */
+  levels?: boolean;
 }
 
+/** The suffix a read-only grant carries: `settings.mail:read`. */
+export const READ = ':read';
+
 /** Every permission a role can be given, in the order the role page lists them. */
-export const PERMISSIONS: readonly Permission[] = [
+export const PERMISSIONS: readonly Permission[] = ([
   { key: 'tickets.work', label: 'Work on tickets as a technician', group: 'Tickets' },
   { key: 'tickets.view_all', label: "See every ticket, not only their groups' and their own", group: 'Tickets' },
   { key: 'tickets.edit', label: 'Change status, priority, assignee, group and category', group: 'Tickets' },
-  { key: 'tickets.internal', label: 'Read and write internal notes', group: 'Tickets' },
+  { key: 'tickets.internal', label: 'Internal notes', group: 'Tickets', levels: true },
   { key: 'tickets.delete', label: 'Delete tickets', group: 'Tickets' },
-  { key: 'assets.manage', label: 'Manage assets', group: 'Assets' },
+  { key: 'assets.manage', label: 'Assets', group: 'Assets', levels: true },
   { key: 'reports.view', label: 'Open Reports', group: 'Reports and people' },
   { key: 'people.directory', label: 'Search the people directory', group: 'Reports and people' },
   { key: 'settings.integrations', label: 'Integrations', group: 'Settings' },
@@ -50,11 +60,12 @@ export const PERMISSIONS: readonly Permission[] = [
   { key: 'settings.advanced', label: 'Advanced settings: portal scripting, data', group: 'Settings' },
   { key: 'settings.assets', label: 'Assets: columns and statuses', group: 'Settings' },
   { key: 'settings.audit', label: 'Audit trail', group: 'Settings' },
-  { key: 'automation.manage', label: 'Build automations and connections', group: 'Automation and API' },
-  { key: 'api.manage', label: 'Manage API keys', group: 'Automation and API' },
-];
+  { key: 'automation.manage', label: 'Automations and connections', group: 'Automation and API', levels: true },
+  { key: 'api.manage', label: 'API keys', group: 'Automation and API', levels: true },
+] as Permission[]).map((p) => (p.key.startsWith('settings.') ? { ...p, levels: true } : p));
 
-const KNOWN = new Set(PERMISSIONS.map((p) => p.key));
+/** Every grant there is: each key, and the read-only form of those with levels. */
+const KNOWN = new Set(PERMISSIONS.flatMap((p) => (p.levels ? [p.key, p.key + READ] : [p.key])));
 
 /** What a technician (agent) could always do, without a custom role. */
 const AGENT_DEFAULT = ['tickets.work', 'tickets.view_all', 'tickets.edit', 'tickets.internal', 'reports.view', 'assets.manage'];
@@ -103,15 +114,23 @@ export function permissionsOf(user: Pick<UserRow, 'role'> & { role_id?: string |
   return new Set(user.role === 'agent' ? AGENT_DEFAULT : []);
 }
 
+/** Read and write - or, for a permission without levels, simply on. */
 export function can(user: (Pick<UserRow, 'role'> & { role_id?: string | null }) | null | undefined, permission: string): boolean {
   return !!user && permissionsOf(user).has(permission);
+}
+
+/** Read only or read and write: enough to look. */
+export function canRead(user: (Pick<UserRow, 'role'> & { role_id?: string | null }) | null | undefined, permission: string): boolean {
+  if (!user) return false;
+  const mine = permissionsOf(user);
+  return mine.has(permission) || mine.has(permission + READ);
 }
 
 /** Whether this person may open any part of Settings at all. */
 export function canOpenSettings(user: (Pick<UserRow, 'role'> & { role_id?: string | null }) | null | undefined): boolean {
   if (!user) return false;
   const mine = permissionsOf(user);
-  return [...mine].some((p) => p.startsWith('settings.') || p === 'automation.manage' || p === 'api.manage');
+  return [...mine].map((p) => p.replace(READ, '')).some((p) => p.startsWith('settings.') || p === 'automation.manage' || p === 'api.manage');
 }
 
 /**
@@ -160,7 +179,10 @@ export function roleProblems(input: RoleInput, exceptId: string | null): Record<
 const clean = (input: RoleInput) => ({
   name: input.name.trim(),
   description: input.description.trim(),
-  permissions: [...new Set(input.permissions.filter((p) => KNOWN.has(p)))],
+  // Read and write wins over read only for the same permission.
+  permissions: [...new Set(input.permissions.filter((p) => KNOWN.has(p)))].filter(
+    (p, _i, all) => !(p.endsWith(READ) && all.includes(p.slice(0, -READ.length))),
+  ),
 });
 
 export async function createRole(input: RoleInput, actor: { id: string; email: string }): Promise<string> {

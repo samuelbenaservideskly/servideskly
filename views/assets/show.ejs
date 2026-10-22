@@ -5,9 +5,11 @@
     <%- include('../partials/back-link', { href: '/inventory', label: t('All assets') }) %>
     <h1><%= title %></h1>
   </div>
+  <% if (locals.canEditAssets !== false) { %>
   <div class="page-head__actions">
     <a class="btn btn--quiet btn--danger" href="#delete-asset">Delete</a>
   </div>
+  <% } %>
 </div>
 
 <div class="columns">
@@ -16,6 +18,8 @@
       <input type="hidden" name="_csrf" value="<%= locals.csrfToken %>">
       <h2 class="section-title">Details</h2>
       <% if (errors.form) { %><p class="field-error" role="alert"><%= errors.form %></p><% } %>
+      <%# Read only: the values shown in their controls, every one disabled. %>
+      <fieldset class="settings-readonly"<%= locals.canEditAssets === false ? ' disabled' : '' %>>
       <%- include('_fields', {
         p: '',
         columns: columns,
@@ -24,9 +28,12 @@
         statusId: draft ? draft.statusId : asset.status_id,
         assignee: draft ? draft.assignee : (asset.assignee_email || ''),
       }) %>
+      </fieldset>
+      <% if (locals.canEditAssets !== false) { %>
       <div class="actions">
         <button type="submit" class="btn btn--primary">Save asset</button>
       </div>
+      <% } %>
     </form>
 
     <section class="card stack" id="comments" aria-labelledby="comments-title">
@@ -41,6 +48,7 @@
           <% }); %>
         </ul>
       <% } %>
+      <% if (locals.canEditAssets !== false) { %>
       <form method="post" action="/inventory/<%= asset.id %>/comments" class="stack">
         <input type="hidden" name="_csrf" value="<%= locals.csrfToken %>">
         <% (locals.flashMessages || []).filter(function (m) { return m.where === 'comment'; }).forEach(function (m) { %>
@@ -50,6 +58,7 @@
         <textarea id="comment" name="body" rows="3" maxlength="10000" placeholder="Add a comment"></textarea>
         <div class="actions"><button type="submit" class="btn">Add comment</button></div>
       </form>
+      <% } %>
     </section>
   </div>
 
@@ -66,7 +75,7 @@
         <dt>Changed</dt>
         <dd><%= formatDateTime(asset.updated_at) %></dd>
       </dl>
-      <% if (asset.assigned_to) { %>
+      <% if (asset.assigned_to && locals.canEditAssets !== false) { %>
         <%# One press: the same save as the form, so the history, the "taken
             back" email and any automation follow as usual. %>
         <form method="post" action="/inventory/<%= asset.id %>/unassign" class="actions">

@@ -79,7 +79,7 @@ import {
 } from '../services/local-import.js';
 import { PROVIDERS, providerConfig, providerName, type ProviderKey } from '../auth/oidc.js';
 import { hasAuthenticator, removeAuthenticator } from '../auth/authenticator.js';
-import { PERMISSIONS, can, countRoleMembers, createRole, deleteRole, listRoles, roleById, roleProblems, setCustomRole, updateRole } from '../auth/permissions.js';
+import { PERMISSIONS, READ, canRead, countRoleMembers, createRole, deleteRole, listRoles, roleById, roleProblems, setCustomRole, updateRole } from '../auth/permissions.js';
 import { BLANK, filterParams, menuValues, readColumnFilters, type ColumnValue } from '../lib/column-filters.js';
 import { roleLabel, sourceLabel, stateLabel } from '../lib/format.js';
 
@@ -124,10 +124,17 @@ const PER_PAGE = 50;
 function readRole(body: Record<string, unknown>) {
   const text = (k: string) => (typeof body[k] === 'string' ? String(body[k]) : '');
   const ticked = body.permissions;
+  // A permission with levels posts its own choice (level_<key>: read or
+  // write); one radio group each, so read only and read and write can never
+  // both be chosen. The rest are tick boxes, as before.
+  const levelled = PERMISSIONS.filter((p) => p.levels).flatMap((p) => {
+    const chosen = text('level_' + p.key);
+    return chosen === 'write' ? [p.key] : chosen === 'read' ? [p.key + READ] : [];
+  });
   return {
     name: normaliseLine(text('name')).slice(0, 80),
     description: text('description').trim().slice(0, 400),
-    permissions: (Array.isArray(ticked) ? ticked : ticked === undefined ? [] : [ticked]).map(String),
+    permissions: [...(Array.isArray(ticked) ? ticked : ticked === undefined ? [] : [ticked]).map(String), ...levelled],
   };
 }
 
@@ -1098,7 +1105,7 @@ async function renderUser(req: Request, res: Response, user: UserRow): Promise<v
         user,
         managerEmail: await managerEmailOf(user),
         // What is assigned to them (services/assets.ts), for those who manage assets.
-        assets: can(req.currentUser, 'assets.manage') ? await assetsAssignedTo(user.id) : [],
+        assets: canRead(req.currentUser, 'assets.manage') ? await assetsAssignedTo(user.id) : [],
         assetTitle,
         groups,
         groupIds: groups.map((g) => g.id),

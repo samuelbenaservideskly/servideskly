@@ -2144,6 +2144,25 @@ Still by design, and worth knowing: **Build automations** and **Groups** are
 powers over every ticket (an automation acts on any ticket; a group's
 members see its tickets), so give them as you would administration.
 
+**Permission levels** (22 Oct 2026). A permission with `levels` (every
+Settings section, automations, API keys, assets, internal notes) is chosen
+as None / Read only / Read and write - three radios, so the two can never
+both be set - in a role form grouped under chevrons. **Read and write is
+the key itself** (so a role from before keeps its meaning), read only is
+`<key>:read` (`READ`); `clean()` drops a read-only grant beside its
+read-and-write one. `can()` is read and write; `canRead()` is either.
+
+- Settings (`routes/admin.ts`): a GET needs `canRead`, anything else `can`;
+  a section seen read only is drawn inside a disabled `<fieldset>`
+  (`settingsReadOnly`, `_layout.ejs`), so every control is off without a
+  script, and the gate refuses a post anyway.
+- Assets: read only opens the list and pages (`canEditAssets` hides the
+  ways to change them); a post is a 403.
+- Internal notes: read only sees them (`seesInternal`); writing one, or an
+  internal file, needs read and write (`writesInternal`).
+- Look-only and one-action permissions (Reports, People directory, Delete
+  tickets, See every ticket) stay a single tick box, by the owner's choice.
+
 ### An authenticator app after the password (21 Oct 2026)
 
 `auth/authenticator.ts`, migration 64 (`user_authenticators`), the same as

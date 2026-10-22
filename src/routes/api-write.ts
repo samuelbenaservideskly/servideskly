@@ -18,7 +18,7 @@ import {
   addComment,
   approvalBlocks,
   canSeeTicket,
-  seesInternal,
+  writesInternal,
   TICKET_PRIORITIES,
   TICKET_STATUSES,
   TICKET_TYPES,
@@ -269,7 +269,7 @@ apiWriteRouter.patch('/tickets/:ref', handle(async (req, _res, ctx) => {
   const { update, note, internal } = await changesFrom(body, ctx, ticket);
   if (Object.keys(update).length === 0) no(400, 'Nothing to change: send status, priority, group or assignee.');
   author(ctx, 'tickets.edit', 'changing tickets');
-  if (internal && note && !seesInternal(ctx.actor)) no(403, 'The role of the person who made this key does not allow internal notes.');
+  if (internal && note && !writesInternal(ctx.actor)) no(403, 'The role of the person who made this key does not allow internal notes.');
   const changes = await updateTicket(ticket.id, ctx.actorId, update);
   if (update.status && update.status !== ticket.status) await noteFor(ticket.id, ctx, update.status, note, internal);
   audit({ action: 'api.ticket.updated', actorId: ctx.actorId, targetType: 'ticket', targetId: ticket.id, detail: { key: ctx.key.name, fields: changes.map((c) => c.field) } });
@@ -283,7 +283,7 @@ apiWriteRouter.post('/tickets/:ref/comments', handle(async (req, res, ctx) => {
   const body = bodyOf(req);
   const message = text(body.body ?? body.message, 20000);
   if (!message) no(400, 'Send the comment as "body".');
-  if (truthy(body.internal) && !seesInternal(ctx.actor)) no(403, 'The role of the person who made this key does not allow internal notes.');
+  if (truthy(body.internal) && !writesInternal(ctx.actor)) no(403, 'The role of the person who made this key does not allow internal notes.');
   await addComment({ ticketId: ticket.id, authorId: ctx.actorId, body: message, isInternal: truthy(body.internal) });
   audit({ action: 'api.comment.added', actorId: ctx.actorId, targetType: 'ticket', targetId: ticket.id, detail: { key: ctx.key.name, internal: truthy(body.internal) } });
   res.status(201);

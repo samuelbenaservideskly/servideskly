@@ -61,3 +61,6 @@
   <% } %>
 
   <div class="settings-body">
+  <%# Seen with a read-only permission (routes/admin.ts): every control is
+      disabled by one fieldset, and the gate refuses a post anyway. %>
+  <% if (locals.settingsReadOnly) { %><p class="settings-readonly-note small">Read only</p><fieldset class="settings-readonly" disabled><% } %>

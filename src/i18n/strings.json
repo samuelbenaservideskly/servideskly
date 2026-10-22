@@ -419,12 +419,6 @@
     "where": "views/admin/settings/template-catalogue.ejs",
     "uses": 1
   },
-  "s084f1652d0": {
-    "text": "Manage assets",
-    "context": "A permission a custom role can be given, a tick box on the Roles page",
-    "where": "src/i18n/code-strings.ts",
-    "uses": 1
-  },
   "s085154084c": {
     "text": "tasks",
     "context": "Text on admin/settings/api-keys",
@@ -1649,11 +1643,23 @@
     "where": "views/admin/settings/users-other.ejs",
     "uses": 1
   },
+  "s1dda4ca85b": {
+    "text": "Your role can only look at assets.",
+    "context": "A message shown beside a form or after an action",
+    "where": "src/routes/assets.ts",
+    "uses": 1
+  },
   "s1de3df70dd": {
     "text": "Steps",
     "context": "A table column heading on admin/settings/automation-edit / A table column heading on admin/settings/automation-runs",
     "where": "views/admin/settings/automation-edit.ejs",
     "uses": 2
+  },
+  "s1e5e3ce20c": {
+    "text": "read only",
+    "context": "Text on admin/settings/roles",
+    "where": "views/admin/settings/roles.ejs",
+    "uses": 1
   },
   "s1e6eab80aa": {
     "text": "To the requester, when a ticket is resolved or closed.",
@@ -1972,12 +1978,6 @@
     "context": "A button on people/show / A button on tickets/show",
     "where": "views/people/show.ejs",
     "uses": 2
-  },
-  "s232f1f97cf": {
-    "text": "Read and write internal notes",
-    "context": "A permission a custom role can be given, a tick box on the Roles page",
-    "where": "src/i18n/code-strings.ts",
-    "uses": 1
   },
   "s233c0db994": {
     "text": "IMAP host",
@@ -5933,12 +5933,6 @@
     "where": "src/i18n/code-strings.ts",
     "uses": 1
   },
-  "s695cb19231": {
-    "text": "Build automations and connections",
-    "context": "A permission a custom role can be given, a tick box on the Roles page",
-    "where": "src/i18n/code-strings.ts",
-    "uses": 1
-  },
   "s69672da941": {
     "text": "Share \"{0}\"",
     "context": "A heading on boards/show",
@@ -6057,12 +6051,6 @@
     "text": "Allow the ticket to be resolved or closed only when all tasks are resolved",
     "context": "Text on admin/settings/template-edit",
     "where": "views/admin/settings/template-edit.ejs",
-    "uses": 1
-  },
-  "s6b7c804d2c": {
-    "text": "Manage API keys",
-    "context": "A permission a custom role can be given, a tick box on the Roles page",
-    "where": "src/i18n/code-strings.ts",
     "uses": 1
   },
   "s6b8aa53c3a": {
@@ -6971,6 +6959,12 @@
     "where": "views/admin/settings/user-detail.ejs",
     "uses": 1
   },
+  "s7bbe2e2482": {
+    "text": "Automations and connections",
+    "context": "A permission a custom role can be given, a tick box on the Roles page",
+    "where": "src/i18n/code-strings.ts",
+    "uses": 1
+  },
   "s7be1be52ea": {
     "text": "{{request.json.summary}}",
     "context": "The grey example inside an input on admin/settings/automation-edit",
@@ -7323,6 +7317,12 @@
     "text": "email",
     "context": "Text on admin/settings/users",
     "where": "views/admin/settings/users.ejs",
+    "uses": 1
+  },
+  "s822da963c0": {
+    "text": "Read and write",
+    "context": "Text on the page on admin/settings/roles",
+    "where": "views/admin/settings/roles.ejs",
     "uses": 1
   },
   "s8238135ff3": {
@@ -7822,6 +7822,12 @@
     "context": "The line under \"Integrations\" in the Settings list",
     "where": "src/i18n/code-strings.ts",
     "uses": 1
+  },
+  "s8ac7673530": {
+    "text": "Read only",
+    "context": "Text on the page on admin/settings/_layout / Text on the page on admin/settings/roles",
+    "where": "views/admin/settings/_layout.ejs",
+    "uses": 2
   },
   "s8acef7915b": {
     "text": "This request appears to come from another site.",
@@ -8653,9 +8659,9 @@
   },
   "s98aae89721": {
     "text": "API keys",
-    "context": "A link on admin/settings/_advanced-tabs / A link on admin/settings/automation-edit",
-    "where": "views/admin/settings/_advanced-tabs.ejs",
-    "uses": 3
+    "context": "A permission a custom role can be given, a tick box on the Roles page / A link on admin/settings/_advanced-tabs / A link on admin/settings/automation-edit",
+    "where": "src/i18n/code-strings.ts",
+    "uses": 4
   },
   "s98abff28a9": {
     "text": "Matches",
@@ -10825,9 +10831,9 @@
   },
   "sbd12731d7b": {
     "text": "Assets",
-    "context": "A section of Settings, in the list on the left / A group of permissions on the Roles page / A label for a screen reader on admin/settings/_assets-tabs",
+    "context": "A section of Settings, in the list on the left / A permission a custom role can be given, a tick box on the Roles page / A group of permissions on the Roles page",
     "where": "src/i18n/code-strings.ts",
-    "uses": 8
+    "uses": 9
   },
   "sbd3ce63349": {
     "text": "None yet.",
@@ -12305,6 +12311,12 @@
     "where": "views/admin/settings/automation-edit.ejs",
     "uses": 1
   },
+  "sd8ecfc0765": {
+    "text": "Internal notes",
+    "context": "A permission a custom role can be given, a tick box on the Roles page",
+    "where": "src/i18n/code-strings.ts",
+    "uses": 1
+  },
   "sd909750b1b": {
     "text": "Automation",
     "context": "A link on admin/settings/_advanced-tabs / A link on admin/settings/api-keys / Text on admin/settings/automation-runs",
@@ -12529,9 +12541,9 @@
   },
   "sdc937b5989": {
     "text": "None",
-    "context": "Text on the page on admin/settings/assets-documents / Text on admin/settings/roles",
+    "context": "Text on the page on admin/settings/assets-documents / Text on admin/settings/roles / Text on the page on admin/settings/roles",
     "where": "views/admin/settings/assets-documents.ejs",
-    "uses": 2
+    "uses": 3
   },
   "sdca5fa430c": {
     "text": "Not sure",

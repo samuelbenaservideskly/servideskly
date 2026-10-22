@@ -2,7 +2,7 @@ import { Router } from 'express';
 import { requireAuth } from '../middleware/auth.js';
 import { forbidden } from '../lib/errors.js';
 import { audit } from '../lib/audit.js';
-import { can, canOpenSettings, permissionForSettingsPath } from '../auth/permissions.js';
+import { can, canOpenSettings, canRead, permissionForSettingsPath } from '../auth/permissions.js';
 import { settingsRouter } from './settings.js';
 
 /**
@@ -21,12 +21,23 @@ export const adminRouter = Router();
  * part (auth/permissions.ts). The roles themselves stay an administrator's.
  * Denials are audited, as requireRole's were.
  */
-adminRouter.use(requireAuth(), (req, _res, next) => {
+adminRouter.use(requireAuth(), (req, res, next) => {
   const user = req.currentUser!;
   if (user.role === 'admin') return next();
   const needed = permissionForSettingsPath(req.path);
-  const ok = needed === 'admin' ? false : needed === 'any' ? canOpenSettings(user) : can(user, needed);
-  if (ok) return next();
+  // Looking needs read only or more; any change needs read and write
+  // (permission levels, 22 Oct 2026). A section seen read only draws its
+  // forms disabled (settingsReadOnly, _layout.ejs).
+  const looking = req.method === 'GET' || req.method === 'HEAD';
+  const ok =
+    needed === 'admin' ? false
+    : needed === 'any' ? canOpenSettings(user)
+    : looking ? canRead(user, needed)
+    : can(user, needed);
+  if (ok) {
+    res.locals.settingsReadOnly = needed !== 'any' && !can(user, needed);
+    return next();
+  }
   audit({ action: 'authz.denied', outcome: 'failure', actorId: user.id, actorEmail: user.email, detail: { path: req.originalUrl, needed } });
   next(forbidden('You do not have access to this part of Settings.', 'not_permitted'));
 });

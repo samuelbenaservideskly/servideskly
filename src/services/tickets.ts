@@ -8,7 +8,7 @@ import { audit } from '../lib/audit.js';
 import { removeStoredFile } from './attachments.js';
 import { isStaff, type UserRow } from './users.js';
 import { loadSlaFacts, slaFromFacts, slaMatches, type SlaFilter } from './sla.js';
-import { can } from '../auth/permissions.js';
+import { can, canRead } from '../auth/permissions.js';
 import { BLANK, columnClauses, MAX_VALUES, withoutColumn, type ColumnFilters, type ColumnValue } from '../lib/column-filters.js';
 
 export const TICKET_STATUSES = [
@@ -903,7 +903,10 @@ export async function canSeeTicket(viewer: UserRow, ticket: TicketRow): Promise<
 }
 
 /** Whether this person reads and writes internal notes: staff whose role allows it. */
-export const seesInternal = (viewer: UserRow): boolean => isStaff(viewer.role) && can(viewer, 'tickets.internal');
+export const seesInternal = (viewer: UserRow): boolean => isStaff(viewer.role) && canRead(viewer, 'tickets.internal');
+
+/** Whether this person may write internal notes (and internal files): read and write. */
+export const writesInternal = (viewer: UserRow): boolean => isStaff(viewer.role) && can(viewer, 'tickets.internal');
 
 /**
  * Comments for a ticket. Internal notes are filtered out in SQL for

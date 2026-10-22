@@ -237,3 +237,56 @@ describe('the security review of 21 Oct 2026', () => {
     assert.equal((await api('post', '/tickets/' + ours.reference + '/comments').send({ body: 'hidden', internal: true })).status, 403);
   });
 });
+
+describe('permission levels: read only and read and write (22 Oct 2026)', () => {
+  test('a Settings section read only: the page opens with its controls disabled, and nothing can be saved', async () => {
+    const reader = await withRole('levels.mail@example.com', ['settings.mail:read']);
+    const page = await get('/admin/settings/mail', reader).expect(200);
+    assert.match(page.text, /<fieldset class="settings-readonly" disabled>/);
+    assert.match(page.text, /Read only/);
+    const save = await request(app).post('/admin/settings/mail/notifications').set('Cookie', reader.cookie).type('form')
+      .send({ _csrf: reader.csrfToken, name: 'Nope' });
+    assert.equal(save.status, 403);
+    // Read and write: the same page without the fieldset.
+    const writer = await withRole('levels.mail.rw@example.com', ['settings.mail']);
+    const full = await get('/admin/settings/mail', writer).expect(200);
+    assert.doesNotMatch(full.text, /class="settings-readonly" disabled/);
+  });
+
+  test('assets read only: the list and pages open, without the ways to change them', async () => {
+    const reader = await withRole('levels.assets@example.com', ['tickets.work', 'assets.manage:read']);
+    const list = await get('/inventory', reader).expect(200);
+    assert.doesNotMatch(list.text, /href="#new-asset"/);
+    const add = await request(app).post('/inventory').set('Cookie', reader.cookie).type('form').send({ _csrf: reader.csrfToken, v_Model: 'X' });
+    assert.equal(add.status, 403);
+    const nobody = await withRole('levels.noassets@example.com', ['tickets.work']);
+    assert.equal((await get('/inventory', nobody)).status, 404);
+  });
+
+  test('internal notes read only: they are shown, but a note cannot be written', async () => {
+    const reader = await withRole('levels.notes@example.com', ['tickets.work', 'tickets.view_all', 'tickets.edit', 'tickets.internal:read']);
+    const requester = await signInAs('levels.requester@example.com', 'user');
+    const ticket = await createTicket({ title: 'Notes to read', description: 'Has an internal note', priority: 'normal', category: 'other', requesterId: requester.user.id });
+    await addComment({ ticketId: ticket.id, authorId: admin.user.id, body: 'Readable internal remark', isInternal: true });
+    const page = await get('/tickets/' + ticket.id, reader).expect(200);
+    assert.match(page.text, /Readable internal remark/);
+    await request(app).post('/tickets/' + ticket.id + '/comments').set('Cookie', reader.cookie).type('form')
+      .send({ _csrf: reader.csrfToken, internal: 'on', body: 'Trying to note this' }).expect(302);
+    const written = await queryOne<{ is_internal: boolean }>("SELECT is_internal FROM ticket_comments WHERE body = 'Trying to note this'");
+    assert.equal(written?.is_internal, false, 'posted as a public reply');
+  });
+
+  test('the role form stores a level, and read and write wins over read only', async () => {
+    const res = await request(app).post('/admin/settings/users/roles').set('Cookie', admin.cookie).type('form')
+      .send({ _csrf: admin.csrfToken, name: 'Levels role', description: '', 'level_settings.mail': 'read', 'level_assets.manage': 'write', permissions: ['reports.view', 'assets.manage:read'] });
+    assert.equal(res.status, 302);
+    const row = await queryOne<{ permissions: string[] | string }>("SELECT permissions FROM roles WHERE name = 'Levels role'");
+    const perms = typeof row!.permissions === 'string' ? (JSON.parse(row!.permissions) as string[]) : row!.permissions;
+    assert.ok(perms.includes('settings.mail:read'));
+    assert.ok(perms.includes('assets.manage') && !perms.includes('assets.manage:read'));
+    assert.ok(perms.includes('reports.view'));
+    const page = await get('/admin/settings/users/roles', admin).expect(200);
+    assert.match(page.text, /Mail \(read only\)/);
+    assert.match(page.text, /name="level_settings.mail" value="read"/);
+  });
+});

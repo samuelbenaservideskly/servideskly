@@ -1,8 +1,8 @@
 import { Router, type Request, type Response } from 'express';
 import multer from 'multer';
-import { can } from '../auth/permissions.js';
+import { can, canRead } from '../auth/permissions.js';
 import { asyncHandler } from '../lib/async-handler.js';
-import { notFound } from '../lib/errors.js';
+import { forbidden, notFound } from '../lib/errors.js';
 import { queryString } from '../lib/format.js';
 import { requireAuth } from '../middleware/auth.js';
 import { assertCsrfToken } from '../middleware/csrf.js';
@@ -56,8 +56,13 @@ async function assignablePeople(): Promise<{ email: string; label: string }[]> {
  */
 export const assetsRouter = Router();
 
-assetsRouter.use(requireAuth(), (req, _res, next) => {
-  if (!can(req.currentUser, 'assets.manage')) return next(notFound());
+assetsRouter.use(requireAuth(), (req, res, next) => {
+  // Read only opens the list and the pages; any change needs read and write
+  // (permission levels, 22 Oct 2026). Nobody else learns the pages exist.
+  if (!canRead(req.currentUser, 'assets.manage')) return next(notFound());
+  const writes = can(req.currentUser, 'assets.manage');
+  if (!writes && req.method !== 'GET' && req.method !== 'HEAD') return next(forbidden('Your role can only look at assets.', 'read_only'));
+  res.locals.canEditAssets = writes;
   next();
 });
 
