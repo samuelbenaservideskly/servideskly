@@ -15,7 +15,7 @@ import {
   type MailboxRow,
 } from './mailboxes.js';
 import { notify } from './outbox.js';
-import { skippedNote, storeIncomingAttachments } from './inbound-attachments.js';
+import { placeInlineImages, skippedNote, storeIncomingAttachments } from './inbound-attachments.js';
 import { stripSignature } from './signatures.js';
 import { trimQuotedHistory } from './transport.js';
 import { firstMatchingRule, raiseFromRule, repeatOf } from './rules.js';
@@ -212,7 +212,8 @@ export async function ingest(
   // treated as the empty message it really is.
   // The quoted conversation first, then the signature: IMAP and Graph alike.
   const unquoted = settings().automation.trimQuoted !== false ? trimQuotedHistory(message.body) : message.body;
-  const written = stripSignature(unquoted).trim();
+  // A picture pasted into the mail keeps its place as [image: name] (inbound-attachments.ts).
+  const written = placeInlineImages(stripSignature(unquoted).trim(), message.body, attachments);
 
   // "Here you go" with the screenshot and nothing else is a real message, and
   // dropping it as empty threw away the only thing it carried. Empty now

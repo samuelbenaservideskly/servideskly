@@ -126,5 +126,48 @@
     form.classList.remove('file-form--drop');
     take(e.dataTransfer.files);
   });
+
+  // A picture pasted into the text (asked for 22 Oct 2026): it joins the
+  // files like any other, and the text gets "[image: name]" where the caret
+  // was, which the ticket page draws as the picture (lib/inline-images.ts).
+  // Only a paste that is nothing but pictures: copying cells from Excel
+  // brings a picture of them too, and there the words are what was meant.
+  Array.prototype.forEach.call(form.querySelectorAll('textarea[data-paste-images]'), function (box) {
+    box.addEventListener('paste', function (e) {
+      var data = e.clipboardData;
+      if (!data || (data.getData('text/plain') || '').trim() !== '') return;
+      var pictures = [];
+      Array.prototype.forEach.call(data.items || [], function (item) {
+        if (item.kind === 'file' && /^image\/(png|jpeg|gif|webp)$/.test(item.type)) {
+          var blob = item.getAsFile();
+          if (blob) pictures.push(blob);
+        }
+      });
+      if (!pictures.length) return;
+      e.preventDefault();
+      var markers = pictures.map(function (blob) {
+        var file = new File([blob], pastedName(blob.type), { type: blob.type, lastModified: Date.now() });
+        take([file]);
+        return '[image: ' + file.name + ']';
+      });
+      var start = box.selectionStart;
+      var before = box.value.slice(0, start);
+      var text = (before && !/\n$/.test(before) ? '\n' : '') + markers.join('\n') + '\n';
+      box.setRangeText(text, start, box.selectionEnd, 'end');
+      box.dispatchEvent(new Event('input', { bubbles: true }));
+    });
+  });
+  }
+
+  // pasted-image-20261022-143005-2.png: unique on the ticket, and nothing in
+  // it the server's file name rules would change.
+  var pasted = 0;
+  function pastedName(type) {
+    var d = new Date();
+    var two = function (n) { return (n < 10 ? '0' : '') + n; };
+    pasted += 1;
+    var ext = type === 'image/jpeg' ? 'jpg' : type.split('/')[1];
+    return 'pasted-image-' + d.getFullYear() + two(d.getMonth() + 1) + two(d.getDate()) + '-' +
+      two(d.getHours()) + two(d.getMinutes()) + two(d.getSeconds()) + '-' + pasted + '.' + ext;
   }
 })();

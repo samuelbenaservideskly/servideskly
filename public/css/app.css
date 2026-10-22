@@ -4521,6 +4521,9 @@ h1 { font-weight: 700; letter-spacing: -0.015em; }
 .tk-entry__when { font-size: 0.8rem; color: var(--text-muted); }
 .tk-entry__tools { margin-left: auto; align-self: center; }
 .tk-entry .prose { line-height: 1.55; }
+/* A picture pasted into the text, where it was put (lib/inline-images.ts). */
+.tk-inline-img { display: block; width: fit-content; max-width: 100%; margin: 0.5rem 0; }
+.tk-inline-img img { display: block; max-width: min(100%, 48rem); max-height: 32rem; height: auto; border: 1px solid var(--border); border-radius: var(--radius); }
 
 /* Files, with the message they came with. */
 .tk-files { list-style: none; margin: 0.65rem 0 0; padding: 0; display: flex; flex-wrap: wrap; gap: 0.5rem; }

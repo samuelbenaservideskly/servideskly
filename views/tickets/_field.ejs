@@ -89,7 +89,7 @@
     <% if (locked) { %>
       <p class="locked-value"><%= template.body || t('Nothing to add.') %></p>
     <% } else { %>
-      <textarea id="description" name="description" rows="6"
+      <textarea id="description" name="description" rows="6" data-paste-images
                 <%= req ? 'required' : '' %> maxlength="20000"
                 placeholder="<%= t(field.ghost || '') %>"><%= values.description %></textarea>
     <% } %>

@@ -40,7 +40,7 @@ settings page - is unchanged.
 | `public/js/copy.js` | `/admin/settings/customization/images` | copy-to-clipboard buttons | buttons stay hidden; snippets are one-click selectable |
 | `public/js/copy.js` | `/admin/settings/advanced/api-keys` | copy the new key, and each code example; approved 12 Oct 2026 | buttons stay hidden; the key selects with one click |
 | `public/js/copy.js` | `/boards` | copy a pin's address beside it; asked for 15 Oct 2026 | buttons stay hidden; the address selects with one click |
-| `public/js/reply-files.js` | `/tickets/:id` and `/tickets/new` (`allowOwnScripts()` on each GET; any `form[data-file-form]`) | the reply box's chosen files as chips with a cross, choosing again adds rather than replaces, files dropped on the box join them; no requests - the real file input holds the list (asked for 21 Oct 2026, "implement both with the script") | an ordinary file picker, which posts the same files |
+| `public/js/reply-files.js` | `/tickets/:id` and `/tickets/new` (`allowOwnScripts()` on each GET; any `form[data-file-form]`) | the reply box's chosen files as chips with a cross, choosing again adds rather than replaces, files dropped on the box join them; **a picture pasted into the description or the reply** (`textarea[data-paste-images]`) joins them too and leaves `[image: name]` at the caret, drawn as the picture by `lib/inline-images.ts` (22 Oct 2026); no requests - the real file input holds the list (asked for 21 Oct 2026, "implement both with the script") | an ordinary file picker, which posts the same files; a pasted picture does nothing |
 | `public/js/catalogue-grid.js` | `/admin/settings/templates/catalogue` | drag a tile onto another in the service catalogue grid (asked for 15 Oct 2026, "like in ticket template") | the ▲▼ buttons on each tile do the same, and the script hides them only when it runs |
 | `public/js/automation-canvas.js` | `/admin/settings/advanced/automation/:id` | drag steps, draw wires; approved 11 Oct 2026 | the step cards do the same with forms |
 | `public/js/password-reveal.js` | every page of the Users router (`allowOwnScripts()` on `userAdminRouter`), **`/profile`**, `/login/new-password` and **`/setup`** (asked for 18 Oct 2026) | the eye beside a password box an administrator types into (`partials/password-input.ejs`), and the rules box ticking as a password is typed (`partials/password-rules.ejs`); no requests; both approved 15 Oct 2026 | an ordinary password box, and the rules as a plain list that still says what is required |
@@ -1318,6 +1318,14 @@ Five decisions:
 5. **Nothing here may cost the ticket.** Each file is tried on its own and the
    whole step is wrapped, so a misconfigured limit cannot turn a request into
    a message that vanished.
+
+**A picture pasted into an email is drawn where it was** (22 Oct 2026,
+`placeInlineImages`): the text's `[cid:...]` becomes `[image: name]`, one
+with no marker goes at the end, one whose marker was in the cut quoted
+history is left out, a signature logo's marker is removed, and pictures
+sharing a name (Apple Mail's image.png) are renamed so each marker names its
+own file. The ticket page draws a marker only for a PNG, JPEG, GIF or WebP
+the reader may open (`?embed`, which is not an audit line per view).
 
 **Graph needs a second call per message.** `$expand=attachments` on a list
 returns every byte of every attachment in one response, and twenty-five

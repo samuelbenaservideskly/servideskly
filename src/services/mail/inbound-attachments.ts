@@ -10,6 +10,7 @@ import {
   verifyType,
 } from '../attachments.js';
 import type { IncomingAttachment } from './transport.js';
+import { imageMarker } from '../../lib/inline-images.js';
 
 const log = logger.child({ module: 'mail' });
 
@@ -125,6 +126,47 @@ export async function storeIncomingAttachments(
 
   return result;
 }
+
+/**
+ * A picture pasted into an email, shown in the ticket where it was
+ * (22 Oct 2026). The text part of such a mail says `[cid:image001.png@01DB...]`
+ * where the picture sat (Outlook, and mailparser's text made from HTML); that
+ * becomes `[image: image001.png]`, which the ticket page draws once the file
+ * is stored (lib/inline-images.ts). A picture whose place the text does not
+ * mark goes at the end - unless its marker was in the quoted history that
+ * was cut, which is an older message's picture. A signature logo (under the
+ * size floor, never stored) loses its marker.
+ */
+export function placeInlineImages(text: string, original: string, attachments: IncomingAttachment[]): string {
+  let out = text;
+  const atEnd: string[] = [];
+  const names = new Set<string>();
+  for (const attachment of attachments) {
+    if (!attachment.inline || !/^image\//i.test(attachment.contentType)) continue;
+    const pattern = attachment.cid ? '\\[cid:' + escapeRegExp(attachment.cid) + '\\]' : '';
+    if (attachment.content.byteLength < SIGNATURE_IMAGE_BYTES) {
+      if (pattern) out = out.replace(new RegExp(pattern, 'gi'), '');
+      continue;
+    }
+    // Apple Mail calls every pasted picture image.png: each marker must name
+    // its own file, so a second one is renamed before it is stored.
+    const given = sanitiseFilename(attachment.filename);
+    let name = given;
+    for (let n = 2; names.has(name.toLowerCase()); n++) name = given.replace(/(\.[^.]*)?$/, '-' + n + '$1');
+    names.add(name.toLowerCase());
+    attachment.filename = name;
+    const placed = imageMarker(name);
+    if (pattern && new RegExp(pattern, 'i').test(out)) {
+      out = out.replace(new RegExp(pattern, 'gi'), placed);
+    } else if (!pattern || !new RegExp(pattern, 'i').test(original)) {
+      atEnd.push(placed);
+    }
+  }
+  out = out.replace(/[ \t]+\n/g, '\n').trim();
+  return atEnd.length ? (out ? out + '\n\n' : '') + atEnd.join('\n') : out;
+}
+
+const escapeRegExp = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
 /** What a technician should be told about the files that did not make it. */
 export function skippedNote(skipped: string[]): string {

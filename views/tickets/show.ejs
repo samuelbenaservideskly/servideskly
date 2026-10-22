@@ -117,7 +117,7 @@
                   <%= locals.raisedByName ? tx('raised this for {0}', [ticket.requester_name]) : t('raised this') %> &middot; <%= formatRelative(ticket.created_at) %>
                 </span>
               </header>
-              <div class="prose"><%= ticket.description %></div>
+              <div class="prose"><%- textWithImages(ticket.description, ticket.id, entry.files, attachments) %></div>
               <% if (entry.files.length) { fileList(entry.files); } %>
             </div>
           </article>
@@ -134,7 +134,7 @@
                   <span class="tk-entry__tools"><%- include('../partials/bin-button', { label: t('Delete this comment'), href: '#delete-comment-' + c.id }) %></span>
                 <% } %>
               </header>
-              <div class="prose"><%= c.body %></div>
+              <div class="prose"><%- textWithImages(c.body, ticket.id, entry.files, attachments) %></div>
               <% if (entry.files.length) { fileList(entry.files); } %>
             </div>
           </article>
@@ -191,7 +191,7 @@
       <% } %>
 
       <label for="reply-body" class="visually-hidden"><%= locals.isStaff ? t('Reply') : t('Add a comment') %></label>
-      <textarea id="reply-body" name="body" rows="4" maxlength="20000"
+      <textarea id="reply-body" name="body" rows="4" maxlength="20000" data-paste-images
                 placeholder="<%= locals.isStaff ? t('Write a reply...') : t('Add a comment...') %>"><%= draft ? draft.body : '' %></textarea>
 
       <% replyErrors.forEach(function (message) { %>

@@ -13,6 +13,7 @@ import { requireAuth } from '../middleware/auth.js';
 import { assertCsrfToken } from '../middleware/csrf.js';
 import { allowOwnScripts, writeLimiter } from '../middleware/security.js';
 import { buildTimeline } from '../services/ticket-timeline.js';
+import { textWithImages } from '../lib/inline-images.js';
 import { flash } from '../middleware/view-locals.js';
 import { isStaff, listAssignableStaff, findUserById, findUserByEmail, type UserRow } from '../services/users.js';
 import { mayRaiseFor } from '../services/teams.js';
@@ -1035,6 +1036,8 @@ ticketRouter.get(
       title: ticket.reference + ' - ' + ticket.title,
       ticket,
       mayDeleteComments: await mayDeleteComments(viewer, ticket),
+      // Pictures pasted into the text, shown where they were put (lib/inline-images.ts).
+      textWithImages,
       requireCancelNote: settings().tickets.requireCancelNote,
       requireResolveNote: settings().tickets.requireResolveNote,
       requesterLines: requesterField && requesterPerson ? requesterDetails(requesterField, requesterPerson) : [],
@@ -1670,7 +1673,10 @@ ticketRouter.get(
     if (!row || row.ticket_id !== ticket.id) throw notFound('That attachment does not exist.');
     if (row.is_internal && !seesInternal(viewer)) throw notFound('That attachment does not exist.');
 
-    auditRequest(req, {
+    // A picture drawn in the ticket's text (?embed) is not somebody
+    // downloading it: every view of the page would be an audit line.
+    const embedded = req.query.embed !== undefined && viewable(row.content_type) && row.content_type.startsWith('image/');
+    if (!embedded) auditRequest(req, {
       action: 'ticket.attachment.downloaded',
       targetType: 'ticket',
       targetId: ticket.id,
