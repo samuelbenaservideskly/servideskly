@@ -10,14 +10,15 @@
   <%# An empty state says what to press, not why it is empty. %>
   <p class="empty">Nothing has run yet. An automation runs when its trigger happens.</p>
 <% } else { %>
+<%- include('../../partials/clear-columns', { state: locals.listState, path: locals.columnPath || '' }) %>
   <div class="table-scroll">
     <table class="table">
       <thead>
         <tr>
-          <th scope="col">When</th>
-          <th scope="col">Automation</th>
+          <%- include('../../partials/col-head', { key: 'when', label: t('When'), path: columnPath, state: listState, menu: columnMenus['when'] }) %>
+          <%- include('../../partials/col-head', { key: 'automation', label: t('Automation'), path: columnPath, state: listState, menu: columnMenus['automation'] }) %>
           <th scope="col">Ticket</th>
-          <th scope="col">Outcome</th>
+          <%- include('../../partials/col-head', { key: 'outcome', label: t('Outcome'), path: columnPath, state: listState, menu: columnMenus['outcome'] }) %>
           <th scope="col">Steps</th>
         </tr>
       </thead>

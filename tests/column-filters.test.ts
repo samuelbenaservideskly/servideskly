@@ -135,3 +135,25 @@ describe('Reports, Settings lists and People', () => {
     }
   });
 });
+
+describe('the Settings lists drawn whole (routes/column-lists.ts)', () => {
+  test('each page renders, with and without filters and a sort', async () => {
+    const admin = await signInAs('cf.whole@example.com', 'admin');
+    for (const path of [
+      '/admin/settings/advanced/api-keys', '/admin/settings/advanced/connections', '/admin/settings/templates/custom-fields',
+      '/admin/settings/advanced/automation/runs', '/admin/settings/mail', '/admin/settings/groups', '/admin/settings/groups/users',
+    ]) {
+      await get(path, admin).expect(200);
+      await get(path + '?sort=name&dir=desc&cf_status=Active', admin).expect(200);
+    }
+    const { createGroup } = await import('../src/services/groups.js');
+    await createGroup({ name: 'CF zeta desk', description: '', isActive: true }, null);
+    await createGroup({ name: 'CF eta desk', description: '', isActive: true }, null);
+    const sorted = await get('/admin/settings/groups?sort=name&dir=desc', admin).expect(200);
+    const body = sorted.text.slice(sorted.text.indexOf('<tbody>'));
+    assert.ok(body.indexOf('CF zeta desk') < body.indexOf('CF eta desk'), 'sorted Z to A');
+    const one = await get('/admin/settings/groups?cf_name=CF%20eta%20desk', admin).expect(200);
+    assert.doesNotMatch(one.text.slice(one.text.indexOf('<tbody>')), /CF zeta desk/);
+    assert.match(one.text, /Clear column filters/);
+  });
+});

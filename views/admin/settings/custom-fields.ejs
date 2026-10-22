@@ -13,13 +13,14 @@
     <p class="small muted">Start with <a href="#new-field">New custom field</a>, or tick "Also save to the library" when adding one in a template.</p>
   </div>
 <% } else { %>
+<%- include('../../partials/clear-columns', { state: locals.listState, path: locals.columnPath || '' }) %>
   <div class="table-scroll">
     <table class="table">
       <thead>
         <tr>
-          <th scope="col">Label</th>
-          <th scope="col">Type</th>
-          <th scope="col">Used by</th>
+          <%- include('../../partials/col-head', { key: 'label', label: t('Label'), path: columnPath, state: listState, menu: columnMenus['label'] }) %>
+          <%- include('../../partials/col-head', { key: 'type', label: t('Type'), path: columnPath, state: listState, menu: columnMenus['type'] }) %>
+          <%- include('../../partials/col-head', { key: 'usedBy', label: t('Used by'), path: columnPath, state: listState, menu: columnMenus['usedBy'] }) %>
           <th scope="col"><span class="visually-hidden">Actions</span></th>
         </tr>
       </thead>

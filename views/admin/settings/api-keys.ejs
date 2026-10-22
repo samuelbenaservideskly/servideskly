@@ -25,16 +25,17 @@
     <p class="small muted">Make one with <a href="#new-key">New API key</a>, then choose it on an automation's trigger.</p>
   </div>
 <% } else { %>
+<%- include('../../partials/clear-columns', { state: locals.listState, path: locals.columnPath || '' }) %>
   <div class="table-scroll">
     <table class="table">
       <thead>
         <tr>
-          <th scope="col">Name</th>
+          <%- include('../../partials/col-head', { key: 'name', label: t('Name'), path: columnPath, state: listState, menu: columnMenus['name'] }) %>
           <th scope="col">Identifier</th>
           <th scope="col">May run</th>
-          <th scope="col">Templates</th>
-          <th scope="col">Starts</th>
-          <th scope="col">Last used</th>
+          <%- include('../../partials/col-head', { key: 'templates', label: t('Templates'), path: columnPath, state: listState, menu: columnMenus['templates'] }) %>
+          <%- include('../../partials/col-head', { key: 'starts', label: t('Starts'), path: columnPath, state: listState, menu: columnMenus['starts'] }) %>
+          <%- include('../../partials/col-head', { key: 'lastUsed', label: t('Last used'), path: columnPath, state: listState, menu: columnMenus['lastUsed'] }) %>
           <th scope="col"><span class="visually-hidden">Actions</span></th>
         </tr>
       </thead>

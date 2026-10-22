@@ -153,3 +153,25 @@ export function rowMenus<T>(
   }
   return menus;
 }
+
+/**
+ * Everything a page of a whole, short list needs, from its address: the
+ * rows filtered and sorted, each header's menu, and the state its links keep.
+ * `sortCells` overrides how a column sorts (a date rather than its words).
+ */
+export function listView<T>(
+  query: Record<string, unknown>,
+  rows: readonly T[],
+  cells: Cells<T>,
+  options: { sortCells?: Cells<T>; labelOf?: (key: string, value: string) => string; keep?: Record<string, string | undefined> } = {},
+): { rows: T[]; columnMenus: Record<string, { values: ColumnValue[]; selected: string[] }>; listState: Record<string, string | string[] | undefined> } {
+  const sortCells = { ...cells, ...options.sortCells };
+  const columns = readColumnFilters(query, Object.keys(cells));
+  const sort = typeof query.sort === 'string' && sortCells[query.sort] ? query.sort : undefined;
+  const dir = query.dir === 'desc' ? 'desc' : 'asc';
+  return {
+    rows: sortRows(filterRows(rows, columns, cells), sort, dir, sortCells),
+    columnMenus: rowMenus(rows, columns, cells, options.labelOf),
+    listState: { ...(options.keep ?? {}), sort, dir: sort ? dir : undefined, ...filterParams(columns) },
+  };
+}

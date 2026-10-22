@@ -781,7 +781,7 @@
   },
   "s0e66373f45": {
     "text": "Label",
-    "context": "A table column heading on admin/settings/custom-fields / The label of a form field on admin/settings/custom-fields / The label of a form field on admin/settings/template-catalogue",
+    "context": "Text on admin/settings/custom-fields / The label of a form field on admin/settings/custom-fields / The label of a form field on admin/settings/template-catalogue",
     "where": "views/admin/settings/custom-fields.ejs",
     "uses": 5
   },
@@ -871,9 +871,9 @@
   },
   "s1044a4c056": {
     "text": "Members",
-    "context": "A heading on admin/settings/group-detail / A table column heading on admin/settings/groups / A heading on admin/settings/user-group-detail",
+    "context": "A heading on admin/settings/group-detail / A heading on admin/settings/user-group-detail",
     "where": "views/admin/settings/group-detail.ejs",
-    "uses": 4
+    "uses": 2
   },
   "s1045c16d9b": {
     "text": "In which of your groups?",
@@ -3673,9 +3673,9 @@
   },
   "s4228aeb07c": {
     "text": "Rules",
-    "context": "A heading on admin/settings/group-detail / A heading on admin/settings/user-group-detail / A table column heading on admin/settings/user-groups",
+    "context": "A heading on admin/settings/group-detail / A heading on admin/settings/user-group-detail",
     "where": "views/admin/settings/group-detail.ejs",
-    "uses": 3
+    "uses": 2
   },
   "s423cdd3957": {
     "text": "The ticket, its comments and its files are removed for good. The\n                manager of its group is emailed the reason (with no manager, the\n                other administrators are). To take a ticket out of the queue without\n                losing it, set the status to Cancelled instead.",
@@ -4309,7 +4309,7 @@
   },
   "s4e80abb5b1": {
     "text": "Outcome",
-    "context": "The label of a form field on admin/settings/audit / A table column heading on admin/settings/automation-edit / A table column heading on admin/settings/automation-runs",
+    "context": "The label of a form field on admin/settings/audit / A table column heading on admin/settings/automation-edit / Text on admin/settings/automation-runs",
     "where": "views/admin/settings/audit.ejs",
     "uses": 3
   },
@@ -4813,9 +4813,9 @@
   },
   "s56b564b75c": {
     "text": "Templates",
-    "context": "A label for a screen reader on admin/settings/_template-tabs / A link on admin/settings/_template-tabs / A table column heading on admin/settings/api-keys",
+    "context": "A label for a screen reader on admin/settings/_template-tabs / A link on admin/settings/_template-tabs / Text on admin/settings/api-keys",
     "where": "views/admin/settings/_template-tabs.ejs",
-    "uses": 4
+    "uses": 3
   },
   "s56bf0e6705": {
     "text": "Install an authenticator app on your phone, such as Microsoft Authenticator or Google Authenticator.",
@@ -5821,7 +5821,7 @@
   },
   "s681bf81aba": {
     "text": "Used by",
-    "context": "A table column heading on admin/settings/connections / A table column heading on admin/settings/custom-fields",
+    "context": "Text on admin/settings/connections / Text on admin/settings/custom-fields",
     "where": "views/admin/settings/connections.ejs",
     "uses": 2
   },
@@ -6067,7 +6067,7 @@
   },
   "s6c1b8968a3": {
     "text": "Last read",
-    "context": "A table column heading on admin/settings/mail",
+    "context": "Text on admin/settings/mail",
     "where": "views/admin/settings/mail.ejs",
     "uses": 1
   },
@@ -7153,7 +7153,7 @@
   },
   "s7f3e8bf052": {
     "text": "Reads",
-    "context": "A table column heading on admin/settings/mail",
+    "context": "Text on admin/settings/mail",
     "where": "views/admin/settings/mail.ejs",
     "uses": 1
   },
@@ -7321,7 +7321,7 @@
   },
   "s830ec7f812": {
     "text": "Last used",
-    "context": "A table column heading on admin/settings/api-keys",
+    "context": "Text on admin/settings/api-keys",
     "where": "views/admin/settings/api-keys.ejs",
     "uses": 1
   },
@@ -7783,9 +7783,9 @@
   },
   "s8b2085f74d": {
     "text": "Manager",
-    "context": "Text on the page on admin/settings/group-detail / A table column heading on admin/settings/groups / The label of a form field on admin/settings/user-detail",
+    "context": "Text on the page on admin/settings/group-detail / The label of a form field on admin/settings/user-detail / Text on tickets/show",
     "where": "views/admin/settings/group-detail.ejs",
-    "uses": 6
+    "uses": 5
   },
   "s8b463ea23a": {
     "text": "Czech",
@@ -8281,9 +8281,9 @@
   },
   "s920e413c7d": {
     "text": "Status",
-    "context": "A table column heading on admin/settings/assets-statuses / The label of a form field on admin/settings/automation-edit / A table column heading on admin/settings/groups",
+    "context": "A table column heading on admin/settings/assets-statuses / The label of a form field on admin/settings/automation-edit / Text on admin/settings/mail-notifications",
     "where": "views/admin/settings/assets-statuses.ejs",
-    "uses": 29
+    "uses": 27
   },
   "s9234069589": {
     "text": "Active",
@@ -8509,7 +8509,7 @@
   },
   "s96dbedeca7": {
     "text": "Starts",
-    "context": "A table column heading on admin/settings/api-keys",
+    "context": "Text on admin/settings/api-keys",
     "where": "views/admin/settings/api-keys.ejs",
     "uses": 1
   },
@@ -8995,7 +8995,7 @@
   },
   "s9db6f247de": {
     "text": "Handles",
-    "context": "A table column heading on admin/settings/mail",
+    "context": "Text on admin/settings/mail",
     "where": "views/admin/settings/mail.ejs",
     "uses": 1
   },
@@ -10621,7 +10621,7 @@
   },
   "sbaaddf70fb": {
     "text": "Type",
-    "context": "A table column heading on admin/settings/connections / Text on the page on admin/settings/connections / A table column heading on admin/settings/custom-fields",
+    "context": "Text on admin/settings/connections / Text on the page on admin/settings/connections / Text on admin/settings/custom-fields",
     "where": "views/admin/settings/connections.ejs",
     "uses": 11
   },
@@ -11707,7 +11707,7 @@
   },
   "scf9c7aa24a": {
     "text": "When",
-    "context": "A table column heading on admin/settings/automation-edit / The label of a form field on admin/settings/automation-edit / A table column heading on admin/settings/automation-runs",
+    "context": "A table column heading on admin/settings/automation-edit / The label of a form field on admin/settings/automation-edit / Text on admin/settings/automation-runs",
     "where": "views/admin/settings/automation-edit.ejs",
     "uses": 8
   },
@@ -12253,7 +12253,7 @@
   },
   "sd909750b1b": {
     "text": "Automation",
-    "context": "A link on admin/settings/_advanced-tabs / A link on admin/settings/api-keys / A table column heading on admin/settings/automation-runs",
+    "context": "A link on admin/settings/_advanced-tabs / A link on admin/settings/api-keys / Text on admin/settings/automation-runs",
     "where": "views/admin/settings/_advanced-tabs.ejs",
     "uses": 4
   },
@@ -12495,7 +12495,7 @@
     "text": "Name",
     "context": "The label of a form field on admin/settings/_mailbox-dialog / A table column heading on admin/settings/_member-picker / The label of a form field on admin/settings/_relay-dialog",
     "where": "views/admin/settings/_mailbox-dialog.ejs",
-    "uses": 49
+    "uses": 47
   },
   "sdce880ecdd": {
     "text": "Make another template the default first.",
@@ -12637,7 +12637,7 @@
   },
   "sdf16a246ee": {
     "text": "Connects by",
-    "context": "Text on the page on admin/settings/_mailbox-dialog / A table column heading on admin/settings/mail",
+    "context": "Text on the page on admin/settings/_mailbox-dialog / Text on admin/settings/mail",
     "where": "views/admin/settings/_mailbox-dialog.ejs",
     "uses": 2
   },
@@ -13891,9 +13891,9 @@
   },
   "sf8f5bc2acf": {
     "text": "Open tickets",
-    "context": "A table column heading on admin/settings/groups / Text on work-dashboard",
-    "where": "views/admin/settings/groups.ejs",
-    "uses": 2
+    "context": "Text on work-dashboard",
+    "where": "views/work-dashboard.ejs",
+    "uses": 1
   },
   "sf8fc4d9be5": {
     "text": "api://example/.default",

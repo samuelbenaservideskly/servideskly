@@ -14,7 +14,8 @@
   </a>
 </div>
 
-<%- include('_list-search', { action: '/admin/settings/groups', search: search, noun: 'groups' }) %>
+<%- include('_list-search', { action: '/admin/settings/groups', search: search, state: listState, noun: 'groups' }) %>
+<%- include('../../partials/clear-columns', { state: listState, path: '/admin/settings/groups' }) %>
 
 <% if (groups.length === 0 && search.q) { %>
   <div class="card"><p>Nothing matches "<%= search.q %>".</p></div>
@@ -30,11 +31,9 @@
     <table class="table">
       <thead>
         <tr>
-          <th scope="col">Name</th>
-          <th scope="col">Manager</th>
-          <th scope="col">Members</th>
-          <th scope="col">Open tickets</th>
-          <th scope="col">Status</th>
+          <% [{ key: 'name', label: 'Name' }, { key: 'manager', label: 'Manager' }, { key: 'members', label: 'Members' }, { key: 'open', label: 'Open tickets' }, { key: 'status', label: 'Status' }].forEach(function (c) { %>
+            <%- include('../../partials/col-head', { key: c.key, label: t(c.label), path: '/admin/settings/groups', state: listState, menu: columnMenus[c.key] }) %>
+          <% }); %>
         </tr>
       </thead>
       <tbody>
@@ -61,7 +60,7 @@
       </tbody>
     </table>
   </div>
-  <%- include('_list-pages', { action: '/admin/settings/groups', search: search }) %>
+  <%- include('_list-pages', { action: '/admin/settings/groups', search: search, state: listState }) %>
 <% } %>
 
 <%# The dialog is a :target anchor; openDialog reopens it after a refusal. %>

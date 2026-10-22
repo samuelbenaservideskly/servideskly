@@ -14,14 +14,15 @@
     <p class="small muted">Add one with <a href="#new-connection">New connection</a> to use "Send authenticated HTTP request" in an automation.</p>
   </div>
 <% } else { %>
+<%- include('../../partials/clear-columns', { state: locals.listState, path: locals.columnPath || '' }) %>
   <div class="table-scroll">
     <table class="table">
       <thead>
         <tr>
-          <th scope="col">Name</th>
-          <th scope="col">Type</th>
+          <%- include('../../partials/col-head', { key: 'name', label: t('Name'), path: columnPath, state: listState, menu: columnMenus['name'] }) %>
+          <%- include('../../partials/col-head', { key: 'type', label: t('Type'), path: columnPath, state: listState, menu: columnMenus['type'] }) %>
           <th scope="col">Signs in as</th>
-          <th scope="col">Used by</th>
+          <%- include('../../partials/col-head', { key: 'usedBy', label: t('Used by'), path: columnPath, state: listState, menu: columnMenus['usedBy'] }) %>
           <th scope="col"><span class="visually-hidden">Actions</span></th>
         </tr>
       </thead>

@@ -14,7 +14,8 @@
   </a>
 </div>
 
-<%- include('_list-search', { action: '/admin/settings/groups/users', search: search, noun: 'user groups' }) %>
+<%- include('_list-search', { action: '/admin/settings/groups/users', search: search, state: listState, noun: 'user groups' }) %>
+<%- include('../../partials/clear-columns', { state: listState, path: '/admin/settings/groups/users' }) %>
 
 <% if (groups.length === 0 && search.q) { %>
   <div class="card"><p>Nothing matches "<%= search.q %>".</p></div>
@@ -30,11 +31,9 @@
     <table class="table">
       <thead>
         <tr>
-          <th scope="col">Name</th>
-          <th scope="col">Members</th>
-          <th scope="col">Rules</th>
-          <th scope="col">Templates</th>
-          <th scope="col">Status</th>
+          <% [{ key: 'name', label: 'Name' }, { key: 'members', label: 'Members' }, { key: 'rules', label: 'Rules' }, { key: 'templates', label: 'Templates' }, { key: 'status', label: 'Status' }].forEach(function (c) { %>
+            <%- include('../../partials/col-head', { key: c.key, label: t(c.label), path: '/admin/settings/groups/users', state: listState, menu: columnMenus[c.key] }) %>
+          <% }); %>
         </tr>
       </thead>
       <tbody>
@@ -61,7 +60,7 @@
       </tbody>
     </table>
   </div>
-  <%- include('_list-pages', { action: '/admin/settings/groups/users', search: search }) %>
+  <%- include('_list-pages', { action: '/admin/settings/groups/users', search: search, state: listState }) %>
 <% } %>
 
 <div class="dialog<%= openDialog === 'new-user-group' ? ' dialog--open' : '' %>" id="new-user-group">

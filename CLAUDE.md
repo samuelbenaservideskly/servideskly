@@ -3062,7 +3062,13 @@ automations, notifications). **A new table uses them.**
 - **A menu's values are counted over what the other filters leave**
   (`withoutColumn`), at most `MAX_VALUES`, so ticking a second value in the
   same column stays possible.
-- **Short lists held whole** use `filterRows`, `sortRows` and `rowMenus`.
+- **Short lists held whole** use `filterRows`, `sortRows` and `rowMenus`, or
+  `listView` for all three. The Settings lists rendered from several places
+  (API keys, connections, custom fields, automation runs, mailboxes) get
+  theirs at render time from `routes/column-lists.ts` - **add a new whole
+  list there**, naming its view, rows and cells. The group lists read every
+  match and page in memory. A list whose order is a setting (mail rules,
+  asset columns, the catalogue) is left unsorted on purpose.
 - **No script**: a `<details>` whose panel is `position: fixed` with no
   offsets (so a table's scroll box does not clip it), and whose summary
   covers the page while open (a click elsewhere closes it). More than 8

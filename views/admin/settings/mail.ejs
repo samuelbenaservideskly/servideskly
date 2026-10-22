@@ -38,16 +38,17 @@
     </p>
   </div>
 <% } else { %>
+<%- include('../../partials/clear-columns', { state: locals.listState, path: locals.columnPath || '' }) %>
   <div class="table-scroll">
     <table class="table">
       <thead>
         <tr>
-          <th scope="col">Address</th>
-          <th scope="col">Connects by</th>
-          <th scope="col">Handles</th>
-          <th scope="col">Reads</th>
-          <th scope="col">Last read</th>
-          <th scope="col">Status</th>
+          <%- include('../../partials/col-head', { key: 'address', label: t('Address'), path: columnPath, state: listState, menu: columnMenus['address'] }) %>
+          <%- include('../../partials/col-head', { key: 'kind', label: t('Connects by'), path: columnPath, state: listState, menu: columnMenus['kind'] }) %>
+          <%- include('../../partials/col-head', { key: 'handles', label: t('Handles'), path: columnPath, state: listState, menu: columnMenus['handles'] }) %>
+          <%- include('../../partials/col-head', { key: 'reads', label: t('Reads'), path: columnPath, state: listState, menu: columnMenus['reads'] }) %>
+          <%- include('../../partials/col-head', { key: 'lastRead', label: t('Last read'), path: columnPath, state: listState, menu: columnMenus['lastRead'] }) %>
+          <%- include('../../partials/col-head', { key: 'status', label: t('Status'), path: columnPath, state: listState, menu: columnMenus['status'] }) %>
           <th scope="col">Actions</th>
         </tr>
       </thead>

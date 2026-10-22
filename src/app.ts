@@ -28,6 +28,7 @@ import { providerName, providerOfIssuer } from './auth/oidc.js';
 import { adminSetupRouter } from './routes/admin-setup.js';
 import { ticketRouter } from './routes/tickets.js';
 import { peopleRouter } from './routes/people.js';
+import { columnLists } from './routes/column-lists.js';
 import { assetsRouter } from './routes/assets.js';
 import { registerAssetNotifications } from './services/asset-notify.js';
 import { searchRouter } from './routes/search.js';
@@ -374,7 +375,8 @@ export function createApp(): Express {
   app.use('/dashboard', workDashboardRouter);
   app.use('/reports', reportsRouter);
   app.use('/boards', boardsRouter);
-  app.use('/admin', adminRouter);
+  // Excel-like headers on the whole Settings lists (routes/column-lists.ts).
+  app.use('/admin', columnLists(), adminRouter);
 
   app.use(notFoundHandler());
   app.use(errorHandler());

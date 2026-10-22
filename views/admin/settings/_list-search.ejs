@@ -4,6 +4,8 @@
   ({ q, page, total, pageCount }), noun ("groups").
 %>
 <form method="get" action="<%= action %>" class="list-search" role="search">
+  <%# Column filters (lib/column-filters.ts) survive a new search. %>
+  <%- include('../../partials/keep-columns', { state: locals.state || {} }) %>
   <label for="list-q" class="visually-hidden">Search <%= noun %></label>
   <input id="list-q" name="q" type="search" maxlength="100" value="<%= search.q %>" placeholder="Search <%= noun %>">
   <button type="submit" class="btn">Search</button>

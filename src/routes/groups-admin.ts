@@ -70,6 +70,7 @@ async function memberLocals(groupId: string, req: Request) {
 }
 import { settingsView } from './settings-shared.js';
 import { pageOf, pickerQuery, pickerReturn, pickerSelection } from './member-picker.js';
+import { listView as columnListView, type Cells } from '../lib/column-filters.js';
 
 /**
  * Technician groups.
@@ -113,12 +114,29 @@ function listQuery(query: Record<string, unknown>): { q: string; page: number } 
   return { q, page };
 }
 
-async function listView(extra: Record<string, unknown> = {}, list = { q: '', page: 1 }): Promise<Record<string, unknown>> {
-  const found = await searchGroups(list.q, list.page, PER_PAGE);
+async function listView(extra: Record<string, unknown> = {}, list = { q: '', page: 1 }, query: Record<string, unknown> = {}): Promise<Record<string, unknown>> {
+  // Excel-like headers (lib/column-filters.ts): every match is read, then
+  // filtered, sorted and paged here - a list of groups is short.
+  const all = await searchGroups(list.q, 1, 5000);
+  type Row = (typeof all.rows)[number];
+  const cells: Cells<Row> = {
+    name: (r) => r.name,
+    manager: (r) => (r.manager_names.length ? r.manager_names.join(', ') : ''),
+    members: (r) => String(r.member_count),
+    open: (r) => String(r.open_count),
+    status: (r) => (r.is_active ? 'Active' : 'Retired'),
+  };
+  const view = columnListView(query, all.rows, cells, {
+    sortCells: { members: (r) => String(r.member_count).padStart(8, '0') },
+    keep: { q: list.q || undefined },
+  });
+  const found = { rows: view.rows.slice((list.page - 1) * PER_PAGE, list.page * PER_PAGE), total: view.rows.length };
   return settingsView('groups', {
     sectionTitle: 'Groups',
     tab: 'technicians',
     groups: found.rows,
+    columnMenus: view.columnMenus,
+    listState: view.listState,
     search: { q: list.q, page: list.page, total: found.total, pageCount: Math.max(1, Math.ceil(found.total / PER_PAGE)) },
     values: {},
     errors: {},
@@ -130,7 +148,7 @@ async function listView(extra: Record<string, unknown> = {}, list = { q: '', pag
 groupAdminRouter.get(
   '/',
   asyncHandler(async (req, res) => {
-    res.render('admin/settings/groups', await listView({}, listQuery(req.query as Record<string, unknown>)));
+    res.render('admin/settings/groups', await listView({}, listQuery(req.query as Record<string, unknown>), req.query as Record<string, unknown>));
   }),
 );
 
