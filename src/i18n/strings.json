@@ -2195,6 +2195,12 @@
     "where": "src/i18n/code-strings.ts",
     "uses": 1
   },
+  "s275d28e44a": {
+    "text": "Choose a CSV file to upload.",
+    "context": "A message shown beside a form or after an action",
+    "where": "src/routes/assets.ts",
+    "uses": 1
+  },
   "s2773a775b6": {
     "text": "Choose the kind of request",
     "context": "Text on tickets/new",
@@ -2485,9 +2491,9 @@
   },
   "s2cff9baabf": {
     "text": "Import",
-    "context": "A button on admin/settings/locale / A button on boards/index",
+    "context": "A button on admin/settings/locale / A button on assets/import / A button on assets/index",
     "where": "views/admin/settings/locale.ejs",
-    "uses": 2
+    "uses": 4
   },
   "s2d1554063a": {
     "text": "Sends for",
@@ -5189,6 +5195,12 @@
     "where": "views/admin/settings/users-other.ejs",
     "uses": 1
   },
+  "s5f0c6b1ac4": {
+    "text": "Nothing was imported:",
+    "context": "Text on the page on assets/import",
+    "where": "views/assets/import.ejs",
+    "uses": 1
+  },
   "s5f3026cf06": {
     "text": "Service desk lead",
     "context": "The grey example inside an input on admin/settings/roles",
@@ -5547,6 +5559,12 @@
     "text": "with the JSON;",
     "context": "Text on admin/settings/api-keys",
     "where": "views/admin/settings/api-keys.ejs",
+    "uses": 1
+  },
+  "s649f7f0452": {
+    "text": "Download the template",
+    "context": "A link on assets/import",
+    "where": "views/assets/import.ejs",
     "uses": 1
   },
   "s64a24bfa14": {
@@ -6281,6 +6299,12 @@
     "where": "views/admin/settings/groups.ejs",
     "uses": 1
   },
+  "s70cc1b0500": {
+    "text": "That is not a CSV file. Save the sheet as \"CSV UTF-8\" and upload that.",
+    "context": "A message shown beside a form or after an action",
+    "where": "src/routes/assets.ts",
+    "uses": 1
+  },
   "s70d341a292": {
     "text": "Just another printer issue, 0123456789",
     "context": "Text on the page on admin/settings/customization",
@@ -6403,9 +6427,9 @@
   },
   "s73aad53a5a": {
     "text": "CSV file",
-    "context": "The label of a form field on admin/settings/users",
+    "context": "The label of a form field on admin/settings/users / The label of a form field on assets/import",
     "where": "views/admin/settings/users.ejs",
-    "uses": 1
+    "uses": 2
   },
   "s73b0a71328": {
     "text": "Save {0}",
@@ -6759,6 +6783,12 @@
     "text": "ticket{0}",
     "context": "Text on boards/show",
     "where": "views/boards/show.ejs",
+    "uses": 1
+  },
+  "s79a88f8816": {
+    "text": "1 asset imported.",
+    "context": "Text on assets/import",
+    "where": "views/assets/import.ejs",
     "uses": 1
   },
   "s7a061ab5cc": {
@@ -7841,6 +7871,12 @@
     "where": "views/work-dashboard.ejs",
     "uses": 1
   },
+  "s8dc991db11": {
+    "text": "{0} skipped:",
+    "context": "Text on assets/import. Keep each {0}, {1}...: it is a value",
+    "where": "views/assets/import.ejs",
+    "uses": 1
+  },
   "s8df79ccb7a": {
     "text": "First response (business hours)",
     "context": "A table column heading on admin/settings/template-other",
@@ -8674,6 +8710,12 @@
     "context": "The label of a form field on boards/index",
     "where": "views/boards/index.ejs",
     "uses": 1
+  },
+  "s9a98e8b1ea": {
+    "text": "Import assets",
+    "context": "A heading on assets/import / The title of a page, in the browser tab",
+    "where": "views/assets/import.ejs",
+    "uses": 3
   },
   "s9aae5f6057": {
     "text": "Keep at least one status.",
@@ -9815,6 +9857,12 @@
     "where": "views/admin/settings/_member-picker.ejs",
     "uses": 1
   },
+  "sb027696e59": {
+    "text": "See the assets",
+    "context": "A button on assets/import",
+    "where": "views/assets/import.ejs",
+    "uses": 1
+  },
   "sb02dd18291": {
     "text": "Choose a kind",
     "context": "One choice in a dropdown on admin/settings/automation-edit",
@@ -10239,6 +10287,12 @@
     "text": "Tickets with a breach",
     "context": "Text on reports",
     "where": "views/reports.ejs",
+    "uses": 1
+  },
+  "sb7905e4d07": {
+    "text": "The sheet has no rows under its header. Fill in the template and upload it.",
+    "context": "A message shown beside a form or after an action",
+    "where": "src/services/asset-import.ts",
     "uses": 1
   },
   "sb7a94f8501": {
@@ -11477,6 +11531,12 @@
     "where": "views/admin/settings/locale.ejs",
     "uses": 1
   },
+  "sceade092e6": {
+    "text": "The file must be 2 MB or smaller.",
+    "context": "A message shown beside a form or after an action",
+    "where": "src/routes/assets.ts",
+    "uses": 1
+  },
   "scec3a9b89b": {
     "text": "Data",
     "context": "A link on admin/settings/_advanced-tabs",
@@ -11842,6 +11902,12 @@
     "context": "Text on admin/settings/user-detail / Text on admin/settings/users",
     "where": "views/admin/settings/user-detail.ejs",
     "uses": 2
+  },
+  "sd5d455437e": {
+    "text": "and {0} more.",
+    "context": "Text on assets/import. Keep each {0}, {1}...: it is a value",
+    "where": "views/assets/import.ejs",
+    "uses": 1
   },
   "sd5ebac266f": {
     "text": "This request is no longer waiting for an answer.",
@@ -13117,9 +13183,9 @@
   },
   "seba68d27fc": {
     "text": "All assets",
-    "context": "Text on assets/show",
-    "where": "views/assets/show.ejs",
-    "uses": 1
+    "context": "Text on assets/import / Text on assets/show",
+    "where": "views/assets/import.ejs",
+    "uses": 2
   },
   "sebe7db36e4": {
     "text": "On hold",
@@ -13965,6 +14031,12 @@
     "text": "A user group with that name already exists.",
     "context": "A message shown beside a form or after an action",
     "where": "src/services/user-groups.ts",
+    "uses": 1
+  },
+  "sfdb7e95656": {
+    "text": "{0} assets imported.",
+    "context": "Text on assets/import. Keep each {0}, {1}...: it is a value",
+    "where": "views/assets/import.ejs",
     "uses": 1
   },
   "sfdd9d5053c": {

@@ -147,3 +147,50 @@ describe('Settings - Assets', () => {
     await as(admin).get('/admin/settings/assets/statuses').expect(200);
   });
 });
+
+describe('importing assets from a CSV', () => {
+  const upload = (s: TestSession, csv: string) =>
+    as(s).post('/inventory/import').field('_csrf', s.csrfToken).attach('file', Buffer.from(csv, 'utf8'), 'assets.csv');
+
+  test('the template is the columns switched on, and Status', async () => {
+    const res = await as(agent).get('/inventory/import/template.csv').expect(200);
+    const header = res.text.replace(/^\uFEFF/, '').split('\r\n')[0]!;
+    assert.match(header, /^Status,Model,/);
+    assert.match(header, /\(email\)/);
+    assert.doesNotMatch(header, /IMEI/, 'switched off above');
+  });
+
+  test('a good sheet imports; a serial number already here, or twice in the sheet, is skipped and said', async () => {
+    const csv = [
+      'Status;Model;Serial number;Holder (email)',
+      'In stock;Surface Pro;SP-1;',
+      'assigned;Surface Laptop;SP-2;assets.user@example.com',
+      'In stock;Surface Pro again;SP-1;',
+      'In stock;Old;PF-1234;',
+    ].join('\n');
+    const res = await upload(agent, csv).expect(200);
+    assert.match(res.text, /2 assets imported/);
+    assert.match(res.text, /Row 4: serial number SP-1 is earlier in the sheet/);
+    assert.match(res.text, /Row 5: serial number PF-1234 is already here/);
+    const laptop = (await listAssets({ q: 'SP-2' })).items[0]!;
+    assert.equal(laptop.assigned_to, requester.user.id);
+    assert.equal(laptop.status_id, 'assigned');
+  });
+
+  test('one bad row imports nothing, and every problem has its row', async () => {
+    const before = (await listAssets({ perPage: 200 })).total;
+    const csv = ['Status,Model,Date bought,Holder (email)', 'In stock,Fine,2026-01-01,', 'Unknown,Bad,yesterday,nobody@example.com'].join('\n');
+    const res = await upload(agent, csv).expect(400);
+    assert.match(res.text, /Nothing was imported/);
+    assert.match(res.text, /Row 3: no status called &#34;Unknown&#34;/);
+    assert.match(res.text, /Row 3: nobody active has the address nobody@example.com/);
+    assert.match(res.text, /Row 3: Date bought: enter a date/);
+    assert.equal((await listAssets({ perPage: 200 })).total, before);
+    const unknown = await upload(agent, 'Model,Colour\nX,Red').expect(400);
+    assert.match(unknown.text, /Unknown column &#34;Colour&#34;/);
+  });
+
+  test('a requester cannot import', async () => {
+    await upload(requester, 'Model\nX').expect(404);
+  });
+});

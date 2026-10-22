@@ -103,6 +103,8 @@ function isAttachmentUploadPath(path: string): boolean {
   // The local-users CSV import and the custom image upload, which check the
   // token themselves once the multipart body is parsed.
   if (path === '/admin/settings/users/import') return true;
+  // The assets import (routes/assets.ts), checked there the same way.
+  if (path === '/inventory/import') return true;
   if (path === '/admin/settings/customization/images') return true;
 
   // /admin/settings/customization/{logo|favicon}/upload

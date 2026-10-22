@@ -1,0 +1,41 @@
+<%- include('../partials/header') %>
+
+<div class="page-head">
+  <div>
+    <%- include('../partials/back-link', { href: '/inventory', label: t('All assets') }) %>
+    <h1>Import assets</h1>
+  </div>
+</div>
+
+<% if (imported !== null) { %>
+  <div class="card stack" role="status">
+    <p><strong><%= imported === 1 ? t('1 asset imported.') : tx('{0} assets imported.', [imported]) %></strong></p>
+    <% if (skipped.length) { %>
+      <p class="small muted"><%= tx('{0} skipped:', [skipped.length]) %></p>
+      <ul class="small"><% skipped.forEach(function (s) { %><li><%= s %></li><% }); %></ul>
+    <% } %>
+    <div class="actions"><a class="btn btn--primary" href="/inventory">See the assets</a></div>
+  </div>
+<% } %>
+
+<form method="post" action="/inventory/import" enctype="multipart/form-data" class="card stack">
+  <input type="hidden" name="_csrf" value="<%= locals.csrfToken %>">
+  <p class="small">Start from the template: it has a column for each one switched on, and Status. A serial number already here is skipped. <a href="/inventory/import/template.csv">Download the template</a></p>
+  <% if (problems.length) { %>
+    <div class="field-error" role="alert">
+      <p>Nothing was imported:</p>
+      <ul><% problems.slice(0, 50).forEach(function (p) { %><li><%= p %></li><% }); %></ul>
+      <% if (problems.length > 50) { %><p><%= tx('and {0} more.', [problems.length - 50]) %></p><% } %>
+    </div>
+  <% } %>
+  <div class="field">
+    <div class="label-row">
+      <label for="file">CSV file</label>
+      <%- include('../partials/info', { text: 'Comma or semicolon separated, UTF-8. At most ' + maxRows + ' rows; one row with a problem imports nothing.' }) %>
+    </div>
+    <input id="file" name="file" type="file" accept=".csv,text/csv" required>
+  </div>
+  <div class="actions"><button type="submit" class="btn btn--primary">Import</button></div>
+</form>
+
+<%- include('../partials/footer') %>

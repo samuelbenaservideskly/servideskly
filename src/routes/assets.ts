@@ -1,9 +1,13 @@
 import { Router, type Request, type Response } from 'express';
+import multer from 'multer';
 import { can } from '../auth/permissions.js';
 import { asyncHandler } from '../lib/async-handler.js';
 import { notFound } from '../lib/errors.js';
 import { queryString } from '../lib/format.js';
 import { requireAuth } from '../middleware/auth.js';
+import { assertCsrfToken } from '../middleware/csrf.js';
+import { auditRequest } from '../lib/audit.js';
+import { assetTemplateCsv, MAX_ASSET_ROWS, planAssetImport, runAssetImport } from '../services/asset-import.js';
 import { writeLimiter } from '../middleware/security.js';
 import { flash } from '../middleware/view-locals.js';
 import {
@@ -108,6 +112,59 @@ assetsRouter.post(
     }
     flash(req, 'success', 'Asset added.');
     res.redirect('/inventory/' + made.value);
+  }),
+);
+
+// --- import (step 2), before /:id so "import" is not read as an asset ---------
+
+assetsRouter.get(
+  '/import/template.csv',
+  asyncHandler(async (_req, res) => {
+    res.setHeader('Content-Type', 'text/csv; charset=utf-8');
+    res.setHeader('Content-Disposition', 'attachment; filename="assets.csv"');
+    res.setHeader('X-Content-Type-Options', 'nosniff');
+    res.send(await assetTemplateCsv());
+  }),
+);
+
+assetsRouter.get('/import', (_req, res) => {
+  res.render('assets/import', { title: 'Import assets', problems: [], skipped: [], imported: null, maxRows: MAX_ASSET_ROWS });
+});
+
+/** Memory storage: the file is read and thrown away, never kept. */
+const importUpload = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 2 * 1024 * 1024, files: 1, fields: 5, parts: 8 },
+}).single('file');
+
+assetsRouter.post(
+  '/import',
+  writeLimiter,
+  asyncHandler(async (req, res) => {
+    const tooBig = await new Promise<boolean>((resolve, reject) => {
+      importUpload(req, res, (err: unknown) => {
+        if (!err) resolve(false);
+        else if (err instanceof multer.MulterError) resolve(true);
+        else reject(err);
+      });
+    });
+    // The global CSRF check runs before a multipart body exists (app.ts), so
+    // it is made here, once the token can be read.
+    assertCsrfToken(req);
+    const page = (problems: string[], skipped: string[] = [], imported: number | null = null, status = 200) =>
+      res.status(status).render('assets/import', { title: 'Import assets', problems, skipped, imported, maxRows: MAX_ASSET_ROWS });
+
+    if (tooBig) return page(['The file must be 2 MB or smaller.'], [], null, 400);
+    const file = req.file;
+    if (!file || file.size === 0) return page(['Choose a CSV file to upload.'], [], null, 400);
+    const text = file.buffer.toString('utf8');
+    if (text.includes('\u0000')) return page(['That is not a CSV file. Save the sheet as "CSV UTF-8" and upload that.'], [], null, 400);
+
+    const plan = await planAssetImport(text);
+    if (plan.problems.length) return page(plan.problems, [], null, 400);
+    const imported = await runAssetImport(plan.create, req.currentUser ?? null);
+    auditRequest(req, { action: 'asset.imported', targetType: 'asset', detail: { created: imported, skipped: plan.skipped.length } });
+    return page([], plan.skipped, imported);
   }),
 );
 
