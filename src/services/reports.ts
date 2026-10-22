@@ -946,8 +946,9 @@ export async function reportTickets(user: UserRow, input: ReportInput, filter: D
     ? DRILL_SORTS[filter.sort] + (filter.dir === 'desc' ? ' DESC' : ' ASC') + ', t.created_at DESC'
     : 't.created_at DESC';
   ids = (await query<{ id: string }>(
-    'SELECT t.id' + DRILL_FROM + ' WHERE ' + current.sql + ' ORDER BY ' + order + ', t.id LIMIT ' + DRILL_PAGE + ' OFFSET ' + (page - 1) * DRILL_PAGE,
-    current.params as never[],
+    // The page as parameters, not in the text: one statement for every page.
+    'SELECT t.id' + DRILL_FROM + ' WHERE ' + current.sql + ' ORDER BY ' + order + ', t.id LIMIT ? OFFSET ?',
+    [...current.params, DRILL_PAGE, (page - 1) * DRILL_PAGE] as never[],
   )).map((r) => r.id);
   const columnMenus: Record<string, { values: ColumnValue[]; selected: string[] }> = {};
   for (const [key, expr] of Object.entries(DRILL_COLUMNS)) {

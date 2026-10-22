@@ -129,18 +129,39 @@ export function sqliteHandle(): Database.Database {
 }
 
 /**
- * Prepared statements are cached: preparing is the expensive half of a query,
- * and the SQL strings in this codebase are a fixed set.
+ * Prepared statements are cached: preparing is the expensive half of a query.
+ *
+ * **Bounded** (review, 22 Oct 2026): the SQL is not a fixed set. A list of
+ * ids is `IN (?, ?, ...)` with as many marks as ids, a report's service-level
+ * list can hold thousands, and every new length was a new statement kept for
+ * the life of the process - memory that only grew. The cache keeps the most
+ * recently used SQL_CACHE_SIZE; the fixed queries the app runs all the time
+ * stay in it, one-off texts fall out and are freed.
  */
+const SQL_CACHE_SIZE = 1000;
 const statements = new Map<string, Database.Statement>();
 
-function prepare(sql: string): Database.Statement {
-  let statement = statements.get(sql);
-  if (!statement) {
-    statement = sqlite!.prepare(sql);
-    statements.set(sql, statement);
+/** A Map used as a least-recently-used cache: a hit moves to the end, the oldest goes first. */
+function remember<T>(cache: Map<string, T>, key: string, make: () => T): T {
+  const hit = cache.get(key);
+  if (hit !== undefined) {
+    cache.delete(key);
+    cache.set(key, hit);
+    return hit;
   }
-  return statement;
+  const value = make();
+  cache.set(key, value);
+  if (cache.size > SQL_CACHE_SIZE) cache.delete(cache.keys().next().value as string);
+  return value;
+}
+
+function prepare(sql: string): Database.Statement {
+  return remember(statements, sql, () => sqlite!.prepare(sql));
+}
+
+/** How many statements and translations are cached, for the test that they stay bounded. */
+export function sqlCacheSizes(): { statements: number; translated: number; limit: number } {
+  return { statements: statements.size, translated: translated.size, limit: SQL_CACHE_SIZE };
 }
 
 // ---------------------------------------------------------------------------
@@ -151,11 +172,15 @@ const translated = new Map<string, string>();
 
 /**
  * `?` -> `$n` and LIKE -> ILIKE, outside string literals, quoted
- * identifiers and comments. Cached: the SQL strings are a fixed set.
+ * identifiers and comments. Cached, bounded like the statements above.
  */
 export function toPostgres(sql: string): string {
   const hit = translated.get(sql);
-  if (hit !== undefined) return hit;
+  if (hit !== undefined) {
+    translated.delete(sql);
+    translated.set(sql, hit);
+    return hit;
+  }
   let out = '';
   let n = 0;
   let i = 0;
@@ -193,6 +218,7 @@ export function toPostgres(sql: string): string {
     }
   }
   translated.set(sql, out);
+  if (translated.size > SQL_CACHE_SIZE) translated.delete(translated.keys().next().value as string);
   return out;
 }
 
