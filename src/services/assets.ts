@@ -5,6 +5,7 @@ import { newId, nowIso } from '../lib/util.js';
 import { CUSTOM_FIELD_TYPES } from './templates.js';
 import { BLANK, columnClauses, MAX_VALUES, withoutColumn, type ColumnFilters, type ColumnValue } from '../lib/column-filters.js';
 import { findUserByEmail, findUserById, type UserRow } from './users.js';
+import { settings } from '../settings/index.js';
 
 /**
  * Assets (asked for 21 Oct 2026): laptops, phones and the like, assigned to
@@ -251,7 +252,7 @@ export function valueProblems(columns: readonly AssetColumn[], values: Record<st
         if (value.split(/\s*,\s*/).some((v) => !column.choices.includes(v))) problems[column.key] = name + ': choose from the options.';
         break;
       case 'date':
-        if (!/^\d{4}-\d{2}-\d{2}$/.test(value) || Number.isNaN(new Date(value + 'T12:00:00Z').getTime())) problems[column.key] = name + ': enter a date as 2026-10-21.';
+        if (!parseAssetDate(value)) problems[column.key] = name + ': "' + value.slice(0, 40) + '" is not a date. Write it as 2026-10-21 or 21.10.2026.';
         break;
       case 'number':
         if (!/^-?\d+(?:[.,]\d+)?$/.test(value)) problems[column.key] = name + ': enter a number.';
@@ -267,6 +268,54 @@ export function valueProblems(columns: readonly AssetColumn[], values: Record<st
 }
 
 /** Only the columns there are (any, switched off or not), trimmed. */
+/**
+ * A date as people and spreadsheets write it, as 2026-10-21 - or null.
+ *
+ * The import template writes 2026-10-21, but opening it in Excel and saving
+ * it again rewrites every date in the computer's own format: 21.10.2026 in
+ * Czech, 21/10/2026 in British English, 10/21/2026 in American (reported
+ * 22 Oct 2026, a template refused as it was downloaded). So the usual
+ * writings are read: year first; day first with dots; slashes and dashes
+ * with the order from Settings - Locale when both could be a month; a time
+ * after the date is ignored; and an Excel day number (45951).
+ */
+export function parseAssetDate(input: string): string | null {
+  const value = input.trim().replace(/[T\s]+\d{1,2}:\d{2}(:\d{2}(\.\d+)?)?\s*(Z|[ap]m)?$/i, '');
+  let y: number, m: number, d: number;
+  let match: RegExpMatchArray | null;
+  if ((match = value.match(/^(\d{4})[-/.](\d{1,2})[-/.](\d{1,2})$/))) {
+    [y, m, d] = [Number(match[1]), Number(match[2]), Number(match[3])];
+  } else if ((match = value.match(/^(\d{1,2})\.\s?(\d{1,2})\.\s?(\d{4})$/))) {
+    [d, m, y] = [Number(match[1]), Number(match[2]), Number(match[3])];
+  } else if ((match = value.match(/^(\d{1,2})[/-](\d{1,2})[/-](\d{4})$/))) {
+    const a = Number(match[1]);
+    const b = Number(match[2]);
+    y = Number(match[3]);
+    // Whichever cannot be a month is the day; when both could be, the Locale says.
+    const monthFirst = a > 12 ? false : b > 12 ? true : settings().locale.dateFormat === 'MM/dd/yyyy';
+    [m, d] = monthFirst ? [a, b] : [b, a];
+  } else if (/^\d{5}$/.test(value) && Number(value) > 20000 && Number(value) < 80000) {
+    // An Excel day number: days since 30 Dec 1899.
+    return new Date(Date.UTC(1899, 11, 30) + Number(value) * 86_400_000).toISOString().slice(0, 10);
+  } else {
+    return null;
+  }
+  const date = new Date(Date.UTC(y, m - 1, d));
+  if (m < 1 || m > 12 || date.getUTCFullYear() !== y || date.getUTCMonth() !== m - 1 || date.getUTCDate() !== d) return null;
+  return date.toISOString().slice(0, 10);
+}
+
+/** Dates as 2026-10-21 whatever way they were written; everything else as it came. */
+function normaliseValues(columns: readonly AssetColumn[], values: Record<string, string>): Record<string, string> {
+  const out = { ...values };
+  for (const column of columns) {
+    if (column.format !== 'date') continue;
+    const iso = parseAssetDate(values[column.key] ?? '');
+    if (iso) out[column.key] = iso;
+  }
+  return out;
+}
+
 function cleanValues(columns: readonly AssetColumn[], values: Record<string, string>): Record<string, string> {
   const out: Record<string, string> = {};
   for (const column of columns) {
@@ -450,8 +499,9 @@ async function announce(change: AssetChange): Promise<void> {
   for (const listener of listeners) await listener(change);
 }
 
-export async function createAsset(input: AssetInput, actor: Actor): Promise<string> {
+export async function createAsset(asked: AssetInput, actor: Actor): Promise<string> {
   const columns = await listColumns();
+  const input = { ...asked, values: normaliseValues(columns, asked.values) };
   const problems = valueProblems(columns, input.values);
   if (Object.keys(problems).length) throw badRequest(Object.values(problems)[0]!, 'bad_value');
   const statusId = await checkStatus(input.statusId);
@@ -470,10 +520,11 @@ export async function createAsset(input: AssetInput, actor: Actor): Promise<stri
 }
 
 /** Saves an asset: each value, status or assignee that changed is a line of history. */
-export async function updateAsset(id: string, input: AssetInput, actor: Actor): Promise<void> {
+export async function updateAsset(id: string, asked: AssetInput, actor: Actor): Promise<void> {
   const asset = await getAsset(id);
   if (!asset) throw notFound('That asset no longer exists.');
   const columns = await listColumns();
+  const input = { ...asked, values: normaliseValues(columns, asked.values) };
   const problems = valueProblems(columns, input.values);
   if (Object.keys(problems).length) throw badRequest(Object.values(problems)[0]!, 'bad_value');
   const statusId = await checkStatus(input.statusId);

@@ -77,7 +77,7 @@ describe('an asset', () => {
 
   test('a value that is not what its column asks for is refused beside the form, with what was typed', async () => {
     const res = await post(agent, '/inventory', { statusId: 'in-stock', assignee: '', v_Model: 'Kept', v_DateBought: 'last week' }).expect(400);
-    assert.match(res.text, /Date bought: enter a date/);
+    assert.match(res.text, /Date bought: &#34;last week&#34; is not a date/);
     assert.match(res.text, /value="Kept"/);
     assert.match(res.text, /dialog dialog--open" id="new-asset"/);
     const unknown = await post(agent, '/inventory', { statusId: 'in-stock', assignee: 'nobody@example.com', v_Model: 'X' }).expect(400);
@@ -184,10 +184,20 @@ describe('importing assets from a CSV', () => {
     assert.match(res.text, /Nothing was imported/);
     assert.match(res.text, /Row 3: no status called &#34;Unknown&#34;/);
     assert.match(res.text, /Row 3: nobody active has the address nobody@example.com/);
-    assert.match(res.text, /Row 3: Date bought: enter a date/);
+    assert.match(res.text, /Row 3: Date bought: &#34;yesterday&#34; is not a date/);
     assert.equal((await listAssets({ perPage: 200 })).total, before);
     const unknown = await upload(agent, 'Model,Colour\nX,Red').expect(400);
     assert.match(unknown.text, /Unknown column &#34;Colour&#34;/);
+  });
+
+  test('dates as Excel saves them are read, and stored as 2026-10-21', async () => {
+    const csv = ['Status;Model;Serial number;Date bought', 'In stock;Czech Excel;XL-1;21.10.2026', 'In stock;British Excel;XL-2;21/10/2026', 'In stock;With a time;XL-3;2026-10-21 00:00', 'In stock;Excel day number;XL-4;46316'].join('\n');
+    const res = await upload(agent, csv).expect(200);
+    assert.match(res.text, /4 assets imported/);
+    for (const serial of ['XL-1', 'XL-2', 'XL-3', 'XL-4']) {
+      const row = (await listAssets({ q: serial })).items[0]!;
+      assert.equal(row.field_values.DateBought, '2026-10-21', serial);
+    }
   });
 
   test('a requester cannot import', async () => {

@@ -529,8 +529,11 @@ export function missingSettings(node: GraphNode, outputs: ReadonlySet<string> = 
     case 'http_request_auth':
       return httpStepProblem(c, true, outputs);
     case 'asset_email': {
-      if (!['assignee', 'manager', 'email'].includes(c.recipient ?? '')) return 'choose who it goes to.';
-      if (c.recipient === 'email' && !/^[^@\s]+@[^@\s]+$/.test(c.email ?? '') && !/\{\{/.test(c.email ?? '')) return 'enter an email address.';
+      // Nothing stored yet is the dropdown's first choice, which the popup
+      // already shows: whoever has the asset (reported 22 Oct 2026).
+      const recipient = c.recipient || 'assignee';
+      if (!['assignee', 'manager', 'email'].includes(recipient)) return 'choose who it goes to.';
+      if (recipient === 'email' && !/^[^@\s]+@[^@\s]+$/.test(c.email ?? '') && !/\{\{/.test(c.email ?? '')) return 'enter an email address.';
       if (!(c.subject ?? '').trim()) return 'write the subject.';
       if (!(c.body ?? '').trim()) return 'write the message.';
       const bad = unknownVariables((c.subject ?? '') + ' ' + (c.body ?? ''), outputs);
@@ -997,11 +1000,12 @@ async function assetAct(node: GraphNode, assetId: string, actorId: string | null
     case 'asset_email': {
       const asset = (await getAsset(assetId))!;
       const holder = asset.assigned_to ? await findUserById(asset.assigned_to) : undefined;
+      const recipient = c.recipient || 'assignee';
       const to =
-        c.recipient === 'assignee' ? holder?.email ?? ''
-          : c.recipient === 'manager' ? (holder?.manager_id ? (await findUserById(holder.manager_id))?.email ?? '' : '')
+        recipient === 'assignee' ? holder?.email ?? ''
+          : recipient === 'manager' ? (holder?.manager_id ? (await findUserById(holder.manager_id))?.email ?? '' : '')
             : fillVariables(c.email ?? '', run, 'raw').trim();
-      if (!to) return 'not sent: ' + (c.recipient === 'manager' ? 'the person it is assigned to has no manager' : 'nobody to send it to');
+      if (!to) return 'not sent: ' + (recipient === 'manager' ? 'the person it is assigned to has no manager' : 'nobody to send it to');
       const subject = fillVariables(c.subject ?? '', run, 'raw').replace(/[\r\n]+/g, ' ').trim().slice(0, 300);
       if (!(await canMailOne())) return 'not sent: no mailbox or relay to send it';
       // A document filled in for this asset (step 5): a PDF when LibreOffice

@@ -45,6 +45,15 @@ const setStatus = async (id: string, statusId: string) => {
 };
 
 describe('asset automations', () => {
+  test('a new email step goes to whoever has the asset, as its popup shows, without asking', async () => {
+    const a = await createAutomation('Default recipient', 'asset.assigned', admin.user.id);
+    const trigger = await triggerOf(a.id);
+    const mail = await addNode(a.id, 'asset_email', 300, 100, null);
+    await configureNode(a.id, mail, { subject: 'Your {{asset.Model}}', body: 'Hello' }, null);
+    await connect(a.id, trigger, 'next', mail, null);
+    assert.deepEqual(graphProblems((await findAutomation(a.id))!.graph), []);
+  });
+
   test('status changes to Bought out: a comment on the asset, and an email to the manager with its variables', async () => {
     const a = await createAutomation('Buyout', 'asset.status.changed', admin.user.id);
     const trigger = await triggerOf(a.id);
