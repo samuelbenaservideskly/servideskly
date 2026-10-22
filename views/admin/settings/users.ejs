@@ -94,6 +94,7 @@
 <% } %>
 
 <form method="get" action="<%= listUrl %>" class="filters">
+  <%- include("../../partials/keep-columns", { state: listState }) %>
   <% if (filters.idp) { %><input type="hidden" name="idp" value="<%= filters.idp %>"><% } %>
   <span class="filters__field">
     <label for="q">Search</label>
@@ -135,17 +136,23 @@
   <span class="muted small"><%= total %> account(s)</span>
 </form>
 
+<%- include('../../partials/clear-columns', { state: listState, path: listUrl }) %>
 <div class="table-scroll">
   <table class="table">
     <thead>
       <tr>
-        <th scope="col">Name</th>
-        <th scope="col">Role</th>
-        <th scope="col">Technician groups</th>
-        <th scope="col">User groups</th>
-        <th scope="col">Status</th>
-        <th scope="col">Source</th>
-        <th scope="col">Last sign-in</th>
+        <%# Excel-like headers (partials/col-head.ejs). %>
+        <% [
+          { key: 'name', label: 'Name' },
+          { key: 'role', label: 'Role' },
+          { key: 'tgroups', label: 'Technician groups', sortable: false },
+          { key: 'ugroups', label: 'User groups', sortable: false },
+          { key: 'status', label: 'Status' },
+          { key: 'source', label: 'Source' },
+          { key: 'lastSignIn', label: 'Last sign-in' },
+        ].forEach(function (c) { %>
+          <%- include('../../partials/col-head', { key: c.key, label: t(c.label), path: listUrl, state: listState, menu: columnMenus[c.key], sortable: c.sortable !== false }) %>
+        <% }); %>
       </tr>
     </thead>
     <tbody>

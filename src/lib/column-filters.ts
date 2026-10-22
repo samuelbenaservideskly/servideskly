@@ -96,3 +96,60 @@ export function menuValues(rows: readonly ColumnValue[], selected: readonly stri
     return a.label.localeCompare(b.label);
   });
 }
+
+// ---------------------------------------------------------------------------
+// In memory: for a short list a page already holds whole (most of Settings)
+// ---------------------------------------------------------------------------
+
+/** How a row's cell reads, per column: the value filtered on and sorted by. */
+export type Cells<T> = Record<string, (row: T) => string>;
+
+/** The rows whose cells are among the ticked values, column by column. */
+export function filterRows<T>(rows: readonly T[], filters: ColumnFilters, cells: Cells<T>): T[] {
+  return rows.filter((row) =>
+    Object.entries(filters).every(([key, values]) => {
+      const cell = cells[key];
+      return !cell || values.length === 0 || values.includes(cell(row) ?? BLANK);
+    }),
+  );
+}
+
+/** Rows sorted by one column, as text, numbers compared as numbers. Stable. */
+export function sortRows<T>(rows: readonly T[], sort: string | undefined, dir: 'asc' | 'desc' | undefined, cells: Cells<T>): T[] {
+  const cell = sort ? cells[sort] : undefined;
+  if (!cell) return [...rows];
+  const sign = dir === 'desc' ? -1 : 1;
+  return rows
+    .map((row, i) => ({ row, i, v: cell(row) ?? '' }))
+    .sort((a, b) => {
+      // Blanks last either way, as in the SQL lists.
+      if (a.v === '' && b.v !== '') return 1;
+      if (b.v === '' && a.v !== '') return -1;
+      return sign * a.v.localeCompare(b.v, undefined, { numeric: true, sensitivity: 'base' }) || a.i - b.i;
+    })
+    .map((x) => x.row);
+}
+
+/** Each column's menu, counted over the rows every other filter leaves. */
+export function rowMenus<T>(
+  rows: readonly T[],
+  filters: ColumnFilters,
+  cells: Cells<T>,
+  labelOf: (key: string, value: string) => string = (_k, v) => v,
+): Record<string, { values: ColumnValue[]; selected: string[] }> {
+  const menus: Record<string, { values: ColumnValue[]; selected: string[] }> = {};
+  for (const [key, cell] of Object.entries(cells)) {
+    const counts = new Map<string, number>();
+    for (const row of filterRows(rows, withoutColumn(filters, key), cells)) {
+      const v = cell(row) ?? BLANK;
+      counts.set(v, (counts.get(v) ?? 0) + 1);
+    }
+    const values = [...counts.entries()]
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, MAX_VALUES)
+      .map(([value, count]) => ({ value, label: labelOf(key, value), count }));
+    const selected = filters[key] ?? [];
+    menus[key] = { values: menuValues(values, selected, (v) => labelOf(key, v)), selected };
+  }
+  return menus;
+}

@@ -10,6 +10,7 @@
     menu      { values: [{ value, label, count }], selected: [...] }, or
               absent for a column that only sorts
     cls       an extra class for the <th>
+    tag       'th' (default) or 'span', for a header that is not a table's
 
   The label still sorts when pressed, as it always did. The chevron opens a
   <details> menu: sort either way, the column's values as tick boxes in a
@@ -34,8 +35,14 @@
   // Hidden inputs for the filter form: everything but this column's filter and the page.
   var keep = copy({}, [cfKey]);
   var ariaSort = !sorted ? 'none' : st.dir === 'desc' ? 'descending' : 'ascending';
+  var tag = locals.tag === 'span' ? 'span' : 'th';
+  // Written as raw markup on purpose: the i18n rewriter takes a bare
+  // scope="col" between two tags for text, and escapes its quotes. Every
+  // part of it is fixed or chosen from a fixed list.
+  var classes = ('col-' + key + (locals.cls ? ' ' + cls : '') + (filtered ? ' th-filter--on' : '')).replace(/[^\w -]/g, '');
+  var opening = '<' + tag + (tag === 'th' ? ' scope="col" aria-sort="' + ariaSort + '"' : '') + ' class="' + classes + '">';
 %>
-<th scope="col" class="col-<%= key %><%= locals.cls ? ' ' + cls : '' %><%= filtered ? ' th-filter--on' : '' %>" aria-sort="<%= ariaSort %>">
+<%- opening %>
   <div class="th-head">
     <% if (sortable) { %>
       <a class="th-sort<%= sorted ? ' th-sort--on' : '' %>" href="<%= href(copy({ sort: key, dir: nextDir })) %>">
@@ -68,7 +75,7 @@
               <% menu.values.forEach(function (item) { %>
                 <label class="check colfilter__value">
                   <input type="checkbox" name="<%= cfKey %>" value="<%= item.value %>"<%= selected.indexOf(item.value) >= 0 ? ' checked' : '' %>>
-                  <span><%= item.label || t('(blank)') %></span>
+                  <span><%= item.label ? t(item.label) : t('(blank)') %></span>
                   <span class="colfilter__count"><%= item.count %></span>
                 </label>
               <% }); %>
@@ -84,4 +91,4 @@
       </div>
     </details>
   </div>
-</th>
+</<%= tag %>>

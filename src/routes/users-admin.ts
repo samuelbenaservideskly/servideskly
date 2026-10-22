@@ -26,6 +26,9 @@ import {
   findUserById,
   isStaff,
   listUsers,
+  userColumnValues,
+  USER_SORTS,
+  type UserListOptions,
   type UserKind,
   setProfileAttributes,
   setUserRole,
@@ -77,6 +80,8 @@ import {
 import { PROVIDERS, providerConfig, providerName, type ProviderKey } from '../auth/oidc.js';
 import { hasAuthenticator, removeAuthenticator } from '../auth/authenticator.js';
 import { PERMISSIONS, can, countRoleMembers, createRole, deleteRole, listRoles, roleById, roleProblems, setCustomRole, updateRole } from '../auth/permissions.js';
+import { BLANK, filterParams, menuValues, readColumnFilters, type ColumnValue } from '../lib/column-filters.js';
+import { roleLabel, sourceLabel, stateLabel } from '../lib/format.js';
 
 /**
  * Users.
@@ -278,16 +283,40 @@ async function renderList(
   const parsed = usersQuery.safeParse(req.method === 'GET' ? req.query : {});
   const filters = parsed.success ? parsed.data : usersQuery.parse({});
 
-  const { rows, total } = await listUsers({
+  // Excel-like headers (lib/column-filters.ts): sort any column, filter by values.
+  const raw = (req.method === 'GET' ? req.query : {}) as Record<string, unknown>;
+  const columns = readColumnFilters(raw, ['role', 'tgroups', 'ugroups', 'status', 'source']);
+  const sort = typeof raw.sort === 'string' && USER_SORTS[raw.sort] ? raw.sort : undefined;
+  const dir = raw.dir === 'desc' ? 'desc' : raw.dir === 'asc' ? 'asc' : undefined;
+  const listOptions: UserListOptions = {
     ...(filters.q ? { search: filters.q } : {}),
     ...(filters.role ? { role: filters.role } : {}),
     ...(filters.tg ? { technicianGroupId: filters.tg } : {}),
     ...(filters.ug ? { userGroupId: filters.ug } : {}),
     ...(kind === 'directory' && filters.idp ? { provider: filters.idp } : {}),
     kind,
-    limit: PER_PAGE,
-    offset: (filters.page - 1) * PER_PAGE,
+    columns,
+    ...(sort ? { sort, ...(dir ? { dir } : {}) } : {}),
+  };
+  const { rows, total } = await listUsers({ ...listOptions, limit: PER_PAGE, offset: (filters.page - 1) * PER_PAGE });
+  const menuKeys = ['role', 'tgroups', 'ugroups', 'status', 'source'];
+  const menuRows = await Promise.all(menuKeys.map((key) => userColumnValues(listOptions, key)));
+  const labelFor: Record<string, (v: string, fallback: string) => string> = {
+    role: (v) => roleLabel(v),
+    status: (v) => stateLabel(v),
+    source: (v) => sourceLabel(v),
+    tgroups: (v, fallback) => (v === BLANK ? 'None' : fallback),
+    ugroups: (v, fallback) => (v === BLANK ? 'None' : fallback),
+  };
+  const columnMenus: Record<string, { values: ColumnValue[]; selected: string[] }> = {};
+  menuKeys.forEach((key, i) => {
+    const rowsFor = menuRows[i]!.map((r) => ({ ...r, label: labelFor[key]!(r.value, r.label || r.value) }));
+    columnMenus[key] = { values: menuValues(rowsFor, columns[key] ?? [], (v) => labelFor[key]!(v, v)), selected: columns[key] ?? [] };
   });
+  const listState = {
+    q: filters.q, role: filters.role, tg: filters.tg, ug: filters.ug, idp: filters.idp,
+    sort, dir, ...filterParams(columns),
+  };
 
   // One round trip per page of users rather than per user.
   const users = await Promise.all(
@@ -310,6 +339,9 @@ async function renderList(
   if (filters.tg) keep.set('tg', filters.tg);
   if (filters.ug) keep.set('ug', filters.ug);
   if (filters.idp) keep.set('idp', filters.idp);
+  if (sort) keep.set('sort', sort);
+  if (dir) keep.set('dir', dir);
+  for (const [k, values] of Object.entries(filterParams(columns))) for (const v of values) keep.append(k, v);
 
   if (status) res.status(status);
   res.render(
@@ -320,7 +352,10 @@ async function renderList(
       technicianGroups,
       allUserGroups,
       filterQuery: keep.toString(),
-      filtering: Boolean(filters.q || filters.role || filters.tg || filters.ug),
+      filtering: Boolean(filters.q || filters.role || filters.tg || filters.ug || Object.keys(columns).length),
+      columnMenus,
+      columnFilters: columns,
+      listState,
       // A tab per provider that is set up or already has accounts here.
       providerTabs: kind === 'directory' ? await providerTabs() : [],
       users,

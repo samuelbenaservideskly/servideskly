@@ -3,6 +3,7 @@ import { z } from 'zod';
 import { count, query } from '../db/index.js';
 import { asyncHandler } from '../lib/async-handler.js';
 import { settingsView } from './settings-shared.js';
+import { BLANK, columnClauses, filterParams, MAX_VALUES, menuValues, readColumnFilters, withoutColumn, type ColumnFilters, type ColumnValue } from '../lib/column-filters.js';
 
 /**
  * The audit trail, as a settings section.
@@ -16,6 +17,10 @@ import { settingsView } from './settings-shared.js';
 // ---------------------------------------------------------------------------
 
 const PER_PAGE = 50;
+
+/** Column filters on the audit trail: the stored value each header filters on. */
+const AUDIT_COLUMNS: Record<string, string> = { actor: "coalesce(actor_email, '')", action: 'action', outcome: 'outcome' };
+const AUDIT_SORTS: Record<string, string> = { when: 'created_at', actor: "lower(coalesce(actor_email, ''))", action: 'action', outcome: 'outcome' };
 
 const auditQuery = z.object({
   action: z.string().trim().max(100).optional(),
@@ -55,7 +60,20 @@ auditRouter.get(
       params.push(filters.outcome);
     }
 
-    const whereSql = where.length > 0 ? ' WHERE ' + where.join(' AND ') : '';
+    // Excel-like headers (lib/column-filters.ts): filter by values, sort any column.
+    const raw = req.query as Record<string, unknown>;
+    const columns = readColumnFilters(raw, Object.keys(AUDIT_COLUMNS));
+    const sort = typeof raw.sort === 'string' && AUDIT_SORTS[raw.sort] ? raw.sort : '';
+    const dir = raw.dir === 'asc' ? 'asc' : 'desc';
+    const base = { where: [...where], params: [...params] };
+    const withColumns = (cols: ColumnFilters) => {
+      const cf = columnClauses(cols, AUDIT_COLUMNS);
+      const all = [...base.where, ...cf.where];
+      return { sql: all.length > 0 ? ' WHERE ' + all.join(' AND ') : '', params: [...base.params, ...cf.params] };
+    };
+    const current = withColumns(columns);
+    const whereSql = current.sql;
+    params.splice(0, params.length, ...current.params);
 
     const total = await count('SELECT count(*) AS c FROM audit_log' + whereSql, params);
     const pageCount = Math.max(Math.ceil(total / PER_PAGE), 1);
@@ -65,9 +83,22 @@ auditRouter.get(
       `SELECT id, created_at, actor_email, action, outcome, target_type, target_id, ip, detail
          FROM audit_log` +
         whereSql +
-        ' ORDER BY created_at DESC, id DESC LIMIT ? OFFSET ?',
+        ' ORDER BY ' + (sort ? AUDIT_SORTS[sort] + ' ' + (dir === 'asc' ? 'ASC' : 'DESC') + ', ' : '') + 'created_at DESC, id DESC LIMIT ? OFFSET ?',
       [...params, PER_PAGE, (page - 1) * PER_PAGE],
     );
+
+    // Each header's values, over what the other filters leave.
+    const columnMenus: Record<string, { values: ColumnValue[]; selected: string[] }> = {};
+    for (const [key, expr] of Object.entries(AUDIT_COLUMNS)) {
+      const other = withColumns(withoutColumn(columns, key));
+      const rows = await query<{ v: string; n: number }>(
+        'SELECT ' + expr + ' AS v, count(*) AS n FROM audit_log' + other.sql + ' GROUP BY ' + expr + ' ORDER BY n DESC LIMIT ' + MAX_VALUES,
+        other.params as never[],
+      );
+      const values = rows.map((r) => ({ value: r.v ?? BLANK, label: r.v || (key === 'actor' ? 'anonymous' : ''), count: Number(r.n) }));
+      columnMenus[key] = { values: menuValues(values, columns[key] ?? [], (v) => v), selected: columns[key] ?? [] };
+    }
+    const listState = { action: filters.action, outcome: filters.outcome, sort: sort || undefined, dir: sort ? dir : undefined, ...filterParams(columns) };
 
     const actionRows = await query<{ action: string }>(
       'SELECT DISTINCT action FROM audit_log ORDER BY action',
@@ -81,6 +112,8 @@ auditRouter.get(
         page,
         pageCount,
         filters,
+        columnMenus,
+        listState,
         actionGroups: groupActions(actionRows.map((r) => r.action), filters.action ?? ''),
       }),
     );

@@ -73,6 +73,7 @@ import { listActiveTemplates } from '../services/templates.js';
 import { attempt, issueErrors, type FieldErrors } from './form-errors.js';
 import { config } from '../config.js';
 import { settingsView } from './settings-shared.js';
+import { filterParams, filterRows, readColumnFilters, rowMenus, sortRows, type Cells } from '../lib/column-filters.js';
 
 /**
  * Mail.
@@ -346,6 +347,9 @@ async function notificationsView(
     relaysOnly: await relaysOnlyInForce(),
     placeholders: PLACEHOLDERS,
     errors: {},
+    // The headers' menus; the list page fills them in (GET /notifications).
+    columnMenus: {},
+    listState: {},
     ...extra,
   });
 }
@@ -429,9 +433,41 @@ mailAdminRouter.get(
     const wanted = String(req.query.lang ?? '');
     const language = enabledLanguages().find((l) => l.tag === wanted)?.tag ?? '';
     if (language) await seedNotificationsFor(language);
-    res.render('admin/settings/mail-notifications', await notificationsView({ kind, language }));
+    const view = await notificationsView({ kind, language });
+    // Excel-like headers (lib/column-filters.ts), in memory: the list is whole.
+    type Row = Awaited<ReturnType<typeof listNotificationsOfKind>>[number];
+    const rows = view.notifications as Row[];
+    const cells: Cells<Row> = {
+      name: (r) => r.name,
+      goesTo: (r) => (kind === 'custom' ? 'automation' : (AUDIENCE as Record<string, string>)[r.event] ?? ''),
+      status: (r) => (r.is_enabled ? 'On' : 'Off'),
+    };
+    const asked = req.query as Record<string, unknown>;
+    const columns = readColumnFilters(asked, Object.keys(cells));
+    const sort = typeof asked.sort === 'string' && cells[asked.sort] ? asked.sort : undefined;
+    const dir = asked.dir === 'desc' ? 'desc' : 'asc';
+    const labelOf = (key: string, v: string) => (key === 'goesTo' ? (AUDIENCE_LABELS[v] ?? v) : v);
+    res.render('admin/settings/mail-notifications', {
+      ...view,
+      notifications: sortRows(filterRows(rows, columns, cells), sort, dir, cells),
+      columnMenus: rowMenus(rows, columns, cells, labelOf),
+      listState: { kind: kind === 'custom' ? 'custom' : undefined, lang: language || undefined, sort, dir: sort ? dir : undefined, ...filterParams(columns) },
+    });
   }),
 );
+
+/** Who a notification goes to, in words, for the Goes to column's menu. */
+const AUDIENCE_LABELS: Record<string, string> = {
+  automation: 'Chosen by the automation',
+  requester: 'The requester',
+  group: 'The technician group',
+  assignee: 'The assigned technician',
+  admins: 'Other administrators',
+  approver: 'The approver',
+  manager: 'The group manager',
+  manager_or_admins: 'The group manager, else other administrators',
+  person: 'One person',
+};
 
 /** A new custom notification, from the dialog on the Custom tab. */
 mailAdminRouter.post(

@@ -159,6 +159,7 @@
   </a>
 </div>
 
+<%- include('../../partials/clear-columns', { state: locals.listState, path: '/admin/settings/templates' }) %>
 <% if (templates.length === 0) { %>
   <div class="card">
     <p><strong>No templates yet.</strong></p>
@@ -171,12 +172,9 @@
     <table class="table">
       <thead>
         <tr>
-          <th scope="col">Name</th>
-          <th scope="col">Raises</th>
-          <th scope="col">Filed under</th>
-          <th scope="col">Priority</th>
-          <th scope="col">Form</th>
-          <th scope="col">Status</th>
+          <% [{ key: 'name', label: 'Name' }, { key: 'raises', label: 'Raises' }, { key: 'filed', label: 'Filed under' }, { key: 'priority', label: 'Priority' }, { key: 'form', label: 'Form' }, { key: 'status', label: 'Status' }].forEach(function (c) { %>
+            <%- include('../../partials/col-head', { key: c.key, label: t(c.label), path: '/admin/settings/templates', state: listState, menu: columnMenus[c.key] }) %>
+          <% }); %>
           <th scope="col">Actions</th>
         </tr>
       </thead>

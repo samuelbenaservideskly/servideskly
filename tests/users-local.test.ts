@@ -253,7 +253,7 @@ describe('filtering users', () => {
 
       const inFinance = await as(admin).get('/admin/settings/users/entra?ug=' + finance.id).expect(200);
       assert.match(inFinance.text, /filter\.plain@example\.com/);
-      assert.match(inFinance.text, /<th scope="col">User groups<\/th>/);
+      assert.match(inFinance.text, /<th scope="col"[^>]*class="col-ugroups[^"]*">[\s\S]*?User groups/);
       assert.match(inFinance.text, />\s*Filter finance\s*</);
     } finally {
       await updateSettings({ scim: { enabled: false } }, null);

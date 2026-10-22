@@ -11,6 +11,7 @@
   <a class="btn" href="/admin/settings/advanced/automation/runs">Last runs</a>
 </div>
 
+<%- include('../../partials/clear-columns', { state: locals.listState, path: '/admin/settings/advanced/automation' }) %>
 <% if (automations.length === 0) { %>
   <div class="card">
     <p><strong>No automations yet.</strong></p>
@@ -21,10 +22,9 @@
     <table class="table">
       <thead>
         <tr>
-          <th scope="col">Name</th>
-          <th scope="col">When</th>
-          <th scope="col">Status</th>
-          <th scope="col">Last run</th>
+          <% [{ key: 'name', label: 'Name' }, { key: 'when', label: 'When' }, { key: 'status', label: 'Status' }, { key: 'lastRun', label: 'Last run' }].forEach(function (c) { %>
+            <%- include('../../partials/col-head', { key: c.key, label: t(c.label), path: '/admin/settings/advanced/automation', state: listState, menu: columnMenus[c.key] }) %>
+          <% }); %>
           <th scope="col"><span class="visually-hidden">Actions</span></th>
         </tr>
       </thead>

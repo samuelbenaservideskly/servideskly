@@ -65,6 +65,7 @@ import { PRIORITY_LABELS, STATUS_LABELS, TICKET_PRIORITIES, TICKET_STATUSES, TIC
 import { attempt, type FieldErrors } from './form-errors.js';
 import { allowFormActionTo, allowOwnScripts } from '../middleware/security.js';
 import { settingsView } from './settings-shared.js';
+import { filterParams, filterRows, readColumnFilters, rowMenus, sortRows, type Cells } from '../lib/column-filters.js';
 
 /**
  * Settings - Advanced - Automation and Connections.
@@ -299,14 +300,30 @@ async function renderList(res: Response, extra: { status?: number; openDialog?: 
     `SELECT r.automation_id, r.ran_at, r.outcome FROM automation_runs r
       WHERE r.ran_at = (SELECT max(ran_at) FROM automation_runs x WHERE x.automation_id = r.automation_id)`,
   );
+  const rows = automations.map((a) => ({
+    ...a,
+    trigger: TRIGGERS.find((t) => t.key === a.graph.nodes.find((n) => n.type === 'trigger')?.config.event)?.label ?? '',
+    lastRun: last.find((l) => l.automation_id === a.id) ?? null,
+  }));
+  // Excel-like headers (lib/column-filters.ts), in memory: the list is short and whole.
+  type Row = (typeof rows)[number];
+  const cells: Cells<Row> = {
+    name: (r) => r.name,
+    when: (r) => r.trigger,
+    status: (r) => (r.is_enabled ? 'On' : 'Off'),
+    lastRun: (r) => (r.lastRun ? r.lastRun.outcome : 'never'),
+  };
+  const sortCells: Cells<Row> = { ...cells, lastRun: (r) => r.lastRun?.ran_at ?? '' };
+  const asked = (res.req?.query ?? {}) as Record<string, unknown>;
+  const columns = readColumnFilters(asked, Object.keys(cells));
+  const sort = typeof asked.sort === 'string' && sortCells[asked.sort] ? asked.sort : undefined;
+  const dir = asked.dir === 'desc' ? 'desc' : 'asc';
   res.render(
     'admin/settings/automations',
     settingsView('advanced', {
-      automations: automations.map((a) => ({
-        ...a,
-        trigger: TRIGGERS.find((t) => t.key === a.graph.nodes.find((n) => n.type === 'trigger')?.config.event)?.label ?? '',
-        lastRun: last.find((l) => l.automation_id === a.id) ?? null,
-      })),
+      automations: sortRows(filterRows(rows, columns, cells), sort, dir, sortCells),
+      columnMenus: rowMenus(rows, columns, cells),
+      listState: { sort, dir: sort ? dir : undefined, ...filterParams(columns) },
       triggers: TRIGGERS,
       allowPrivateNetwork: settings().httpRequests.allowPrivateNetwork,
       openDialog: extra.openDialog ?? null,

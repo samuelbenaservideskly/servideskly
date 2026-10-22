@@ -9,6 +9,7 @@ import { bootstrapTestDatabase } from './support/bootstrap.js';
 import { signInAs, type TestSession } from './support/session.js';
 import { createTicket } from '../src/services/tickets.js';
 import { columnClause, readColumnFilters } from '../src/lib/column-filters.js';
+import { updateSettings } from '../src/settings/index.js';
 
 /** Excel-like column filters (lib/column-filters.ts, 21 Oct 2026). */
 
@@ -73,5 +74,64 @@ describe('the ticket queue', () => {
     const other = await signInAs('cf.other@example.com', 'user');
     const theirs = await get('/tickets?status=any&cf_priority=urgent', other).expect(200);
     assert.doesNotMatch(theirs.text, /CF gamma/);
+  });
+});
+
+describe('Settings - Users and the audit trail', () => {
+  test('users filter by role and by group membership, and sort by a column', async () => {
+    const admin = await signInAs('cf.admin@example.com', 'admin');
+    // The test accounts come from the directory: the Identity providers tab, open while SCIM is on.
+    await updateSettings({ scim: { enabled: true } }, null);
+    const page = await get('/admin/settings/users/entra?cf_role=agent', admin).expect(200);
+    assert.match(page.text, /cf\.agent@example\.com/);
+    assert.doesNotMatch(page.text, /cf\.requester@example\.com/);
+    assert.match(page.text, /name="cf_tgroups"/);
+    // "None" in the groups column: people in no technician group.
+    const none = await get('/admin/settings/users/entra?cf_tgroups=', admin).expect(200);
+    assert.match(none.text, /cf\.requester@example\.com/);
+    const sorted = await get('/admin/settings/users/entra?sort=lastSignIn&dir=desc', admin).expect(200);
+    assert.match(sorted.text, /aria-sort="descending"/);
+  });
+
+  test('the audit trail filters by outcome and actor from its headers', async () => {
+    const admin = await signInAs('cf.auditor@example.com', 'admin');
+    const page = await get('/admin/settings/audit?cf_outcome=failure', admin).expect(200);
+    assert.match(page.text, /name="cf_outcome"/);
+    assert.doesNotMatch(page.text, /pill--resolved">success</);
+  });
+});
+
+describe('Reports, Settings lists and People', () => {
+  test('in memory: filter, sort and menus counted over the other filters', async () => {
+    const { filterRows, rowMenus, sortRows } = await import('../src/lib/column-filters.js');
+    const rows = [{ n: 'b', s: 'On' }, { n: 'a', s: 'Off' }, { n: 'c', s: 'On' }];
+    const cells = { name: (r: { n: string }) => r.n, status: (r: { s: string }) => r.s };
+    assert.deepEqual(filterRows(rows, { status: ['On'] }, cells).map((r) => r.n), ['b', 'c']);
+    assert.deepEqual(sortRows(rows, 'name', 'desc', cells).map((r) => r.n), ['c', 'b', 'a']);
+    const menus = rowMenus(rows, { status: ['On'] }, cells);
+    assert.deepEqual(menus.status!.values.map((v) => [v.value, v.count]), [['Off', 1], ['On', 2]], 'its own filter left out');
+    assert.equal(menus.name!.values.length, 2, 'other columns narrowed by it');
+  });
+
+  test('the Settings lists and People take the headers', async () => {
+    const admin = await signInAs('cf.lists@example.com', 'admin');
+    const { ensureDefaultTemplate } = await import('../src/services/templates.js');
+    await ensureDefaultTemplate();
+    for (const path of ['/admin/settings/templates?cf_status=Active', '/admin/settings/mail/notifications?cf_status=On', '/people?cf_company=&sort=company']) {
+      const page = await get(path, admin).expect(200);
+      assert.match(page.text, /class="colfilter"/, path);
+    }
+    const retired = await get('/admin/settings/templates?cf_status=Active', admin).expect(200);
+    assert.match(retired.text, /th-filter--on/);
+  });
+
+  test('a figure\'s tickets in Reports filter and sort from their headers', async () => {
+    const manager = await signInAs('cf.manager@example.com', 'admin');
+    const page = await get('/reports/tickets?metric=raised&period=30&cf_priority=urgent&sort=raised&dir=asc', manager);
+    assert.ok(page.status === 200 || page.status === 404, 'a report or none for this person');
+    if (page.status === 200) {
+      assert.match(page.text, /name="cf_priority" value="urgent" checked/);
+      assert.doesNotMatch(page.text, /CF alpha/);
+    }
   });
 });

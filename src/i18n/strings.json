@@ -601,9 +601,9 @@
   },
   "s0b70af7a26": {
     "text": "Last sign-in",
-    "context": "Text on admin/settings/user-detail / A table column heading on admin/settings/users / Text on profile",
+    "context": "Text on admin/settings/user-detail / Text on profile",
     "where": "views/admin/settings/user-detail.ejs",
-    "uses": 3
+    "uses": 2
   },
   "s0b7e28c164": {
     "text": "no subcategories yet",
@@ -777,12 +777,6 @@
     "text": "{0} cancelled",
     "context": "Text on reports",
     "where": "views/reports.ejs",
-    "uses": 1
-  },
-  "s0e570ca6fa": {
-    "text": "Source",
-    "context": "A table column heading on admin/settings/users",
-    "where": "views/admin/settings/users.ejs",
     "uses": 1
   },
   "s0e66373f45": {
@@ -1131,7 +1125,7 @@
     "text": "Role",
     "context": "A table column heading on admin/settings/roles / A heading on admin/settings/user-detail / The label of a form field on admin/settings/user-detail",
     "where": "views/admin/settings/roles.ejs",
-    "uses": 8
+    "uses": 7
   },
   "s148c294468": {
     "text": "+ Sub Category",
@@ -2541,7 +2535,7 @@
     "text": "Form",
     "context": "The label of a form field on admin/settings/template-catalogue / A table column heading on admin/settings/templates",
     "where": "views/admin/settings/template-catalogue.ejs",
-    "uses": 3
+    "uses": 2
   },
   "s2e0ed22477": {
     "text": "New ticket opens the service catalogue",
@@ -2977,9 +2971,9 @@
   },
   "s34ca0e7660": {
     "text": "Group",
-    "context": "The label of a form field on admin/settings/automation-edit / The label of a form field on boards/_widget-form / A table column heading on reports-tickets",
+    "context": "The label of a form field on admin/settings/automation-edit / The label of a form field on boards/_widget-form / The label of a form field on reports",
     "where": "views/admin/settings/automation-edit.ejs",
-    "uses": 8
+    "uses": 7
   },
   "s350fa12380": {
     "text": "File attached.",
@@ -3327,7 +3321,7 @@
     "text": "Technician groups",
     "context": "A link on admin/settings/_group-tabs / The heading of a group of fields on admin/settings/dashboard-edit / A heading on admin/settings/user-detail",
     "where": "views/admin/settings/_group-tabs.ejs",
-    "uses": 5
+    "uses": 4
   },
   "s3b12016d23": {
     "text": "e.g. HR",
@@ -3761,6 +3755,12 @@
     "where": "views/admin/settings/authentication.ejs",
     "uses": 1
   },
+  "s440ce40eb2": {
+    "text": "Clear column filters",
+    "context": "Text on partials/clear-columns",
+    "where": "views/partials/clear-columns.ejs",
+    "uses": 1
+  },
   "s44128576e4": {
     "text": "{0} open, {1} in all",
     "context": "Text on the page on tickets/show",
@@ -3795,12 +3795,6 @@
     "text": "{0}: a change reaches them as soon as it is saved.",
     "context": "Text on the page on admin/settings/portal-edit",
     "where": "views/admin/settings/portal-edit.ejs",
-    "uses": 1
-  },
-  "s449995c4fe": {
-    "text": "Actor",
-    "context": "Text on the page on admin/settings/audit",
-    "where": "views/admin/settings/audit.ejs",
     "uses": 1
   },
   "s44c09f47e6": {
@@ -4285,9 +4279,9 @@
   },
   "s4e80abb5b1": {
     "text": "Outcome",
-    "context": "The label of a form field on admin/settings/audit / Text on the page on admin/settings/audit / A table column heading on admin/settings/automation-edit",
+    "context": "The label of a form field on admin/settings/audit / A table column heading on admin/settings/automation-edit / A table column heading on admin/settings/automation-runs",
     "where": "views/admin/settings/audit.ejs",
-    "uses": 4
+    "uses": 3
   },
   "s4e93f12515": {
     "text": "One zip: every table as JSON, and every uploaded file. It is the whole\n    service desk as it stands - what to take before a move, and what to hand\n    over when somebody asks for their data.",
@@ -4468,12 +4462,6 @@
     "context": "The tickets behind one figure in Reports - a page heading / Text on work-dashboard",
     "where": "src/i18n/code-strings.ts",
     "uses": 2
-  },
-  "s512a48218b": {
-    "text": "Last run",
-    "context": "A table column heading on admin/settings/automations",
-    "where": "views/admin/settings/automations.ejs",
-    "uses": 1
   },
   "s512a6d6ac6": {
     "text": "{0}, up to {1} KB.\n        A square image, 32x32 or larger, or an SVG.",
@@ -4783,9 +4771,9 @@
   },
   "s567a8b5f8f": {
     "text": "Ticket",
-    "context": "A link on admin/settings/automation-edit / A table column heading on admin/settings/automation-runs / A table column heading on reports-tickets",
+    "context": "A link on admin/settings/automation-edit / A table column heading on admin/settings/automation-runs / A table column heading on work-dashboard",
     "where": "views/admin/settings/automation-edit.ejs",
-    "uses": 4
+    "uses": 3
   },
   "s56b564b75c": {
     "text": "Templates",
@@ -4845,7 +4833,7 @@
     "text": "User groups",
     "context": "A link on admin/settings/_group-tabs / The heading of a group of fields on admin/settings/portal / The heading of a group of fields on admin/settings/template-edit",
     "where": "views/admin/settings/_group-tabs.ejs",
-    "uses": 6
+    "uses": 5
   },
   "s574e535207": {
     "text": "a filter that does not make sense, with the reason.",
@@ -5067,7 +5055,7 @@
     "text": "Resolved",
     "context": "A ticket's status - a badge on the ticket and in the queue / A figure from Reports, shown on a dashboard widget / A figure in Reports",
     "where": "src/i18n/code-strings.ts",
-    "uses": 11
+    "uses": 10
   },
   "s5c1e1acf71": {
     "text": "They see this group in Reports and on the Manager dashboard, and receive its SLA alerts and the reason a ticket in it was deleted. A manager need not be a member.",
@@ -5161,9 +5149,9 @@
   },
   "s5e20d20e39": {
     "text": "Assignee",
-    "context": "A field on the form a ticket is raised with / A table column heading on reports-tickets / Text on tickets/index",
+    "context": "A field on the form a ticket is raised with / Text on tickets/index / The label of a form field on tickets/show",
     "where": "src/i18n/code-strings.ts",
-    "uses": 6
+    "uses": 5
   },
   "s5e639bbbcd": {
     "text": "View only fixes it to the title this template sets. Every template needs this field before it can be offered.",
@@ -5587,9 +5575,9 @@
   },
   "s64cff1319d": {
     "text": "Action",
-    "context": "The label of a form field on admin/settings/audit / Text on the page on admin/settings/audit / The label of a form field on admin/settings/automation-edit",
+    "context": "The label of a form field on admin/settings/audit / The label of a form field on admin/settings/automation-edit",
     "where": "views/admin/settings/audit.ejs",
-    "uses": 3
+    "uses": 2
   },
   "s64d0b3adcd": {
     "text": "Font",
@@ -6967,7 +6955,7 @@
   },
   "s7d31b83313": {
     "text": "Notification",
-    "context": "The label of a form field on admin/settings/automation-edit / A table column heading on admin/settings/mail-notifications",
+    "context": "The label of a form field on admin/settings/automation-edit / Text on admin/settings/mail-notifications",
     "where": "views/admin/settings/automation-edit.ejs",
     "uses": 2
   },
@@ -7239,12 +7227,6 @@
     "text": "Preview - {0}",
     "context": "Text on the page on admin/settings/portal-edit",
     "where": "views/admin/settings/portal-edit.ejs",
-    "uses": 1
-  },
-  "s8241aebfe6": {
-    "text": "Filed under",
-    "context": "A table column heading on admin/settings/templates",
-    "where": "views/admin/settings/templates.ejs",
     "uses": 1
   },
   "s8284ba781d": {
@@ -8227,9 +8209,9 @@
   },
   "s920e413c7d": {
     "text": "Status",
-    "context": "A table column heading on admin/settings/assets-statuses / The label of a form field on admin/settings/automation-edit / A table column heading on admin/settings/automations",
+    "context": "A table column heading on admin/settings/assets-statuses / The label of a form field on admin/settings/automation-edit / A table column heading on admin/settings/groups",
     "where": "views/admin/settings/assets-statuses.ejs",
-    "uses": 32
+    "uses": 28
   },
   "s9234069589": {
     "text": "Active",
@@ -10137,7 +10119,7 @@
     "text": "Raised",
     "context": "A figure from Reports, shown on a dashboard widget / A figure in Reports / The tickets behind one figure in Reports - a page heading",
     "where": "src/i18n/code-strings.ts",
-    "uses": 12
+    "uses": 11
   },
   "sb4b7d3818d": {
     "text": "Mar",
@@ -11119,7 +11101,7 @@
   },
   "sc485e60ea1": {
     "text": "Goes to",
-    "context": "A table column heading on admin/settings/mail-notifications",
+    "context": "Text on admin/settings/mail-notifications",
     "where": "views/admin/settings/mail-notifications.ejs",
     "uses": 1
   },
@@ -11593,9 +11575,9 @@
   },
   "scf9c7aa24a": {
     "text": "When",
-    "context": "Text on the page on admin/settings/audit / A table column heading on admin/settings/automation-edit / The label of a form field on admin/settings/automation-edit",
-    "where": "views/admin/settings/audit.ejs",
-    "uses": 10
+    "context": "A table column heading on admin/settings/automation-edit / The label of a form field on admin/settings/automation-edit / A table column heading on admin/settings/automation-runs",
+    "where": "views/admin/settings/automation-edit.ejs",
+    "uses": 8
   },
   "scfe8ddaee9": {
     "text": "Tile preview",
@@ -11931,7 +11913,7 @@
     "text": "Priority",
     "context": "A field on the form a ticket is raised with / The label of a form field on admin/settings/automation-edit / The label of a form field on admin/settings/template-edit",
     "where": "src/i18n/code-strings.ts",
-    "uses": 19
+    "uses": 17
   },
   "sd62f59d7f4": {
     "text": "Only service desk staff can change ticket fields.",
@@ -11944,6 +11926,12 @@
     "context": "A message shown beside a form or after an action",
     "where": "src/services/mail/outbox.ts",
     "uses": 2
+  },
+  "sd6914758d1": {
+    "text": "Filtered by column.",
+    "context": "Text on partials/clear-columns",
+    "where": "views/partials/clear-columns.ejs",
+    "uses": 1
   },
   "sd696a35bdd": {
     "text": "Profile",
@@ -12369,7 +12357,7 @@
     "text": "Name",
     "context": "The label of a form field on admin/settings/_mailbox-dialog / A table column heading on admin/settings/_member-picker / The label of a form field on admin/settings/_relay-dialog",
     "where": "views/admin/settings/_mailbox-dialog.ejs",
-    "uses": 52
+    "uses": 49
   },
   "sdce880ecdd": {
     "text": "Make another template the default first.",
@@ -12435,7 +12423,7 @@
     "text": "Company",
     "context": "A figure in Reports / The label of a form field on admin/settings/user-detail / The label of a form field on admin/settings/users",
     "where": "src/i18n/code-strings.ts",
-    "uses": 10
+    "uses": 9
   },
   "sde597b5470": {
     "text": "Signs in with",
@@ -13087,9 +13075,9 @@
   },
   "se97e76330f": {
     "text": "Raises",
-    "context": "The label of a form field on admin/settings/automation-edit / A table column heading on admin/settings/mail-rules / A table column heading on admin/settings/templates",
+    "context": "The label of a form field on admin/settings/automation-edit / A table column heading on admin/settings/mail-rules",
     "where": "views/admin/settings/automation-edit.ejs",
-    "uses": 3
+    "uses": 2
   },
   "se981ddae45": {
     "text": "Warning",

@@ -133,6 +133,7 @@
   <a class="btn btn--quiet" href="/tickets">Reset</a>
 </form>
 
+<%- include('../partials/clear-columns', { state: queueState, path: '/tickets' }) %>
 <% if (page.items.length === 0) { %>
   <div class="empty">
     <p>No tickets match these filters.</p>

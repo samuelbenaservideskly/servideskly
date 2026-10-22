@@ -18,6 +18,7 @@
 <% if (l.capped) { %><p class="small muted">The first <%= cap %> tickets raised in the period were read, as on the report.</p><% } %>
 
 <section class="dash-panel">
+  <%- include('partials/clear-columns', { state: listState, path: '/reports/tickets' }) %>
   <% if (l.rows.length === 0) { %>
     <p class="dash-empty"><%= t('No tickets.') %> <a href="<%= backHref %>"><%= t('Back to the report') %></a></p>
   <% } else { %>
@@ -25,14 +26,14 @@
       <table class="table">
         <thead>
           <tr>
-            <th scope="col">Ticket</th>
-            <th scope="col">Status</th>
-            <th scope="col">Priority</th>
-            <th scope="col">Group</th>
-            <th scope="col">Assignee</th>
-            <th scope="col">Company</th>
-            <th scope="col">Raised</th>
-            <th scope="col">Resolved</th>
+            <%# Excel-like headers (partials/col-head.ejs). %>
+            <% [
+              { key: 'ticket', label: 'Ticket' }, { key: 'status', label: 'Status' }, { key: 'priority', label: 'Priority' },
+              { key: 'group', label: 'Group' }, { key: 'assignee', label: 'Assignee' }, { key: 'company', label: 'Company' },
+              { key: 'raised', label: 'Raised' }, { key: 'resolved', label: 'Resolved' },
+            ].forEach(function (c) { %>
+              <%- include('partials/col-head', { key: c.key, label: locals.t(c.label), path: '/reports/tickets', state: listState, menu: l.columnMenus[c.key] }) %>
+            <% }); %>
           </tr>
         </thead>
         <tbody>

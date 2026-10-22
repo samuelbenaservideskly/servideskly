@@ -2,7 +2,8 @@ import { Router } from 'express';
 import { asyncHandler } from '../lib/async-handler.js';
 import { notFound } from '../lib/errors.js';
 import { requireAuth } from '../middleware/auth.js';
-import { isStaff, findUserById, listUsers, type UserRow } from '../services/users.js';
+import { isStaff, findUserById, listUsers, userColumnValues, type UserRow } from '../services/users.js';
+import { filterParams, menuValues, readColumnFilters } from '../lib/column-filters.js';
 import { groupsForUser } from '../services/groups.js';
 import { listUserGroups, userGroupIdsFor } from '../services/user-groups.js';
 import { settings } from '../settings/index.js';
@@ -85,11 +86,22 @@ peopleRouter.get(
 
     // listUsers leaves out the accounts that are not people - the mail
     // sender and the Anonymous placeholder - on every tab.
-    const found = await listUsers({
-      ...(search ? { search } : {}),
-      limit: PER_PAGE,
-      offset: (page - 1) * PER_PAGE,
-    });
+    // Excel-like headers (lib/column-filters.ts): Company filters, Name and Company sort.
+    // Department and job title are sealed at rest (encryption), so SQL cannot filter them.
+    const params = req.query as Record<string, unknown>;
+    const columns = readColumnFilters(params, ['company']);
+    const sort = params.sort === 'name' || params.sort === 'company' ? params.sort : undefined;
+    const dir = params.dir === 'desc' ? ('desc' as const) : ('asc' as const);
+    const options = { ...(search ? { search } : {}), columns, ...(sort ? { sort, dir } : {}) };
+    const found = await listUsers({ ...options, limit: PER_PAGE, offset: (page - 1) * PER_PAGE });
+    const companies = await userColumnValues(options, 'company');
+    const columnMenus = {
+      company: {
+        values: menuValues(companies.map((c) => ({ ...c, label: c.value || 'No company' })), columns.company ?? [], (v) => v || 'No company'),
+        selected: columns.company ?? [],
+      },
+    };
+    const listState = { q: search || undefined, sort, dir: sort ? dir : undefined, ...filterParams(columns) };
 
     /*
      * The company rule is applied here rather than inside listUsers: it is
@@ -115,6 +127,8 @@ peopleRouter.get(
       pages: Math.max(1, Math.ceil(found.total / PER_PAGE)),
       confined: Boolean(company),
       company,
+      columnMenus,
+      listState,
     });
   }),
 );

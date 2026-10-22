@@ -156,7 +156,9 @@ describe('the canvas', () => {
     assert.match(String(editor.headers['content-security-policy']), /script-src 'self'/);
     assert.match(editor.text, /<script src="\/assets\/js\/automation-canvas\.js\?v=[^"]+" defer><\/script>/);
     const list = await as(admin).get(BASE).expect(200);
-    assert.match(String(list.headers['content-security-policy']), /script-src 'none'/);
+    // The list may load the list search (select-search.js) for a long column
+    // menu (lib/column-filters.ts), never the canvas.
+    assert.doesNotMatch(list.text, /automation-canvas\.js/);
   });
 
   test('a new step is placed beside what it follows, not on top of it', async () => {

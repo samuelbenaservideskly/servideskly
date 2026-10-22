@@ -76,6 +76,7 @@ import { listActiveUserGroups } from '../services/user-groups.js';
 import { catalogueAdminRouter } from './catalogue-admin.js';
 import { customFieldsAdminRouter } from './custom-fields-admin.js';
 import { createLibraryField, listLibraryFields, placeLibraryField } from '../services/custom-fields.js';
+import { filterParams, filterRows, readColumnFilters, rowMenus, sortRows, type Cells } from '../lib/column-filters.js';
 
 /**
  * Administration of ticket templates.
@@ -237,13 +238,40 @@ templateAdminRouter.get(
       })),
     );
 
+    // Excel-like headers (lib/column-filters.ts), in memory: the list is whole.
+    type Row = (typeof templates)[number];
+    const cells: Cells<Row> = {
+      name: (r) => r.name,
+      raises: (r) => r.type,
+      filed: (r) => r.categoryPath ?? '',
+      priority: (r) => r.priority,
+      form: (r) => (r.usable ? 'Finished' : 'Unfinished'),
+      status: (r) => (r.is_active ? 'Active' : 'Retired'),
+    };
+    const sortCells: Cells<Row> = {
+      ...cells,
+      priority: (r) => String(['low', 'normal', 'high', 'urgent'].indexOf(r.priority)),
+      form: (r) => (r.usable ? String(r.fieldCount).padStart(4, '0') : ''),
+    };
+    const asked = req.query as Record<string, unknown>;
+    const columns = readColumnFilters(asked, Object.keys(cells));
+    const sort = typeof asked.sort === 'string' && sortCells[asked.sort] ? asked.sort : undefined;
+    const dir = asked.dir === 'desc' ? 'desc' : 'asc';
+    const labelOf = (key: string, v: string) =>
+      key === 'raises' ? (TYPE_LABELS[v as keyof typeof TYPE_LABELS] ?? v)
+      : key === 'priority' ? (PRIORITY_LABELS[v as keyof typeof PRIORITY_LABELS] ?? v)
+      : key === 'filed' && !v ? 'Not filed'
+      : v;
+
     res.render(
       'admin/settings/templates',
       settingsView('templates', {
         title: 'Tickets',
         kind,
         kinds: TEMPLATE_KINDS,
-        templates,
+        templates: sortRows(filterRows(templates, columns, cells), sort, dir, sortCells),
+        columnMenus: rowMenus(templates, columns, cells, labelOf),
+        listState: { type: kind ?? undefined, sort, dir: sort ? dir : undefined, ...filterParams(columns) },
         tasks: [],
         ...labels,
       }),

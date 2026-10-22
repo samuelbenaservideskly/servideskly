@@ -7,11 +7,15 @@ import { PRIORITY_LABELS, TYPE_LABELS } from '../services/tickets.js';
 import {
   AGE_BUCKETS, DRILL_METRICS, METRIC_DEFINITIONS, NO_CATEGORY, NO_COMPANY, PERIODS, REPORT_CAP,
   buildReport, isDrillMetric, readableHours, reportCsv, reportTickets, reportWorkbook, type ReportInput,
+  DRILL_COLUMNS,
+  DRILL_SORTS,
 } from '../services/reports.js';
 import { STATUS_LABELS } from '../services/tickets.js';
 import { settings } from '../settings/index.js';
 import { words, wordsWith } from '../i18n/current.js';
 import { can } from '../auth/permissions.js';
+import { readColumnFilters } from '../lib/column-filters.js';
+import { queryString } from '../lib/format.js';
 
 /**
  * /reports - a group's figures over a period (services/reports.ts); the
@@ -89,11 +93,22 @@ reportsRouter.get(
     const s = (v: unknown) => (typeof v === 'string' ? v : '');
     const metric = s(q.metric);
     if (!isDrillMetric(metric)) throw notFound();
-    const filter = { metric, priority: s(q.priority), type: s(q.type), category: s(q.category), bucket: s(q.bucket), page: Number(s(q.page)) || 1 };
+    const columns = readColumnFilters(q as Record<string, unknown>, Object.keys(DRILL_COLUMNS));
+    const sort = DRILL_SORTS[s(q.sort)] ? s(q.sort) : '';
+    const filter = {
+      metric, priority: s(q.priority), type: s(q.type), category: s(q.category), bucket: s(q.bucket), page: Number(s(q.page)) || 1,
+      columns, ...(sort ? { sort, dir: q.dir === 'desc' ? ('desc' as const) : ('asc' as const) } : {}),
+    };
+    // The page's own address, for header links and filter forms that keep it all.
+    const listState: Record<string, string | string[]> = {};
+    for (const [k, v] of Object.entries(q)) {
+      if (k === 'page') continue;
+      if (typeof v === 'string') listState[k] = v;
+      else if (Array.isArray(v)) listState[k] = v.filter((x): x is string => typeof x === 'string');
+    }
     const list = await reportTickets(req.currentUser!, input, filter);
     if (!list) throw notFound();
     const own = { selected: list.selected, period: list.period, company: list.company };
-    const keep = { metric, ...(filter.priority ? { priority: filter.priority } : {}), ...(filter.type ? { type: filter.type } : {}), ...(filter.category ? { category: filter.category } : {}), ...(filter.bucket ? { bucket: filter.bucket } : {}) };
     res.render('reports-tickets', {
       title: wordsWith()('{0} - Reports', [words()(list.title)]),
       list,
@@ -105,7 +120,9 @@ reportsRouter.get(
       metrics: DRILL_METRICS,
       buckets: AGE_BUCKETS,
       backHref: '/reports?' + reportQuery(own, input),
-      pageHref: (page: number) => '/reports/tickets?' + reportQuery(own, input, { ...keep, page: String(page) }),
+      // Paging keeps the column filters and the sort as well as the report's own choices.
+      pageHref: (page: number) => '/reports/tickets' + queryString({ ...listState, page: String(page) }),
+      listState,
     });
   }),
 );

@@ -1,0 +1,3 @@
+<%# Hidden inputs that carry a page's column filters (cf_*, lib/column-filters.ts)
+    through another GET form on the page, so changing it keeps them. %>
+<% var st = locals.state || {}; Object.keys(st).forEach(function (k) { if (k.indexOf('cf_') !== 0) return; (Array.isArray(st[k]) ? st[k] : [st[k]]).forEach(function (v) { %><input type="hidden" name="<%= k %>" value="<%= v %>"><% }); }); %>

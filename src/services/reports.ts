@@ -8,6 +8,7 @@ import { ticketReference } from '../lib/util.js';
 import { formatDateTime, formatDuration } from '../lib/format.js';
 import { workbook, type Sheet } from '../lib/xlsx.js';
 import { words } from '../i18n/current.js';
+import { BLANK, columnClauses, MAX_VALUES, menuValues, withoutColumn, type ColumnFilters, type ColumnValue } from '../lib/column-filters.js';
 
 /**
  * Reports (/reports): what a group did over a period - raised, resolved,
@@ -736,7 +737,33 @@ export interface DrillFilter {
   /** An AGE_BUCKETS key; with the open-ticket lists. */
   bucket?: string;
   page?: number;
+  /** Excel-like column filters (DRILL_COLUMNS, lib/column-filters.ts). */
+  columns?: ColumnFilters;
+  /** A DRILL_SORTS key; newest first when absent. */
+  sort?: string;
+  dir?: 'asc' | 'desc';
 }
+
+/** Column filters on a figure's tickets: the stored value each header filters on. */
+export const DRILL_COLUMNS: Record<string, string> = {
+  status: 't.status',
+  priority: 't.priority',
+  group: 't.group_id',
+  assignee: 't.assignee_id',
+  company: "coalesce(r.company, '')",
+};
+const DRILL_LABELS: Record<string, string> = { group: 'max(g.name)', assignee: 'max(a.display_name)' };
+export const DRILL_SORTS: Record<string, string> = {
+  ticket: 'lower(t.title)',
+  status: 't.status',
+  priority: "CASE t.priority WHEN 'urgent' THEN 4 WHEN 'high' THEN 3 WHEN 'normal' THEN 2 ELSE 1 END",
+  group: "lower(coalesce(g.name, ''))",
+  assignee: "lower(coalesce(a.display_name, ''))",
+  company: "lower(coalesce(r.company, ''))",
+  raised: 't.created_at',
+  resolved: 't.resolved_at',
+};
+const DRILL_FROM = ' FROM tickets t JOIN users r ON r.id = t.requester_id LEFT JOIN users a ON a.id = t.assignee_id LEFT JOIN technician_groups g ON g.id = t.group_id';
 
 export interface DrillRow {
   id: string;
@@ -773,6 +800,8 @@ export interface DrillList {
   rows: DrillRow[];
   /** The service-level lists read the same first REPORT_CAP tickets as the report. */
   capped: boolean;
+  /** Each header's values for its menu, and what is ticked. */
+  columnMenus: Record<string, { values: ColumnValue[]; selected: string[] }>;
 }
 
 const DRILL_PAGE = 50;
@@ -851,6 +880,7 @@ export async function reportTickets(user: UserRow, input: ReportInput, filter: D
   let ids: string[];
   const details = new Map<string, string>();
   let capped = false;
+  let base: { sql: string; params: unknown[] };
 
   if (SLA_METRICS.includes(metric)) {
     // The same tickets and clocks as the report's figures.
@@ -899,14 +929,38 @@ export async function reportTickets(user: UserRow, input: ReportInput, filter: D
         details.set(t.id, lines.filter(Boolean).join('. '));
       }
     }
-    total = picked.length;
-    ids = picked.slice((page - 1) * DRILL_PAGE, page * DRILL_PAGE);
+    base = { sql: picked.length ? `t.id IN (${marks(picked.length)})` : '1 = 0', params: picked };
   } else {
-    total = Number((await query<{ n: number }>(`SELECT count(*) AS n FROM tickets t WHERE ${whereSql}`, params as never[]))[0]?.n ?? 0);
-    ids = (await query<{ id: string }>(
-      `SELECT t.id FROM tickets t WHERE ${whereSql} ORDER BY t.created_at DESC LIMIT ${DRILL_PAGE} OFFSET ${(page - 1) * DRILL_PAGE}`,
-      params as never[],
-    )).map((r) => r.id);
+    base = { sql: whereSql, params };
+  }
+
+  // Column filters and sorting, in SQL for both kinds of list: the
+  // service-level ones hand over the tickets their clocks picked.
+  const narrowedBy = (cols: ColumnFilters) => {
+    const cf = columnClauses(cols, DRILL_COLUMNS);
+    return { sql: [base.sql, ...cf.where].join(' AND '), params: [...base.params, ...cf.params] };
+  };
+  const current = narrowedBy(filter.columns ?? {});
+  total = Number((await query<{ n: number }>('SELECT count(*) AS n' + DRILL_FROM + ' WHERE ' + current.sql, current.params as never[]))[0]?.n ?? 0);
+  const order = filter.sort && DRILL_SORTS[filter.sort]
+    ? DRILL_SORTS[filter.sort] + (filter.dir === 'desc' ? ' DESC' : ' ASC') + ', t.created_at DESC'
+    : 't.created_at DESC';
+  ids = (await query<{ id: string }>(
+    'SELECT t.id' + DRILL_FROM + ' WHERE ' + current.sql + ' ORDER BY ' + order + ', t.id LIMIT ' + DRILL_PAGE + ' OFFSET ' + (page - 1) * DRILL_PAGE,
+    current.params as never[],
+  )).map((r) => r.id);
+  const columnMenus: Record<string, { values: ColumnValue[]; selected: string[] }> = {};
+  for (const [key, expr] of Object.entries(DRILL_COLUMNS)) {
+    const other = narrowedBy(withoutColumn(filter.columns ?? {}, key));
+    const label = DRILL_LABELS[key] ?? 'max(' + expr + ')';
+    const found = await query<{ v: string | null; label: string | null; n: number }>(
+      'SELECT ' + expr + ' AS v, ' + label + ' AS label, count(*) AS n' + DRILL_FROM + ' WHERE ' + other.sql + ' GROUP BY ' + expr + ' ORDER BY n DESC LIMIT ' + MAX_VALUES,
+      other.params as never[],
+    );
+    const blank = key === 'group' ? 'Unrouted' : key === 'assignee' ? 'Unassigned' : key === 'company' ? 'No company' : '';
+    const values = found.map((r) => ({ value: r.v ?? BLANK, label: r.v ? (r.label ?? r.v) : blank, count: Number(r.n) }));
+    const selected = filter.columns?.[key] ?? [];
+    columnMenus[key] = { values: menuValues(values, selected, (v) => (v === BLANK ? blank : v)), selected };
   }
 
   const found = ids.length === 0 ? [] : await query<{
@@ -956,6 +1010,7 @@ export async function reportTickets(user: UserRow, input: ReportInput, filter: D
     pages: Math.max(1, Math.ceil(total / DRILL_PAGE)),
     rows,
     capped,
+    columnMenus,
   };
 }
 

@@ -1,6 +1,7 @@
 <%- include('_layout') %>
 
 <form method="get" action="/admin/settings/audit" class="filters">
+  <%- include("../../partials/keep-columns", { state: listState }) %>
   <span class="filters__field">
     <label for="action">Action</label>
     <select id="action" name="action">
@@ -31,6 +32,7 @@
   <a class="btn btn--quiet" href="/admin/settings/audit">Reset</a>
 </form>
 
+<%- include('../../partials/clear-columns', { state: listState, path: '/admin/settings/audit' }) %>
 <% if (entries.length === 0) { %>
   <p class="muted">No audit entries match this filter.</p>
 <% } else { %>
@@ -40,8 +42,12 @@
     mid-word). A <details> per entry, so no script and a keyboard opens it.
   %>
   <div class="card card--flush audit-list">
-    <div class="audit-row audit-row--head" aria-hidden="true">
-      <span>When</span><span>Actor</span><span>Action</span><span>Outcome</span><span></span>
+    <%# Excel-like headers (partials/col-head.ejs): When sorts, the rest also filter. %>
+    <div class="audit-row audit-row--head">
+      <% [{ key: 'when', label: 'When' }, { key: 'actor', label: 'Actor' }, { key: 'action', label: 'Action' }, { key: 'outcome', label: 'Outcome' }].forEach(function (c) { %>
+        <%- include('../../partials/col-head', { key: c.key, label: t(c.label), path: '/admin/settings/audit', state: listState, menu: columnMenus[c.key], tag: 'span' }) %>
+      <% }); %>
+      <span></span>
     </div>
     <% entries.forEach(function (entry) { var pairs = detailPairs(entry.detail); %>
       <details class="audit-entry">
@@ -65,11 +71,11 @@
   <% if (pageCount > 1) { %>
     <nav class="pagination" aria-label="Pagination">
       <% if (page > 1) { %>
-        <a class="btn btn--quiet" href="/admin/settings/audit<%= queryString({ action: filters.action, outcome: filters.outcome, page: page - 1 }) %>">Previous</a>
+        <a class="btn btn--quiet" href="/admin/settings/audit<%= queryString(Object.assign({}, listState, { page: page - 1 })) %>">Previous</a>
       <% } %>
       <span class="muted">Page <%= page %> of <%= pageCount %></span>
       <% if (page < pageCount) { %>
-        <a class="btn btn--quiet" href="/admin/settings/audit<%= queryString({ action: filters.action, outcome: filters.outcome, page: page + 1 }) %>">Next</a>
+        <a class="btn btn--quiet" href="/admin/settings/audit<%= queryString(Object.assign({}, listState, { page: page + 1 })) %>">Next</a>
       <% } %>
     </nav>
   <% } %>

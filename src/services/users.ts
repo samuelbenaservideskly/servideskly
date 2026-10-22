@@ -7,6 +7,7 @@ import { newId, normaliseEmail, normaliseLine, nowIso } from '../lib/util.js';
 import { applyDisplayName } from './display-names.js';
 import { sealText } from '../lib/field-crypto.js';
 import { providerIssuerSql, type ProviderKey } from '../auth/oidc.js';
+import { BLANK, columnClauses, MAX_VALUES, withoutColumn, type ColumnFilters, type ColumnValue } from '../lib/column-filters.js';
 
 export type UserStatus = 'active' | 'disabled';
 export type UserSource = 'jit' | 'sync' | 'manual' | 'dev';
@@ -129,7 +130,8 @@ export function isReservedAccount(user: Pick<UserRow, 'issuer'>): boolean {
 
 export type UserKind = 'local' | 'directory';
 
-export async function listUsers(options: {
+/** What listUsers and userColumnValues read. */
+export interface UserListOptions {
   search?: string;
   /** Password accounts, or directory (Entra ID) ones. Both when absent. */
   kind?: UserKind;
@@ -140,9 +142,26 @@ export async function listUsers(options: {
   userGroupId?: string;
   /** One identity provider's accounts (oidc.ts providerIssuerSql), on the Identity providers tab. */
   provider?: ProviderKey;
-  limit: number;
-  offset: number;
-}): Promise<{ rows: UserRow[]; total: number }> {
+  /** Excel-like column filters (USER_FILTER_COLUMNS, lib/column-filters.ts). */
+  columns?: ColumnFilters;
+  /** A column from USER_SORTS; by name when absent. */
+  sort?: string;
+  dir?: 'asc' | 'desc';
+}
+
+/** Column filters on the users list: a stored value, or membership of a group. */
+export const USER_FILTER_COLUMNS: Record<string, string> = { role: 'role', status: 'status', source: 'source', company: "coalesce(company, '')" };
+const USER_MEMBERSHIP: Record<string, string> = { tgroups: 'technician_group_members', ugroups: 'user_group_members' };
+export const USER_SORTS: Record<string, string> = {
+  name: 'lower(display_name)',
+  role: 'role',
+  status: 'status',
+  source: 'source',
+  lastSignIn: 'last_login_at',
+  company: "lower(coalesce(company, ''))",
+};
+
+function userWhere(options: UserListOptions): { clause: string; params: unknown[] } {
   const search = options.search?.trim();
 
   // Conditions and their parameters are pushed together, so the positional
@@ -182,14 +201,58 @@ export async function listUsers(options: {
     where.push(byProvider.sql);
     params.push(...byProvider.params);
   }
-  const clause = where.length > 0 ? ' WHERE ' + where.join(' AND ') : '';
+  // Column filters: stored values, and membership of any ticked group.
+  if (options.columns) {
+    const cf = columnClauses(options.columns, USER_FILTER_COLUMNS);
+    where.push(...cf.where);
+    params.push(...cf.params);
+    for (const [key, table] of Object.entries(USER_MEMBERSHIP)) {
+      const ids = options.columns[key]?.filter((v) => v !== BLANK) ?? [];
+      const none = options.columns[key]?.includes(BLANK) ?? false;
+      const parts: string[] = [];
+      if (ids.length) {
+        parts.push('id IN (SELECT user_id FROM ' + table + ' WHERE group_id IN (' + ids.map(() => '?').join(', ') + '))');
+        params.push(...ids);
+      }
+      if (none) parts.push('id NOT IN (SELECT user_id FROM ' + table + ')');
+      if (parts.length) where.push('(' + parts.join(' OR ') + ')');
+    }
+  }
+  return { clause: where.length > 0 ? ' WHERE ' + where.join(' AND ') : '', params };
+}
 
+export async function listUsers(options: UserListOptions & { limit: number; offset: number }): Promise<{ rows: UserRow[]; total: number }> {
+  const { clause, params } = userWhere(options);
+  const sortExpr = (options.sort && USER_SORTS[options.sort]) || 'lower(display_name)';
+  // A last sign-in that never happened sorts last either way.
+  const nulls = options.sort === 'lastSignIn' ? 'last_login_at IS NULL, ' : '';
   const rows = await query<UserRow>(
-    'SELECT * FROM users' + clause + ' ORDER BY lower(display_name) LIMIT ? OFFSET ?',
+    'SELECT * FROM users' + clause + ' ORDER BY ' + nulls + sortExpr + ' ' + (options.dir === 'desc' ? 'DESC' : 'ASC') + ', lower(display_name), id LIMIT ? OFFSET ?',
     [...params, options.limit, options.offset],
   );
   const total = await count('SELECT count(*) AS c FROM users' + clause, params);
   return { rows, total };
+}
+
+/** One column's values for its header menu, over what every other filter leaves. */
+export async function userColumnValues(options: UserListOptions, key: string): Promise<ColumnValue[]> {
+  const { clause, params } = userWhere({ ...options, columns: withoutColumn(options.columns ?? {}, key) });
+  if (USER_FILTER_COLUMNS[key]) {
+    const expr = USER_FILTER_COLUMNS[key]!;
+    const rows = await query<{ v: string; n: number }>('SELECT ' + expr + ' AS v, count(*) AS n FROM users' + clause + ' GROUP BY ' + expr + ' ORDER BY n DESC LIMIT ' + MAX_VALUES, params);
+    return rows.map((r) => ({ value: r.v ?? BLANK, label: r.v ?? '', count: Number(r.n) }));
+  }
+  const table = USER_MEMBERSHIP[key];
+  if (!table) return [];
+  const groups = key === 'tgroups' ? 'technician_groups' : 'user_groups';
+  const rows = await query<{ v: string; label: string; n: number }>(
+    'SELECT g.id AS v, g.name AS label, count(*) AS n FROM ' + table + ' m JOIN ' + groups + ' g ON g.id = m.group_id' +
+      ' WHERE m.user_id IN (SELECT id FROM users' + clause + ') GROUP BY g.id, g.name ORDER BY n DESC LIMIT ' + MAX_VALUES,
+    params,
+  );
+  const none = await count('SELECT count(*) AS c FROM users' + clause + (clause ? ' AND ' : ' WHERE ') + 'id NOT IN (SELECT user_id FROM ' + table + ')', params);
+  const values = rows.map((r) => ({ value: r.v, label: r.label, count: Number(r.n) }));
+  return none > 0 ? [...values, { value: BLANK, label: '', count: none }] : values;
 }
 
 /** Active agents and admins, for the assignee picker. */

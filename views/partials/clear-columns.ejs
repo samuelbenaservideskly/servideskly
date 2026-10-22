@@ -1,0 +1,8 @@
+<%# While any column filter is on (cf_*, lib/column-filters.ts), a way to drop
+    them all - above the list, so it is there even when the filters leave
+    nothing and the table, with its headers, is not drawn. %>
+<% var st = locals.state || {}; var on = Object.keys(st).some(function (k) { return k.indexOf('cf_') === 0; }); %>
+<% if (on) { %>
+  <% var rest = {}; Object.keys(st).forEach(function (k) { if (k.indexOf('cf_') !== 0 && k !== 'page') rest[k] = st[k]; }); %>
+  <p class="clear-columns small"><%- include('icon', { name: 'funnel', cls: 'ico' }) %> <%= t('Filtered by column.') %> <a href="<%= path + queryString(rest) %>"><%= t('Clear column filters') %></a></p>
+<% } %>

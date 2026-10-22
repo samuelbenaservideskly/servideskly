@@ -90,14 +90,15 @@
   };
 %>
 
+<%- include('../../partials/clear-columns', { state: listState, path: '/admin/settings/mail/notifications' }) %>
 <div class="table-scroll">
   <table class="table">
     <thead>
       <tr>
-        <th scope="col">Notification</th>
-        <th scope="col">Goes to</th>
+        <%- include('../../partials/col-head', { key: 'name', label: t('Notification'), path: '/admin/settings/mail/notifications', state: listState, menu: columnMenus.name }) %>
+        <%- include('../../partials/col-head', { key: 'goesTo', label: t('Goes to'), path: '/admin/settings/mail/notifications', state: listState, menu: columnMenus.goesTo }) %>
         <th scope="col">Sent from</th>
-        <th scope="col">Status</th>
+        <%- include('../../partials/col-head', { key: 'status', label: t('Status'), path: '/admin/settings/mail/notifications', state: listState, menu: columnMenus.status }) %>
       </tr>
     </thead>
     <tbody>
