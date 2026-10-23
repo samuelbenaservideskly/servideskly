@@ -112,10 +112,6 @@ maintaining and improving the project.
 
 Thank you for your support!
 
-## About the author
-
-ServiDeskly is written and maintained by the ServiDeskly authors.
-
 ## License
 
 Copyright (C) 2026 the ServiDeskly authors.
