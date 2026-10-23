@@ -213,7 +213,7 @@ export async function ingest(
   // The quoted conversation first, then the signature: IMAP and Graph alike.
   const unquoted = settings().automation.trimQuoted !== false ? trimQuotedHistory(message.body) : message.body;
   // A picture pasted into the mail keeps its place as [image: name] (inbound-attachments.ts).
-  const written = placeInlineImages(stripSignature(unquoted).trim(), message.body, attachments);
+  const written = placeInlineImages(stripSignature(unquoted).trim(), message.bodyFull ?? message.body, attachments);
 
   // "Here you go" with the screenshot and nothing else is a real message, and
   // dropping it as empty threw away the only thing it carried. Empty now

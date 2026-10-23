@@ -86,6 +86,8 @@ export interface IncomingMessage {
   subject: string;
   /** Plain text, already stripped of quoted history where possible. */
   body: string;
+  /** The body before the quoted history was cut, when a transport cut it. */
+  bodyFull?: string;
   inReplyTo: string;
   references: string[];
   receivedAt: string;
@@ -308,7 +310,11 @@ class GraphTransport implements MailTransport {
     // on a list returns every byte of every attachment in one response - and
     // twenty-five messages of that is a response large enough to fail.
     for (let i = 0; i < messages.length; i++) {
-      if (!json.value?.[i]?.hasAttachments) continue;
+      // hasAttachments leaves out inline ones, so a mail whose only files are
+      // pictures pasted into it says false (reported 23 Oct 2026: the
+      // pictures never arrived). A body that shows a cid: picture has some.
+      const raw = json.value?.[i];
+      if (!raw?.hasAttachments && !/\bsrc\s*=\s*["']?cid:/i.test(raw?.body?.content ?? '')) continue;
       const message = messages[i];
       if (!message) continue;
       const attachments = await this.attachmentsOf(message.providerId);
@@ -338,7 +344,8 @@ class GraphTransport implements MailTransport {
         filename: raw.name || 'attachment-' + (index + 1),
         contentType: raw.contentType ?? 'application/octet-stream',
         content: Buffer.from(raw.contentBytes ?? '', 'base64'),
-        cid: raw.contentId ?? '',
+        // Without the angle brackets some senders keep, as the body's cid: has none.
+        cid: (raw.contentId ?? '').replace(/^<|>$/g, ''),
         inline: Boolean(raw.isInline) || Boolean(raw.contentId),
       }));
   }
@@ -387,6 +394,9 @@ function readGraphMessage(raw: GraphMessage): IncomingMessage & { providerId: st
     fromName: raw.from?.emailAddress?.name ?? '',
     subject: raw.subject ?? '',
     body: plainText(raw.body?.content ?? raw.bodyPreview ?? '', raw.body?.contentType),
+    // The whole of it, quoted history too: a picture whose place is only in
+    // the history that was cut belongs to an earlier message.
+    bodyFull: plainText(raw.body?.content ?? raw.bodyPreview ?? '', raw.body?.contentType, false),
     inReplyTo: header('in-reply-to'),
     references: header('references').split(/\s+/).filter(Boolean),
     receivedAt: raw.receivedDateTime ?? new Date().toISOString(),
@@ -400,10 +410,10 @@ function readGraphMessage(raw: GraphMessage): IncomingMessage & { providerId: st
  * plain text everywhere else in this application, and storing a stranger's
  * HTML would mean rendering it somewhere eventually.
  */
-export function plainText(content: string, contentType?: string): string {
+export function plainText(content: string, contentType?: string, cutQuoted = quotedCutOn()): string {
   let text = content;
   if ((contentType ?? '').toLowerCase() === 'html' || /<[a-z][\s\S]*>/i.test(content)) {
-    const html = quotedCutOn() ? cutQuotedHtml(content) : content;
+    const html = cutQuoted ? cutQuotedHtml(content) : content;
     // Nothing above the quote - a forward with no words - keeps it all.
     text = (/\S/.test(html.replace(/<[^>]+>|&nbsp;/g, '')) ? html : content)
       .replace(/<style[\s\S]*?<\/style>/gi, '')
@@ -414,6 +424,10 @@ export function plainText(content: string, contentType?: string): string {
       // without this "Okay, I will" and the quoted "From:" ran together.
       .replace(/<\/(div|tr|li|h[1-6]|blockquote|table)>/gi, '\n')
       .replace(/<hr[^>]*>/gi, '\n_____\n')
+      // A picture pasted into the mail keeps its place, as the [cid:...]
+      // Outlook writes in a text part; inbound-attachments.ts turns it into
+      // [image: name] once the file is known (asked for 22 Oct 2026).
+      .replace(/<img\b[^>]*?\bsrc\s*=\s*["']?cid:([^"'\s>]+)[^>]*>/gi, '\n[cid:$1]\n')
       .replace(/<[^>]+>/g, '')
       .replace(/&nbsp;/g, ' ')
       .replace(/&amp;/g, '&')

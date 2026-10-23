@@ -10,7 +10,7 @@ import { query } from '../src/db/index.js';
 import { textWithImages } from '../src/lib/inline-images.js';
 import { placeInlineImages } from '../src/services/mail/inbound-attachments.js';
 import { createMailbox, findMailbox } from '../src/services/mail/mailboxes.js';
-import { setTransportFactory, type IncomingAttachment, type MailTransport } from '../src/services/mail/transport.js';
+import { setTransportFactory, transportFor, type IncomingAttachment, type MailTransport } from '../src/services/mail/transport.js';
 import { ingest } from '../src/services/mail/inbound.js';
 
 // Pictures pasted into a ticket's text or into an email (22 Oct 2026).
@@ -91,12 +91,13 @@ describe('on the ticket page', () => {
   let agent: TestSession;
   let requester: TestSession;
   let mailboxId: string;
+  let realTransports: () => void = () => undefined;
 
   const quiet: MailTransport = { send: async () => undefined, fetch: async () => [], acknowledge: async () => undefined };
 
   before(async () => {
     await bootstrapTestDatabase();
-    setTransportFactory(() => quiet);
+    realTransports = setTransportFactory(() => quiet);
     app = createApp();
     agent = await signInAs('paste.agent@example.com', 'agent');
     requester = await signInAs('paste.requester@example.com', 'user');
@@ -146,6 +147,57 @@ describe('on the ticket page', () => {
     assert.equal(await count(), 0);
     await request.agent(app).set('Cookie', agent.cookie).get(embed).expect(200);
     assert.equal(await count(), 1);
+  });
+
+  test('Graph: pictures pasted into the body are fetched and placed, though hasAttachments says false', async () => {
+    // What Graph answers for an Outlook mail whose only files are two pasted
+    // pictures (reported 23 Oct 2026: the ticket arrived without them).
+    const html =
+      '<html><body><div>First this:</div><div><img width="624" height="351" src="cid:image001.png@01DC4F21.6E4F3A50" alt=""></div>' +
+      '<div>and then this:</div><p><img src="cid:image002.png@01DC4F21.6E4F3A50"></p><div>Thanks</div></body></html>';
+    const answers: Record<string, unknown> = {
+      token: { access_token: 'test-token', expires_in: 3600 },
+      list: {
+        value: [{
+          id: 'graph-paste-1', internetMessageId: '<graph-paste-1@x>', subject: 'Two screenshots',
+          from: { emailAddress: { address: 'paste.requester@example.com', name: 'Requester' } },
+          body: { contentType: 'html', content: html }, receivedDateTime: new Date().toISOString(), hasAttachments: false,
+        }],
+      },
+      files: {
+        // Two different screenshots, both well over a signature logo's size.
+        value: ['image001.png', 'image002.png'].map((name, i) => ({
+          '@odata.type': '#microsoft.graph.fileAttachment', name, contentType: 'image/png',
+          contentBytes: png((40 + i) * 1024).toString('base64'),
+          contentId: name + '@01DC4F21.6E4F3A50', isInline: true,
+        })),
+      },
+    };
+    const realFetch = globalThis.fetch;
+    const asked: string[] = [];
+    globalThis.fetch = (async (input: string | URL | Request) => {
+      const url = String(input instanceof Request ? input.url : input);
+      asked.push(url);
+      const body = url.includes('/oauth2/') ? answers.token : url.includes('/attachments') ? answers.files : url.includes('/messages?') ? answers.list : {};
+      return new Response(JSON.stringify(body), { status: 200, headers: { 'content-type': 'application/json' } });
+    }) as typeof fetch;
+    realTransports(); // the real Graph transport, talking to the stand-in above
+    try {
+      const mailbox = await findMailbox(mailboxId);
+      assert.ok(mailbox);
+      const [message] = await transportFor(mailbox).fetch();
+      assert.ok(asked.some((u) => u.includes('/attachments')), 'the files were asked for');
+      assert.equal(message?.attachments?.length, 2);
+      const result = await ingest(mailbox, message!);
+      assert.equal(result.outcome, 'ticket.created');
+      const [ticket] = await query<{ description: string }>('SELECT description FROM tickets WHERE id = ?', [result.ticketId]);
+      assert.match(ticket!.description, /First this:\s*\[image: image001\.png\]\s*and then this:\s*\[image: image002\.png\]\s*Thanks/);
+      const files = await query<{ filename: string }>('SELECT filename FROM ticket_attachments WHERE ticket_id = ? ORDER BY filename', [result.ticketId]);
+      assert.deepEqual(files.map((f) => f.filename), ['image001.png', 'image002.png']);
+    } finally {
+      globalThis.fetch = realFetch;
+      setTransportFactory(() => quiet);
+    }
   });
 
   test('a picture pasted into an email is an attachment, drawn where it was', async () => {
