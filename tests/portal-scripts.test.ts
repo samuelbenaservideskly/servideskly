@@ -10,6 +10,7 @@ import { ensureDefaultTemplate } from '../src/services/templates.js';
 import { STANDARD_PORTAL, isScriptOrigin, partProblems, setDefaultPortal } from '../src/services/portal.js';
 import { settings, updateSettings } from '../src/settings/index.js';
 import { query } from '../src/db/index.js';
+import { flushAudit } from '../src/lib/audit.js';
 
 const BASE = '/admin/settings/customization/portal';
 const ADVANCED = '/admin/settings/advanced/javascript';
@@ -81,6 +82,9 @@ describe('the Advanced settings switch', () => {
     await post(admin, ADVANCED + '/enable', { understood: 'on' }).expect(302);
     assert.equal(settings().portalScripts.enabled, true);
 
+    // The audit entry is written in the background; on PostgreSQL the read
+    // could come first (seen in CI, 23 Oct 2026).
+    await flushAudit();
     const rows = await query<{ action: string }>(
       "SELECT action FROM audit_log WHERE action = 'settings.portal_scripts.enabled'",
     );
